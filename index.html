@@ -1776,9 +1776,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   "use strict";
 
   const DIFF = {
-    easy:   { hpPer: 1,   choices: 3, rise: 0,      wrongRise: 0.25, knock: 0.22, windup: 11000 },
-    medium: { hpPer: 1.5, choices: 4, rise: 1 / 40, wrongRise: 0.25, knock: 0.2,  windup: 8500 },
-    hard:   { hpPer: 2,   choices: 4, rise: 1 / 22, wrongRise: 0.3,  knock: 0.18, windup: 6500 },
+    easy:   { hpPer: 1,   choices: 3, rise: 0,      wrongRise: 0.25, knock: 0.22, windup: 14000, hitCost: 0.5 },   // Easy: a hit costs half a heart (6 hits, not 3)
+    medium: { hpPer: 1.5, choices: 4, rise: 1 / 40, wrongRise: 0.25, knock: 0.2,  windup: 8500, hitCost: 1 },
+    hard:   { hpPer: 2,   choices: 4, rise: 1 / 22, wrongRise: 0.3,  knock: 0.18, windup: 6500, hitCost: 1 },
   };
   const NAME = "Sizzlejaw";
 
@@ -1848,6 +1848,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .lm-hearts{display:flex;gap:3px}
 .lm-heart{width:14px;height:12px;background:#ff7a6b;clip-path:polygon(0 25%,25% 0,50% 25%,75% 0,100% 25%,100% 50%,50% 100%,0 50%)}
 .lm-heart.off{background:#4b3a57}
+.lm-heart.half{background:linear-gradient(90deg,#ff7a6b 50%,#4b3a57 50%)}
 .lm-shield{width:12px;height:14px;background:#6aa8ff;clip-path:polygon(0 0,100% 0,100% 60%,50% 100%,0 60%)}
 .lm-boss{flex:1;min-width:0;flex-direction:column;align-items:stretch;gap:3px;padding:4px 8px}
 .lm-boss span{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#ffb627;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2175,7 +2176,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     function setSay(t, cls) { R.say.textContent = t; R.say.className = "lm-say" + (cls ? " " + cls : ""); }
     function hud() {
       R.hearts.innerHTML = "";
-      for (let i = 0; i < maxHearts; i++) { const d = document.createElement("span"); d.className = "lm-heart" + (i < S.hearts ? "" : " off"); R.hearts.appendChild(d); }
+      for (let i = 0; i < maxHearts; i++) { const d = document.createElement("span"); d.className = "lm-heart" + (S.hearts >= i + 1 ? "" : S.hearts > i ? " half" : " off"); R.hearts.appendChild(d); }
       R.shield.hidden = !S.shield;
       R.hp.style.width = (100 * S.hp / S.hpMax) + "%";
       R.hp.parentNode.setAttribute("aria-valuenow", String(S.hp));
@@ -2361,9 +2362,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       later(ask, 900);
     }
     function reachPlayer() {
-      S.phase = "hurt"; S.hearts--; S.hurt = 1; sfx.roar(); hud();
+      S.phase = "hurt"; S.hearts = loseHeart(); S.hurt = 1; sfx.roar(); hud();
       if (S.hearts <= 0) { lose(); return; }
-      setSay(`${NAME} splashed you! Lost a heart.`, "bad");
+      setSay(`${NAME} splashed you! Lost ${lostTxt()}.`, "bad");
       bossSay(BL.got);
       S.target = 0.45;
       later(() => { S.phase = "ask"; setSay(ASK); }, 1300);
@@ -2373,6 +2374,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     // Rough time the word (and sentence) take to say, so the clock starts after he has heard it.
     // Plus whatever line is still finishing first (the host's queue lets sentences end).
     function talkMs(c, slow) { const k = slow ? 1.7 : 1; return (say.left ? say.left() : 0) + k * (2 * (500 + c.w.length * 60) + (c.sentence ? c.sentence.length * 70 : 0)); }
+    // Easy hits cost half a heart; round to avoid float drift (0.5 steps are exact anyway).
+    function loseHeart() { return Math.max(0, Math.round((S.hearts - (D.hitCost || 1)) * 2) / 2); }
+    function lostTxt() { return (D.hitCost || 1) < 1 ? "half a heart" : "a heart"; }
     function windup() { return (atkOpt.windup || D.windup) / (S.attackSpeed || 1); }   // S.attackSpeed: hook for boss phases
     function fireHit(c, timedOut) {
       if (S.done) return;
@@ -2385,10 +2389,10 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         S.shield = false; hud(); sfx.hit();
         setSay(`Your shield blocked the ${SHOT}!`, "good");
       } else {
-        S.hearts--; S.hurt = 1; S.shake = reduce ? 0 : 350; hud();
+        S.hearts = loseHeart(); S.hurt = 1; S.shake = reduce ? 0 : 350; hud();
         opts.onHurt && opts.onHurt(c.key);
         if (S.hearts <= 0) { lose(); return; }
-        setSay(timedOut ? `Too slow! The ${SHOT} hit you. Lost a heart.` : `The ${SHOT} hit you! Lost a heart.`, "bad");
+        setSay(timedOut ? `Too slow! The ${SHOT} hit you. Lost ${lostTxt()}.` : `The ${SHOT} hit you! Lost ${lostTxt()}.`, "bad");
         bossSay(timedOut ? BL.slow : BL.got);
       }
       later(() => { if (S.phase === "ask" && S.q === c && !S.done) { ATK.arm(windup(), 900 + (timedOut ? talkMs(c, false) : 0)); if (timedOut) speak(false); } }, 1200);
@@ -2591,7 +2595,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 
     const ctrl = {
       stop() { if (!S.done) S.done = true; teardown(); },
-      addHeart() { if (S.done || S.hearts >= maxHearts) return false; S.hearts++; hud(); setSay("Glug glug! +1 heart.", "good"); return true; },
+      addHeart() { if (S.done || S.hearts >= maxHearts) return false; S.hearts = Math.min(maxHearts, S.hearts + 1); hud(); setSay("Glug glug! +1 heart.", "good"); return true; },
       shield() { if (S.done || S.shield) return false; S.shield = true; hud(); setSay("Shield up! Your next mistake is free.", "good"); return true; },
       glow() { if (S.phase !== "ask") return false; S.stats[S.q.key].glow = true; glowRight(); setSay("The glowing block is the right one.", "good"); return true; },
       state() { return { hp: S.hp, hpMax: S.hpMax, hearts: S.hearts, phase: S.phase, p: S.p, q: S.q && S.q.key, shot: ATK ? ATK.progress() : 0, blocks: S.blocks, bossPhase: S.bossPhase, pow: S.pow }; },
