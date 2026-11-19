@@ -3170,9 +3170,10 @@ function renderShop(){
       const n = document.createElement("span"); n.className = "badge"; n.textContent = "×" + SAVE.inv[id]; b.appendChild(n);
     } else if (cur(shopTab) === id){ st.textContent = "✓ On"; b.classList.add("on"); }
     else if (owns(shopTab, id)) st.textContent = it.price === 0 ? "Free" : "Owned";
-    else if (locked(shopTab, id)){ st.textContent = mystery(shopTab, id) ? "🔒 New world" : `🔒 Beat ${it.bossName || "the monster"}`; st.classList.add("poor"); }
+    else if (locked(shopTab, id)){ st.textContent = it.chest ? "🎁 Chest only" : mystery(shopTab, id) ? "🔒 New world" : `🔒 Beat ${it.bossName || "the monster"}`; st.classList.add("poor"); }
     else { st.innerHTML = gemTxt(it.price); st.classList.add(SAVE.gems >= it.price ? "price" : "poor"); }
     b.appendChild(st);
+    if (it.chest) b.classList.add("chest");
     if (it.legend){ b.classList.add("legend"); const l = document.createElement("span"); l.className = "badge"; l.textContent = "★"; b.appendChild(l); }
     if (shopSel[shopTab] === id) b.classList.add("sel");
     const shown = mystery(shopTab, id) ? "Mystery pet" : it.name;
@@ -3203,8 +3204,8 @@ function renderShopInfo(){
   const it = COS[shopTab].items[id];
   const myst = mystery(shopTab, id);
   $("pvName").textContent = myst ? "??? Mystery pet" : it.name;
-  $("pvDesc").textContent = myst ? "A boss lives in a world you haven't reached yet. Find it, beat it, then tame it!" : (locked(shopTab, id) || (it.legend && !owns(shopTab, id)) ? it.lockDesc : it.desc) || "";
-  if (locked(shopTab, id)){ btn.textContent = myst ? "Find this world" : `Beat ${it.bossName || "the monster"}`; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; return; }
+  $("pvDesc").textContent = it.chest && !owns(shopTab, id) ? "Chest-only! Win it from a Test Day reward chest." : myst ? "A boss lives in a world you haven't reached yet. Find it, beat it, then tame it!" : (locked(shopTab, id) || (it.legend && !owns(shopTab, id)) ? it.lockDesc : it.desc) || "";
+  if (locked(shopTab, id)){ btn.textContent = it.chest ? "Find it in a chest" : myst ? "Find this world" : `Beat ${it.bossName || "the monster"}`; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; return; }
   if (cur(shopTab) === id){ btn.textContent = "Equipped ✓"; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; }
   else if (owns(shopTab, id)){ btn.textContent = "Equip"; btn.classList.add("go"); btn.onclick = () => { setEq(shopTab, id); LLAudio.sfx("land"); renderShop(); }; }
   else if (SAVE.gems >= it.price){ btn.innerHTML = "Buy · " + gemTxt(it.price); btn.onclick = () => buyItem(shopTab, id); }
@@ -3530,6 +3531,11 @@ const COS = {
                 pal: { H:"#eef2f7", D:"#1d2b53", R:"#7fd3ff", T:"#dfe6ee", M:"#ff7a1f", S:"#ffb627", P:"#c9d2dc", K:"#6b7280" } },
     dino:     { name: "Dino Suit", price: 400, desc: "Rawr! A comfy dino costume.", sprite: ["..R..R..",".HHHHHH.","HWHWWHWH","HSWDSWDH","HSSSSSSH","HSSMMSSH","..TTTT..",".TTRRTT.","HTTTTTTH","H.TTTT.H","..PPPP.T","..P..PTT",".KK..KK."],
                 pal: { H:"#4caf50", S:"#e7b58a", W:"#ffffff", D:"#1d2b53", M:"#a8563a", T:"#43a047", R:"#c5e86c", P:"#388e3c", K:"#2e7d32" } },
+    // chest-only (Test Day reward chests): price null = can't be bought
+    shadow:   { name: "Shadow Ninja", price: null, chest: "epic", desc: "A ninja made of night. Chest-only!", sprite: [".KKKKKK.","KKKKKKKK","RRRRRRRR","KSDDSDDK","KKKKKKKK",".KKKKKK.","..TTTT..",".TTRRTT.","STTTTTTS","S.TTTT.S","..PPPP..","..P..P..",".KK..KK."],
+                pal: { K:"#1a1030", S:"#c9a8ff", W:"#ffffff", D:"#b06aff", R:"#b06aff", T:"#2a1f45", P:"#1f1735" } },
+    magma:    { name: "Magma Knight", price: null, chest: "legendary", desc: "Armor forged in the volcano. Chest-only!", sprite: ["..RYYR..",".HHHHHH.","HHHHHHHH","HDYDDYDH","HHHHHHHH",".HHHHHH.","..TTTT..",".TTYYTT.","HTTTTTTH","H.TTTT.H","..PPPP..","..P..P..",".KK..KK."],
+                pal: { H:"#3a2230", D:"#1a1018", Y:"#ffd166", T:"#c93312", R:"#ff7a1f", P:"#2a1a22", K:"#1a1018" } },
   } },
   hat: { label: "Hats", items: {
     none:   { name: "No hat", price: 0, desc: "Nothing on your head." },
@@ -3539,6 +3545,9 @@ const COS = {
     tophat: { name: "Top Hat", price: 75, desc: "Very fancy.", over: 1, rows: ["..aaaa..","..aaaa..","..cccc..",".aaaaaa."], pal: { a:"#1f1726", c:"#e63946" } },
     wizard: { name: "Wizard Hat", price: 120, desc: "Spelling magic!", over: 1, rows: ["....a...","...aa...","...aac..","..aaaa..",".acaaaa.","aaaaaaaa"], pal: { a:"#5a3db8", c:"#ffd166" } },
     crown:  { name: "Gold Crown", price: 300, desc: "King of the lava.", over: 1, rows: [".a.aa.a.",".aaaaaa.",".acaaca."], pal: { a:"#ffd166", c:"#ef476f" } },
+    party:  { name: "Party Hat", price: null, chest: "rare", desc: "Every day is a party. Chest-only!", over: 1, rows: ["...cc...","...aa...","..abba..",".abaaba.","abaaaaba"], pal: { a:"#ff7ab6", b:"#5ee0d0", c:"#ffd166" } },
+    icecrown: { name: "Ice Crown", price: null, chest: "epic", desc: "A crown that never melts. Chest-only!", over: 1, rows: [".a.aa.a.",".abaaba.",".aaaaaa."], pal: { a:"#c8ecfc", b:"#4aa8ff" } },
+    halo:   { name: "Flame Halo", price: null, chest: "legendary", desc: "A ring of fire floats over you. Chest-only!", over: 1, rows: ["a.a..a.a","bababbab",".cccccc.","........"], pal: { a:"#fff15a", b:"#ff7a1f", c:"#ffd166" } },
   } },
   pet: { label: "Pets", items: {
     none:   { name: "No pet", price: 0, desc: "Just you." },
@@ -3572,12 +3581,17 @@ const COS = {
     gold:     { name: "Gold", price: 350, desc: "Solid gold. Your path turns to diamond.",
                 choice: { top:["#f3c64a","#ebbd3e"], side:"#9a6d0e", hi:"#fff0a8", lo:"#c28f17", fleck:"#ffffff", ink:"#4a3104" },
                 trail:  { top:["#5ee0d0","#52d6c6"], side:"#1d7f74", hi:"#c8fff8", lo:"#2fae9f", fleck:"#ffffff", ink:"#0a3b36" } },
+    emerald:  { name: "Emerald", price: null, chest: "rare", desc: "Shiny green gem blocks. Chest-only!",
+                choice: { top:["#7be3a0","#6fdb95"], side:"#1f7a45", hi:"#d6ffe5", lo:"#3fae6a", fleck:"#ffffff", ink:"#0b3a20" },
+                trail:  { top:["#ffd166","#f5c55a"], side:"#9a6d0e", hi:"#fff0a8", lo:"#c28f17", fleck:"#ffffff", ink:"#4a3104" } },
   } },
   lava: { label: "Lava", items: {
     classic: { name: "Classic Lava", price: 0, desc: "Hot and orange.", ramp: ["#ffd166","#ffb627","#ff7a1f","#f0521a","#c93312"], spark: "#ffe08a", ember: "#fff1b8" },
     slime:   { name: "Green Slime", price: 50, desc: "Gooey, bubbly slime.", ramp: ["#e3ff8a","#b8f04a","#7ed321","#4caf2a","#2f7d1c"], spark: "#f6ffc8", ember: "#eaffb0" },
     frost:   { name: "Frost Lava", price: 150, desc: "Freezing blue lava.", ramp: ["#a8e6ff","#62c6f5","#3299dc","#1f74bd","#15528f"], spark: "#e8fbff", ember: "#e8fbff" },
     rainbow: { name: "Rainbow Lava", price: 450, desc: "Every color at once!", rainbow: true, ramp: ["#fff","#ffd166","#ef476f","#9b8cff","#4361ee"], spark: "#ffffff", ember: "#ffffff" },
+    galaxy:  { name: "Galaxy Lava", price: null, chest: "epic", desc: "Lava full of stars. Chest-only!", ramp: ["#e8d8ff","#b06aff","#6a2fb8","#3a1a78","#1a0c40"], spark: "#ffffff", ember: "#e8d8ff" },
+    goldlava:{ name: "Molten Gold", price: null, chest: "legendary", desc: "A lake of liquid gold. Chest-only!", ramp: ["#fff8e0","#ffe08a","#ffd166","#e0a526","#a8730f"], spark: "#ffffff", ember: "#fff1b8" },
   } },
   trail: { label: "Trails", items: {
     none:     { name: "No trail", price: 0, desc: "Plain jumps." },
@@ -3585,6 +3599,7 @@ const COS = {
     bubbles:  { name: "Bubbles", price: 25, desc: "Float some bubbles." },
     confetti: { name: "Confetti", price: 50, desc: "Every jump is a party." },
     stars:    { name: "Stars", price: 90, desc: "Leave twinkling stars." },
+    rainbow:  { name: "Rainbow Sparks", price: null, chest: "rare", desc: "Sparks in every color. Chest-only!" },
   } },
 };
 // One tameable pet per world boss (Sizzlejaw's hand-made pet stays above). Frames come from the boss sprite.
@@ -3604,6 +3619,7 @@ function ownedList(cat){ return cat === "skin" ? SAVE.skins : SAVE.owned[cat]; }
 function owns(cat, id){ return COS[cat].items[id].price === 0 || ownedList(cat).includes(id); }
 function locked(cat, id){
   const it = COS[cat].items[id]; if (owns(cat, id)) return false;
+  if (it.chest) return true;   // chest-only: never for sale
   if (it.req === "monster") return !SAVE.monsterBeaten;
   if (it.boss) return !SAVE.bossBeat[it.boss];
   return false;
@@ -3681,6 +3697,7 @@ function spawnTrail(list, kind, x, y, k){
   if (kind === "sparks") list.push({ x: x + (r() - .5) * 10 * k, y, vx: (r() - .5) * 3, vy: -1 - r() * 2, life: 1, dur: 500, s: (2 + r() * 3) * k, c: ["#ffd166", "#ff7a1f", "#fff1b8"][r() * 3 | 0], grav: true });
   if (kind === "bubbles") list.push({ x: x + (r() - .5) * 14 * k, y, vx: (r() - .5) * 0.6, vy: -0.4 - r() * 0.6, life: 1, dur: 1100, s: (4 + r() * 5) * k, shape: "bubble", wob: r() * 6 });
   if (kind === "confetti") list.push({ x: x + (r() - .5) * 12 * k, y, vx: (r() - .5) * 3, vy: -1.5 - r() * 2, life: 1, dur: 1000, s: (3 + r() * 3) * k, c: CONFETTI[r() * 5 | 0], grav: true, shape: "conf", rot: r() * 6 });
+  if (kind === "rainbow") list.push({ x: x + (r() - .5) * 10 * k, y, vx: (r() - .5) * 3, vy: -1 - r() * 2, life: 1, dur: 650, s: (2 + r() * 3) * k, c: CONFETTI.concat("#4aa8ff", "#ff7a1f")[r() * 7 | 0], grav: true });
   if (kind === "stars") list.push({ x: x + (r() - .5) * 12 * k, y: y + (r() - .5) * 8 * k, vx: (r() - .5) * 0.6, vy: -0.2 - r() * 0.4, life: 1, dur: 1200, s: (3 + r() * 2) * k, c: r() < .6 ? "#ffd166" : "#ffffff", shape: "star" });
 }
 function drawPart(c2, p, x, y, t){
@@ -5724,6 +5741,501 @@ window.LavaEvents = (() => {
   window.LLTestDay = { testDate, daysLeft, streak: () => ({ ...S, live: live() }), trendHTML };
 })();
 </script>
+<script>
+/* ==========================================================================
+   QUIZ CHEST: a reward chest after every finished Test Day quiz.
+   - Tiers: Common, Uncommon, Rare, Epic, Legendary, and quiz-only Mythic.
+     Better score = better odds. Wednesday (real test day) = Epic or better.
+     Always something for finishing. Pity: Legendary+ at least every 10 chests,
+     Mythic at least every 25.
+   - Drops: diamonds, potions, chest-only cosmetics (COS items with `chest`),
+     pet eggs, and Mythic Eggs (eggs go through LavaPets.addEgg when the
+     Pet Nest is in; until then a stub stores them in SAVE.eggs).
+   - Opening: the chest lands, each tap upgrades it one tier (auto-advances),
+     effects grow with the tier, Mythic gets a dark fake-out first. Skip jumps
+     to the prize.
+   Save: NEW key lavaleap.chest.v1 = { pending[], last, since, sinceM, n, log[] }.
+   Hooks: LLTest "reward" or "finish" (roll), "results" (button), "close" (open).
+   ========================================================================== */
+(function(){
+  const KEY = "lavaleap.chest.v1";
+  let C = null; try { C = JSON.parse(store.get(KEY) || "null"); } catch(e){}
+  C = Object.assign({ pending: [], last: "", since: 0, sinceM: 0, n: 0, log: [] }, C || {});
+  const put = () => store.set(KEY, JSON.stringify(C));
+  const today = () => (window.LLTest && LLTest.today) ? LLTest.today() : new Date().toISOString().slice(0, 10);
+  const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  function pickW(w){ const t = w.reduce((a, b) => a + b, 0); let r = Math.random() * t; for (let i = 0; i < w.length; i++){ if ((r -= w[i]) < 0) return i; } return w.length - 1; }
+
+  const TIERS = [
+    { id:"common",    name:"Common",    c:"#d4ccd8", d:"#8d8496", wood:["#a8601e","#7a4214"], gem:"#ffffff" },
+    { id:"uncommon",  name:"Uncommon",  c:"#62d26f", d:"#2e8a3a", wood:["#a8601e","#7a4214"], gem:"#c5ffcb" },
+    { id:"rare",      name:"Rare",      c:"#4aa8ff", d:"#1f5fb0", wood:["#8a5430","#5e3418"], gem:"#c8e6ff" },
+    { id:"epic",      name:"Epic",      c:"#b06aff", d:"#6a2fb8", wood:["#4a2a5e","#2e1840"], gem:"#f0dcff" },
+    { id:"legendary", name:"Legendary", c:"#ffb627", d:"#c96a0a", wood:["#ffd166","#d18a1a"], gem:"#fff8e0", band:"#ff5a1f" },
+    { id:"mythic",    name:"Mythic",    c:"#ff7ab6", d:"#5ee0d0", wood:["#24123e","#160a28"], gem:"#ffffff", rainbow:true },
+  ];
+  const TI = id => Math.max(0, TIERS.findIndex(t => t.id === id));
+  const RAINBOW = ["#ff5a5a","#ffb627","#fff15a","#62d26f","#5ee0d0","#4aa8ff","#b06aff","#ff7ab6"];
+  const EGG_NEED = { common:1, uncommon:2, rare:2, epic:3, legendary:4, mythic:5 };
+
+  /* ---------- rolling ---------- */
+  function tierWeights(score, n, wed){
+    const p = n ? score / n : 0;
+    let w = p >= 1 ? [0,20,33,27,13,7] : p >= 0.8 ? [15,30,28,17,7,3] : p >= 0.5 ? [35,32,20,9,3,1] : [55,30,12,3,0,0];
+    if (wed){ const low = w[0] + w[1] + w[2]; w = [0, 0, 0, w[3] + low, w[4], w[5] * 2]; }
+    return w;
+  }
+  function chestItems(tier){
+    const out = [];
+    COS_CATS.forEach(cat => Object.entries(COS[cat].items).forEach(([id, it]) => { if (it.chest === tier && !owns(cat, id)) out.push({ cat, id }); }));
+    return out;
+  }
+  function rollReward(tier){
+    if (tier === "mythic") return { kind: "egg", tier };
+    const G = { common:[10,20], uncommon:[25,40], rare:[50,80], epic:[100,150], legendary:[200,300] }[tier];
+    // kinds: gems, potion, egg, cosmetic
+    const W = { common:[60,30,10,0], uncommon:[40,30,20,10], rare:[30,15,30,25], epic:[25,0,35,40], legendary:[20,0,30,50] }[tier];
+    const k = ["gems", "potion", "egg", "cos"][pickW(W)];
+    if (k === "cos"){
+      const list = chestItems(tier);
+      if (list.length){ const it = list[rnd(0, list.length - 1)]; return { kind: "cos", cat: it.cat, id: it.id }; }
+      return { kind: "gems", n: Math.round(rnd(G[0], G[1]) * 1.5) };
+    }
+    if (k === "potion") return { kind: "potion", pot: ["health", "shield", "glow"][rnd(0, 2)], n: { common:1, uncommon:2, rare:3 }[tier] || 2 };
+    if (k === "egg") return { kind: "egg", tier };
+    return { kind: "gems", n: rnd(G[0], G[1]) };
+  }
+  function roll(rec){
+    const wed = new Date(rec.d + "T12:00:00").getDay() === 3;
+    let ti = pickW(tierWeights(rec.score, rec.n, wed));
+    if (C.since >= 9) ti = Math.max(ti, 4);
+    if (C.sinceM >= 24) ti = 5;
+    C.since = ti >= 4 ? 0 : C.since + 1;
+    C.sinceM = ti >= 5 ? 0 : C.sinceM + 1;
+    const tier = TIERS[ti].id;
+    return { tier, d: rec.d, wed, score: rec.score, n: rec.n, r: rollReward(tier) };
+  }
+  function onFinished(rec){
+    if (!rec || rec.early || C.last === rec.d) return;   // one chest per finished test
+    C.last = rec.d;
+    try { if (window.LavaPets && LavaPets.onQuizDone) LavaPets.onQuizDone(rec); } catch(e){}
+    C.pending.push(roll(rec)); put(); refreshBtn();
+  }
+
+  /* ---------- granting ---------- */
+  function addEgg(tier){
+    if (window.LavaPets && LavaPets.addEgg){ try { return LavaPets.addEgg(tier); } catch(e){} }
+    if (!Array.isArray(SAVE.eggs)) SAVE.eggs = [];
+    const e = { uid: "e_" + Date.now(), tier, got: today(), need: EGG_NEED[tier] || 1, done: 0 };
+    SAVE.eggs.push(e); save(); return e;
+  }
+  function grant(ch){
+    const r = ch.r;
+    if (r.kind === "gems") SAVE.gems += r.n;
+    else if (r.kind === "potion") SAVE.inv[r.pot] = (SAVE.inv[r.pot] || 0) + r.n;
+    else if (r.kind === "cos"){ if (COS[r.cat] && COS[r.cat].items[r.id] && !owns(r.cat, r.id)) ownedList(r.cat).push(r.id); else { r.kind = "gems"; r.n = 150; SAVE.gems += r.n; } }
+    else if (r.kind === "egg"){ const e = addEgg(r.tier); if (e && e.need != null) r.need = e.need; }
+    save();
+    C.n++; C.log.push({ d: ch.d, t: ch.tier, k: r.kind }); if (C.log.length > 60) C.log = C.log.slice(-60);
+    C.pending.shift(); put();
+    try { updateHud(); } catch(e){}
+    refreshBtn();
+  }
+  function rewardText(ch){
+    const r = ch.r, T = TIERS[TI(ch.tier)];
+    if (r.kind === "gems") return { name: r.n + " Diamonds", desc: r.n >= 100 ? "A huge pile of diamonds!" : "Added to your diamonds.", say: r.n + " diamonds!" };
+    if (r.kind === "potion"){ const p = POTIONS[r.pot]; return { name: r.n + " × " + p.name, desc: p.desc, say: r.n + " " + p.name + (r.n > 1 && !/s$/.test(p.name) ? "s" : "") + "!" }; }
+    if (r.kind === "cos"){ const it = COS[r.cat].items[r.id]; return { name: it.name, desc: "Chest-only " + ({ skin:"skin", hat:"hat", blocks:"blocks", lava:"lava", trail:"trail", pet:"pet" }[r.cat]) + "! You can't buy this in the shop.", say: it.name + "!" }; }
+    const need = r.need || EGG_NEED[r.tier] || 1;
+    if (r.tier === "mythic") return { name: "Mythic Egg", desc: `Only from daily quizzes! A Mythic pet hatches after ${need} more daily quizzes.`, say: "A Mythic Egg!" };
+    return { name: T.name + " Pet Egg", desc: `Hatches after ${need} more daily quiz${need > 1 ? "zes" : ""}.`, say: T.name + " pet egg!" };
+  }
+
+  /* ---------- pixel sprites ---------- */
+  const LID = ["..KKKKKKKKKKKK..",".KWWWWWWWWWWWWK.","KWwWWWWWWWWWWwWK","KMMMMMMMMMMMMMMK","KWWWWWWLLWWWWWWK","KMMMMMMLLMMMMMMK"];
+  const BASE = ["KWWWWWKGGKWWWWWK","KWwWWWKGGKWWwWWK","KWWWWWWKKWWWWWWK","KMMMMMMMMMMMMMMK","KWWwWWWWWWWWwWWK","KWWWWWWWWWWWWWWK","KMMMMMMMMMMMMMMK","KKKKKKKKKKKKKKKK"];
+  const mirror = h => h.map(r => r + [...r].reverse().join(""));
+  const EGG = (window.MythicPets && MythicPets.EGG && MythicPets.EGG.grid) || mirror(["...KK","..KAA",".KAWA",".KABB","KAAAB","KCCAA","KCCDD","KADDA","KAAAA",".KBBA",".KBBB","..KKK"]);
+  const GEM = ["...KKKK...","..KTTWTK..",".KTTWTTTK.","KTTTTTTTTK",".KTTTTTTK.","..KTTTTK..","...KTTK...","....KK...."];
+  const BOTTLE = ["...KKKK...","....KK....","....KK....","...KWWK...","..KRRRRK..",".KRWRRRRK.",".KRRRRRRK.",".KRRRRRRK.","..KRRRRK..","...KKKK..."];
+  const POT_COL = { health:"#ff4d5e", shield:"#4aa8ff", glow:"#5ee0d0" };
+  const EGG_PAL = { common:["#d4ccd8","#8d8496","#ffffff"], uncommon:["#62d26f","#c5ffcb","#2e8a3a"], rare:["#4aa8ff","#c8e6ff","#ffffff"],
+                    epic:["#b06aff","#ff7ab6","#f0dcff"], legendary:["#ffb627","#fff1b8","#ff5a1f"] };
+
+  /* ---------- styles + overlay ---------- */
+  const css = document.createElement("style");
+  css.textContent = `
+.qc{position:fixed;inset:0;z-index:80;overflow:hidden;touch-action:manipulation;background:#1a1220;color:var(--ink,#fff3e4);font-family:var(--body);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.qc canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.qc-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.qc-top{position:absolute;top:max(12px, env(safe-area-inset-top,0px));left:max(16px, env(safe-area-inset-left,0px));right:max(16px, env(safe-area-inset-right,0px));display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.qc-title{font-family:var(--display);font-weight:700;font-size:22px;color:var(--glow);text-shadow:2px 2px 0 #a3300c}
+.qc-skip{pointer-events:auto;appearance:none;border:2px solid var(--deck-edge);background:rgba(20,12,24,.8);color:var(--muted);font-family:var(--display);font-weight:700;font-size:15px;padding:8px 12px;min-height:40px;cursor:pointer}
+.qc-tier{position:absolute;left:0;right:0;text-align:center;font-family:var(--display);font-weight:700;font-size:40px;line-height:1;letter-spacing:.06em;opacity:0;pointer-events:none;text-shadow:3px 3px 0 rgba(0,0,0,.6)}
+.qc-tier.pop{animation:qcPop .55s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes qcPop{0%{opacity:0;transform:scale(.3)}60%{opacity:1;transform:scale(1.25)}100%{opacity:1;transform:scale(1)}}
+.qc-hint{position:absolute;left:0;right:0;text-align:center;font-family:var(--display);font-size:20px;opacity:0;transition:opacity .3s;pointer-events:none}
+.qc-hint.on{opacity:1;animation:qcBob 1s ease-in-out infinite}
+@keyframes qcBob{50%{transform:translateY(-6px)}}
+.qc-card{position:absolute;left:max(16px, env(safe-area-inset-left,0px));right:max(16px, env(safe-area-inset-right,0px));bottom:max(16px, env(safe-area-inset-bottom,0px));max-width:400px;margin:0 auto;box-sizing:border-box;background:var(--deck);border:4px solid var(--deck-edge);box-shadow:0 0 0 4px #120b15,0 18px 40px rgba(0,0,0,.5);padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;transform:translateY(140%);transition:transform .45s cubic-bezier(.2,1.3,.4,1)}
+.qc-card.on{transform:none}
+.qc-card .lbl{font-family:var(--display);font-size:14px;letter-spacing:.1em;text-transform:uppercase}
+.qc-card b{font-family:var(--display);font-size:26px;line-height:1.05}
+.qc-card p{margin:0;font-size:16px;color:var(--muted);line-height:1.35}
+.qc-card .row{display:flex;gap:8px;width:100%}
+.qc-card .btn{flex:1}
+.qc-rb{background:linear-gradient(90deg,#ff5a5a,#ffb627,#fff15a,#62d26f,#5ee0d0,#4aa8ff,#b06aff,#ff7ab6);-webkit-background-clip:text;background-clip:text;color:transparent!important;background-size:200% 100%;animation:qcRb 1.2s linear infinite}
+@keyframes qcRb{to{background-position:200% 0}}
+.qc-open{width:100%;margin-top:10px}
+.qc-entry{width:100%;animation:qcGlow 1.2s ease-in-out infinite}
+@keyframes qcGlow{50%{box-shadow:inset -4px -4px 0 rgba(0,0,0,.25), inset 4px 4px 0 rgba(255,255,255,.35), 0 0 16px 2px #ffb627}}
+.it.chest{border-color:#4a2a5e}
+@media (prefers-reduced-motion: reduce){.qc-hint.on,.qc-entry{animation:none}}
+`;
+  document.head.appendChild(css);
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let root = null, cv = null, g = null, W = 0, H = 0, DPR = 1, raf = 0, S = null, onAllDone = null, thumbs = {};
+  let parts = [], rings = [], cracks = [], stars = [], shake = 0, flashA = 0, rays = 0, dark = 0, beam = 0;
+  const el = {};
+
+  function build(){
+    root = document.createElement("div"); root.className = "qc"; root.setAttribute("role", "dialog"); root.setAttribute("aria-label", "Reward chest");
+    root.innerHTML = `<canvas></canvas><div class="qc-flash"></div>
+      <div class="qc-top"><span class="qc-title">Quiz Reward!</span><button class="qc-skip" type="button">Skip ▸▸</button></div>
+      <div class="qc-tier"></div><div class="qc-hint">Tap the chest!</div>
+      <div class="qc-card"><span class="lbl"></span><b></b><p></p><div class="row"></div></div>`;
+    document.body.appendChild(root);
+    cv = root.querySelector("canvas"); g = cv.getContext("2d");
+    el.flash = root.querySelector(".qc-flash"); el.skip = root.querySelector(".qc-skip"); el.tier = root.querySelector(".qc-tier");
+    el.hint = root.querySelector(".qc-hint"); el.card = root.querySelector(".qc-card");
+    el.lbl = el.card.querySelector(".lbl"); el.name = el.card.querySelector("b"); el.desc = el.card.querySelector("p"); el.row = el.card.querySelector(".row");
+    root.addEventListener("pointerdown", e => { if (e.target.closest("button")) return; tap(); });
+    el.skip.addEventListener("click", skip);
+    addEventListener("resize", fit); fit();
+    raf = requestAnimationFrame(frame);
+  }
+  function fit(){
+    if (!cv) return;
+    DPR = Math.min(2, window.devicePixelRatio || 1); W = root.clientWidth; H = root.clientHeight;
+    cv.width = W * DPR; cv.height = H * DPR; g.imageSmoothingEnabled = false;
+    const p = chestXY(), s = SC();
+    el.tier.style.top = (p.y + 9 * s + 12) + "px";
+    el.hint.style.top = (p.y + 9 * s + 64) + "px";
+  }
+  function teardown(){
+    cancelAnimationFrame(raf); raf = 0; removeEventListener("resize", fit);
+    if (root) root.remove(); root = null; S = null; thumbs = {};
+  }
+  const chestXY = () => ({ x: W / 2, y: Math.round(H * 0.38) });
+  const SC = () => Math.max(6, Math.min(9, Math.floor(Math.min(W / 48, H / 80))));
+
+  /* ---------- sound (shared context, lands on the Sounds volume) ---------- */
+  let ac = null;
+  function audio(){ try { LLAudio.unlock && LLAudio.unlock(); } catch(e){} if (!ac){ try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ ac = null; } } if (ac && ac.state === "suspended") ac.resume().catch(() => {}); return ac; }
+  function tone(f, dur, vol, type, delay, slide){
+    if (!ac || ac.state !== "running") return;
+    try {
+      const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), v = ac.createGain();
+      o.type = type || "square"; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+      v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(vol, t + 0.01); v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(v); v.connect(ac.destination); o.start(t); o.stop(t + dur + 0.05);
+    } catch(e){}
+  }
+  function noise(dur, vol, freq, delay){
+    if (!ac || ac.state !== "running") return;
+    try {
+      const t = ac.currentTime + (delay || 0), len = Math.ceil(ac.sampleRate * dur), b = ac.createBuffer(1, len, ac.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const s = ac.createBufferSource(), f = ac.createBiquadFilter(), v = ac.createGain();
+      s.buffer = b; f.type = "lowpass"; f.frequency.value = freq || 900; v.gain.value = vol; s.connect(f); f.connect(v); v.connect(ac.destination); s.start(t);
+    } catch(e){}
+  }
+  const SND = {
+    thud(){ noise(0.35, 0.5, 300); tone(90, 0.25, 0.25, "triangle", 0, 45); },
+    up(lv){ const b = [392,440,523,587,659,784][lv]; [1, 1.25, 1.5, 2].forEach((m, i) => tone(b * m, 0.18, 0.08, "square", i * 0.05)); },
+    open(lv){ noise(0.5, 0.3, 2400); const b = [523,587,659,784,880,1047][lv];
+      [1,1.26,1.5,2].forEach((m, i) => tone(b * m, 0.6, 0.07, lv >= 3 ? "sawtooth" : "square", 0.05 + i * 0.03));
+      if (lv >= 4){ [1,1.26,1.5,2,2.52,3].forEach((m, i) => tone(b * m, 0.35, 0.06, "square", 0.45 + i * 0.09)); tone(b * 4, 0.9, 0.05, "triangle", 1.0); } },
+    hush(){ tone(110, 1.4, 0.12, "sine", 0, 55); },
+    crack(){ noise(0.12, 0.4, 4000); tone(1800 + Math.random() * 800, 0.08, 0.05, "square"); },
+    mythic(){ tone(55, 1.6, 0.3, "sawtooth", 0, 30); noise(1.2, 0.35, 1200);
+      [523,659,784,1047,1319,1568,2093].forEach((f, i) => { tone(f, 0.5, 0.06, "triangle", 0.2 + i * 0.07); tone(f * 1.01, 0.5, 0.04, "sine", 0.2 + i * 0.07); });
+      [1047,1319,1568,2093].forEach((f, i) => tone(f, 1.2, 0.05, "square", 0.9 + i * 0.02)); },
+    collect(){ [784,988,1175,1568].forEach((f, i) => tone(f, 0.12, 0.08, "square", i * 0.06)); },
+  };
+
+  /* ---------- drawing helpers ---------- */
+  function grid(gr, pal, x, y, s){
+    for (let r = 0; r < gr.length; r++) for (let c = 0; c < gr[r].length; c++){
+      const ch = gr[r][c]; if (ch === ".") continue;
+      const col = typeof pal === "function" ? pal(ch, r, c) : pal[ch]; if (!col) continue;
+      g.fillStyle = col; g.fillRect(Math.round(x + c * s), Math.round(y + r * s), Math.ceil(s), Math.ceil(s));
+    }
+  }
+  const chestPal = (t, now) => ch => ch === "K" ? "#1f1424" : ch === "W" ? t.wood[0] : ch === "w" ? t.wood[1]
+    : ch === "M" ? (t.rainbow ? RAINBOW[(Math.floor(now / 70)) % 8] : (t.band || t.c)) : ch === "L" ? (t.rainbow ? "#ffffff" : "#ffd166") : ch === "G" ? t.gem : null;
+  const chestPalR = (t, now) => (ch, r, c) => ch === "M" && t.rainbow ? RAINBOW[(c + Math.floor(now / 70)) % 8] : chestPal(t, now)(ch);
+  function burst(n, x, y, cols, spd, o){
+    if (reduce) n = Math.ceil(n / 3);
+    o = o || {};
+    for (let i = 0; i < n; i++){
+      const a = o.up ? (-Math.PI / 2 + (Math.random() - .5) * (o.spread || 1.2)) : Math.random() * Math.PI * 2, v = spd * (0.4 + Math.random() * 0.8);
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, decay: 0.008 + Math.random() * 0.015, g: o.g == null ? 0.12 : o.g,
+        col: cols[i % cols.length], s: (o.size || 4) * (0.6 + Math.random() * 0.8), kind: o.kind || "sq" });
+    }
+  }
+  const ring = (x, y, col, sp, w) => rings.push({ x, y, r: 10, col, sp: sp || 6, w: w || 6, a: 1 });
+  const doShake = v => { if (!reduce) shake = Math.max(shake, v); };
+  const doFlash = v => { flashA = reduce ? Math.min(v, 0.3) : v; };
+
+  /* ---------- the sequence ---------- */
+  function play(ch){
+    S = { ch, target: TI(ch.tier), lv: 0, phase: "drop", y: -160, vy: 0, nextAt: 0, sh: 0, lidX: 0, lidY: 0, lidVx: 0, lidVy: 0, lidR: 0, levit: 0, openT: 0 };
+    parts = []; rings = []; cracks = []; stars = []; shake = 0; flashA = 0; rays = 0; dark = 0; beam = 0;
+    el.tier.className = "qc-tier"; el.tier.textContent = ""; el.card.classList.remove("on"); el.hint.classList.remove("on"); el.skip.hidden = false;
+    if (ch.r.kind === "cos"){ try { thumbs.cos = thumb(ch.r.cat, ch.r.id); } catch(e){} }
+  }
+  function showTier(i){
+    const t = TIERS[i];
+    el.tier.textContent = t.name.toUpperCase() + "!";
+    el.tier.className = "qc-tier" + (t.rainbow ? " qc-rb" : "");
+    el.tier.style.color = t.c; void el.tier.offsetWidth; el.tier.classList.add("pop");
+  }
+  function levelUp(){
+    const p = chestXY();
+    if (TIERS[S.lv + 1].rainbow) return mythicTurn();
+    S.lv++; const t = TIERS[S.lv];
+    SND.up(S.lv); showTier(S.lv);
+    burst(14 + S.lv * 10, p.x, p.y, [t.c, t.gem, "#fff"], 4 + S.lv, { size: 4 + S.lv });
+    ring(p.x, p.y, t.c, 5 + S.lv, 4 + S.lv * 2);
+    if (S.lv >= 3) doShake(6 + S.lv * 2);
+    if (S.lv >= 4) doFlash(0.7);
+    S.sh = 0.35;
+  }
+  function mythicTurn(){ S.phase = "hush"; S.hushT = performance.now(); el.tier.className = "qc-tier"; SND.hush(); el.hint.classList.remove("on"); }
+  const makeStars = () => { stars = []; for (let i = 0; i < 70; i++) stars.push({ x: Math.random(), y: Math.random(), p: Math.random() * 6 }); };
+  function openChest(){
+    const t = TIERS[S.lv], p = chestXY();
+    S.phase = "open"; S.openT = performance.now(); S.lidVy = -10 - S.lv * 1.5; S.lidVx = (Math.random() < .5 ? -1 : 1) * (1 + S.lv * 0.4);
+    el.hint.classList.remove("on"); el.skip.hidden = true;
+    SND.open(S.lv);
+    const cols = t.rainbow ? RAINBOW : [t.c, t.gem, "#fff", t.d];
+    burst(30 + S.lv * 25, p.x, p.y - 10, cols, 7 + S.lv * 1.5, { up: true, spread: 1.6 + S.lv * 0.3, size: 4 + S.lv, g: 0.15 });
+    ring(p.x, p.y, t.c, 7 + S.lv, 6 + S.lv * 2);
+    if (S.lv >= 2) rays = 1;
+    beam = 1;
+    if (S.lv >= 3) doShake(10 + S.lv * 3);
+    if (S.lv >= 4){ doFlash(1); const run = S; for (let i = 0; i < 40; i++) setTimeout(() => { if (S === run) burst(1, Math.random() * W, -10, t.rainbow ? RAINBOW : ["#ffd166","#ffb627","#fff1b8"], 1, { g: 0.08, size: 7, kind: "coin" }); }, i * 35); }
+    if (t.rainbow){ ring(p.x, p.y, "#fff", 12, 14); setTimeout(() => S && ring(p.x, p.y, "#5ee0d0", 9, 10), 200); setTimeout(() => S && ring(p.x, p.y, "#ff7ab6", 7, 8), 400); }
+    const run = S; setTimeout(() => { if (S === run) reveal(); }, 650 + S.lv * 110);
+  }
+  function reveal(){
+    const ch = S.ch, t = TIERS[S.lv], txt = rewardText(ch);
+    grant(ch);
+    S.phase = "reveal";
+    el.lbl.textContent = t.name + " chest" + (ch.wed ? " · Test Day bonus" : "");
+    el.lbl.className = "lbl" + (t.rainbow ? " qc-rb" : ""); el.lbl.style.color = t.c;
+    el.name.textContent = txt.name; el.desc.textContent = txt.desc;
+    el.card.style.borderColor = t.rainbow ? "#ff7ab6" : t.c;
+    el.row.innerHTML = "";
+    const more = C.pending.length > 0;
+    if (ch.r.kind === "cos"){
+      const wear = document.createElement("button"); wear.type = "button"; wear.className = "btn go"; wear.textContent = "Wear it!";
+      wear.onclick = () => { setEq(ch.r.cat, ch.r.id); collect(); };
+      el.row.appendChild(wear);
+    }
+    const b = document.createElement("button"); b.type = "button"; b.className = "btn" + (ch.r.kind === "cos" ? " alt" : ""); b.textContent = more ? "Next chest!" : "Collect!";
+    b.onclick = collect; el.row.appendChild(b);
+    el.card.classList.add("on");
+    showTier(S.lv);
+    try { say((t.rainbow ? "Mythic! " : "") + txt.say, 0.95, true, "now"); } catch(e){}
+  }
+  function collect(){
+    SND.collect(); try { speechCancel(); } catch(e){}
+    if (C.pending.length){ play(C.pending[0]); return; }
+    teardown();
+    const f = onAllDone; onAllDone = null; if (f) f();
+  }
+  function skip(){
+    if (!S || S.phase === "open" || S.phase === "reveal") return;
+    audio();
+    S.lv = S.target; S.y = chestXY().y; S.vy = 0; S.levit = 0;
+    if (TIERS[S.lv].rainbow){ dark = 0.85; makeStars(); }
+    showTier(S.lv); openChest();
+  }
+  function tap(){
+    if (!S) return; audio();
+    if (S.phase === "wait" || S.phase === "charge") step();
+    else if (S.phase === "hush") S.hushT -= 600;
+  }
+  function step(){
+    if (S.lv < S.target){ S.phase = "charge"; levelUp(); } else openChest();
+    S.nextAt = performance.now() + 1000;
+  }
+
+  function frame(now){
+    if (!root) return;
+    raf = requestAnimationFrame(frame);
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g.fillStyle = "#1a1220"; g.fillRect(0, 0, W, H);
+    const lava = g.createLinearGradient(0, H * 0.62, 0, H);
+    lava.addColorStop(0, "rgba(255,90,31,0)"); lava.addColorStop(1, "rgba(255,90,31,.35)");
+    g.fillStyle = lava; g.fillRect(0, H * 0.62, W, H * 0.38);
+    if (!S) return;
+    const p = chestXY(), s = SC(), t = TIERS[S.lv];
+
+    if (S.phase === "drop"){
+      S.vy += 1.1; S.y += S.vy;
+      if (S.y >= p.y){ S.y = p.y;
+        if (S.vy > 4){ S.vy = -S.vy * 0.32; SND.thud(); doShake(8); burst(18, p.x, p.y + 7 * s, ["#5a4a62","#3b2c45","#8d8496"], 4, { up: true, spread: 2.6, size: 5, g: 0.2 }); }
+        else { S.vy = 0; S.phase = "wait"; S.nextAt = now + 1600; el.hint.classList.add("on"); } }
+    } else if (S.phase === "wait" || S.phase === "charge"){
+      if (now >= S.nextAt){ el.hint.classList.remove("on"); step(); }
+    } else if (S.phase === "hush"){
+      const k = Math.min(1, (now - S.hushT) / 1500);
+      dark = Math.max(dark, k * 0.85); S.levit = k;
+      if (!stars.length && k > 0.2) makeStars();
+      if (Math.random() < 0.06 + k * 0.25){ SND.crack(); cracks.push({ a: Math.random() * Math.PI * 2, l: 10 + Math.random() * 30 * k, c: RAINBOW[Math.floor(Math.random() * 8)] }); doShake(2 + k * 5); }
+      if (k >= 1){ S.lv = TIERS.length - 1; S.phase = "charge"; doFlash(1); doShake(18); SND.mythic(); showTier(S.lv);
+        burst(80, p.x, p.y, RAINBOW, 10, { size: 6 }); ring(p.x, p.y, "#fff", 10, 12); S.nextAt = now + 1100; }
+    }
+
+    if (dark > 0){
+      g.fillStyle = "rgba(4,2,10," + dark + ")"; g.fillRect(0, 0, W, H);
+      stars.forEach(st => { const a = 0.4 + 0.6 * Math.abs(Math.sin(now / 400 + st.p)); g.fillStyle = "rgba(255,255,255," + (a * dark) + ")"; g.fillRect(st.x * W, st.y * H * 0.9, 2, 2); });
+    }
+    let ox = 0, oy = 0;
+    if (shake > 0.3){ ox = (Math.random() - .5) * shake; oy = (Math.random() - .5) * shake; shake *= 0.88; } else shake = 0;
+    g.save(); g.translate(ox, oy);
+
+    if (rays > 0){
+      const n = 14, rot = now / 1400 * (S.lv >= 5 ? 2 : 1);
+      g.save(); g.translate(p.x, p.y); g.rotate(rot); g.globalAlpha = 0.18;
+      for (let i = 0; i < n; i++){
+        const a = i / n * Math.PI * 2; g.fillStyle = t.rainbow ? RAINBOW[i % 8] : t.c;
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a - 0.09) * H, Math.sin(a - 0.09) * H); g.lineTo(Math.cos(a + 0.09) * H, Math.sin(a + 0.09) * H); g.fill();
+      }
+      g.restore(); g.globalAlpha = 1;
+    }
+    const lvGlow = S.phase === "drop" ? 0 : (S.lv + 1) / 6;
+    if (lvGlow > 0){
+      const rad = (60 + lvGlow * 120) * (1 + 0.08 * Math.sin(now / 180));
+      const gr = g.createRadialGradient(p.x, p.y, 4, p.x, p.y, rad), gc = t.rainbow ? RAINBOW[Math.floor(now / 120) % 8] : t.c;
+      gr.addColorStop(0, gc + "cc"); gr.addColorStop(1, gc + "00");
+      g.fillStyle = gr; g.fillRect(p.x - rad, p.y - rad, rad * 2, rad * 2);
+    }
+    if (beam > 0 && S.phase !== "drop"){
+      const bw = 8 * s * (0.8 + 0.2 * Math.sin(now / 90)), bg = g.createLinearGradient(0, 0, 0, p.y), bc = t.rainbow ? RAINBOW[Math.floor(now / 100) % 8] : t.c;
+      bg.addColorStop(0, bc + "00"); bg.addColorStop(1, bc + "aa");
+      g.fillStyle = bg; g.fillRect(p.x - bw / 2, 0, bw, p.y);
+    }
+
+    // chest
+    const cy = S.phase === "drop" ? S.y : p.y - S.levit * 30 + (S.levit ? Math.sin(now / 300) * 4 : 0);
+    let wob = 0;
+    if (S.phase === "wait") wob = Math.sin(now / 90) * (Math.sin(now / 600) > 0.6 ? 0.06 : 0);
+    if (S.sh > 0){ wob = Math.sin(now / 30) * 0.12 * S.sh * (1 + S.lv * 0.3); S.sh -= 0.016; }
+    const cw = 16 * s, chH = 14 * s, pal = chestPalR(t, now);
+    g.save(); g.translate(p.x, cy + chH / 2); g.rotate(wob);
+    grid(BASE, pal, -cw / 2, -8 * s, s);
+    if (S.phase !== "open" && S.phase !== "reveal"){
+      const lift = (S.phase === "charge" && S.sh > 0) ? -Math.abs(Math.sin(now / 40)) * s * 0.8 : 0;
+      if (S.lv >= 1 && S.phase !== "drop"){ g.fillStyle = t.rainbow ? RAINBOW[Math.floor(now / 80) % 8] : t.gem; g.globalAlpha = 0.5 + 0.4 * Math.sin(now / 120); g.fillRect(-cw / 2 + s, -8 * s - s * 0.6 + lift, cw - 2 * s, s * 0.8); g.globalAlpha = 1; }
+      grid(LID, pal, -cw / 2, -14 * s + lift, s);
+    }
+    cracks.forEach(c => { g.strokeStyle = c.c; g.lineWidth = 3; g.beginPath(); g.moveTo(0, -4 * s); g.lineTo(Math.cos(c.a) * c.l * 2, -4 * s + Math.sin(c.a) * c.l * 1.4); g.stroke(); });
+    g.restore();
+
+    if (S.phase === "open" || S.phase === "reveal"){
+      S.lidVy += 0.5; S.lidY += S.lidVy; S.lidX += S.lidVx; S.lidR += S.lidVx * 0.02;
+      if (S.lidY < H){ g.save(); g.translate(p.x + S.lidX, cy + chH / 2 - 11 * s + S.lidY); g.rotate(S.lidR); grid(LID, pal, -cw / 2, -3 * s, s); g.restore(); }
+      const k = Math.min(1, (now - S.openT) / 700), e = 1 - Math.pow(1 - k, 3);
+      const iy = p.y - e * Math.min(H * 0.2, p.y - 90) + Math.sin(now / 350) * 5;
+      drawItem(t, S.ch.r, p.x, iy, (0.4 + e * 0.9) * s * 0.75, now);
+      if (k < 1 && Math.random() < 0.5) burst(2, p.x, iy, t.rainbow ? RAINBOW : [t.c, "#fff"], 2, { size: 3, g: 0 });
+      if (S.phase === "reveal" && Math.random() < 0.2) burst(1, p.x + (Math.random() - .5) * 80, iy + (Math.random() - .5) * 60, t.rainbow ? RAINBOW : [t.gem, "#fff"], 0.6, { size: 3, g: -0.02, kind: "spark" });
+    }
+    g.restore();
+
+    parts = parts.filter(q => q.life > 0);
+    parts.forEach(q => {
+      q.x += q.vx; q.y += q.vy; q.vy += q.g; q.vx *= 0.985; q.life -= q.decay;
+      g.globalAlpha = Math.max(0, Math.min(1, q.life * 1.4)); g.fillStyle = q.col;
+      if (q.kind === "coin"){ const w = q.s * Math.abs(Math.sin(now / 100 + q.x)); g.fillRect(q.x - w / 2, q.y - q.s / 2, Math.max(1.5, w), q.s); }
+      else if (q.kind === "spark"){ g.fillRect(q.x - q.s / 2, q.y - 0.5, q.s, 1.5); g.fillRect(q.x - 0.75, q.y - q.s / 2, 1.5, q.s); }
+      else g.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
+    });
+    g.globalAlpha = 1;
+    rings = rings.filter(r => r.a > 0.02);
+    rings.forEach(r => { r.r += r.sp; r.a *= 0.94; g.strokeStyle = r.col; g.globalAlpha = r.a; g.lineWidth = r.w; g.beginPath(); g.arc(r.x, r.y, r.r, 0, Math.PI * 2); g.stroke(); });
+    g.globalAlpha = 1;
+    if (flashA > 0.01){ el.flash.style.opacity = flashA; flashA *= 0.9; } else el.flash.style.opacity = 0;
+  }
+  function drawItem(t, r, x, y, s, now){
+    if (r.kind === "gems"){
+      const pal = { K:"#1f1424", T:"#5ee0d0", W:"#e8fffb" }, n = r.n >= 100 ? 5 : r.n >= 40 ? 4 : 3;
+      for (let i = 0; i < n; i++){ const dx = (i - (n - 1) / 2) * 9 * s * 0.8, dy = Math.abs(i - (n - 1) / 2) * 3 * s; grid(GEM, pal, x + dx - 5 * s, y + dy - 4 * s, s); }
+    } else if (r.kind === "potion"){
+      const n = Math.min(3, r.n), sc = s * 1.1;
+      for (let i = 0; i < n; i++){ const dx = (i - (n - 1) / 2) * 11 * sc; grid(BOTTLE, { K:"#1f1424", W:"#e8fffb", R: POT_COL[r.pot] || "#ff4d5e" }, x + dx - 5 * sc, y - 5 * sc + Math.abs(dx) * 0.15, sc); }
+    } else if (r.kind === "egg"){
+      const my = r.tier === "mythic", sc = s * (my ? 1.4 : 1.2), P = EGG_PAL[r.tier] || EGG_PAL.common;
+      g.save(); g.translate(x, y); g.rotate(Math.sin(now / 200) * 0.08);
+      grid(EGG, my ? (ch => ch === "K" ? "#1f1424" : ch === "W" ? "#fff" : RAINBOW[("ABCD".indexOf(ch) * 2 + Math.floor(now / 220)) % 8])
+                   : { K:"#1f1424", A:P[0], B:P[1], C:P[2], D:"#ffd166", W:"#ffffff" }, -5 * sc, -6 * sc, sc);
+      g.restore();
+    } else if (r.kind === "cos" && thumbs.cos){
+      const sz = 14 * s * 1.1;
+      g.save(); g.imageSmoothingEnabled = false; g.drawImage(thumbs.cos, x - sz / 2, y - sz / 2, sz, sz); g.restore();
+    }
+  }
+
+  /* ---------- open / entry points ---------- */
+  function open(done){
+    if (!C.pending.length){ done && done(); return false; }
+    if (root) return true;
+    onAllDone = done || null;
+    audio(); try { speechCancel(); } catch(e){}
+    build(); play(C.pending[0]);
+    return true;
+  }
+
+  // start-menu button while a chest is waiting (e.g. the app closed before he opened it)
+  let menuBtn = null;
+  function refreshBtn(){
+    const tb = $("testBtn");
+    if (!tb) return;
+    if (!menuBtn){
+      menuBtn = document.createElement("button"); menuBtn.type = "button"; menuBtn.className = "btn qc-entry"; menuBtn.id = "chestBtn";
+      menuBtn.addEventListener("click", () => { const sc = $("startCard"); if (sc) sc.hidden = true; open(() => { if (sc) sc.hidden = false; }); });
+      tb.insertAdjacentElement("afterend", menuBtn);
+    }
+    const n = C.pending.length;
+    menuBtn.hidden = !n;
+    menuBtn.textContent = n > 1 ? `🎁 Open ${n} chests!` : "🎁 Open your chest!";
+  }
+
+  if (window.LLTest){
+    LLTest.on("reward", x => onFinished(x && x.rec));
+    LLTest.on("finish", rec => onFinished(rec));
+    // a button on the results paper (when the results screen offers a slot)
+    LLTest.on("results", x => {
+      if (!x || !x.slot || !C.pending.length) return;
+      const b = document.createElement("button"); b.type = "button"; b.className = "td-btn go qc-open"; b.textContent = "🎁 Open your chest!";
+      b.onclick = () => { b.remove(); open(); };
+      x.slot.appendChild(b);
+    });
+    // leaving Test Day with a chest still closed: open it right away
+    LLTest.on("close", () => { if (C.pending.length) setTimeout(() => { const sc = $("startCard"); if (sc) sc.hidden = true; open(() => { if (sc) sc.hidden = false; }); }, 150); });
+  }
+  refreshBtn();
+
+  window.LLChest = { open, pending: () => C.pending.slice(), _roll: roll, _weights: tierWeights, _rollReward: rollReward,
+    _give(tier, r){ C.pending.push({ tier, d: today(), wed: false, score: 0, n: 0, r: r || rollReward(tier) }); put(); refreshBtn(); } };
+})();
+</script>
+
 <script>
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
 </script>
