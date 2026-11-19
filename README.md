@@ -12,9 +12,8 @@ Installable PWA, works offline, hosted on GitHub Pages.
 ## Weekly words
 Edit the `WORDS` array near the top of the script in `index.html` (`"word | sentence"`),
 or use "Change this week's words" in the game (saved on the device).
-Words typed in the game need voice clips: Grown-ups shows which words have no voice yet and a
-**Make the voice** button. It opens GitHub with a new `words/<date>.txt` filled in; tap
-*Commit changes* and the clips are ready in about 5 minutes.
+Words typed in the game have no voice until they are in the repo: each week, send the words in
+the Claude project and they get added (to `WORDS` or a `words/<date>.txt` file); the Action makes the clips.
 
 ## Voice
 Every spoken line is a pre-made clip in the free, open-source Kokoro voice "Heart" (`audio/`);
