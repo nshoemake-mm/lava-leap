@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Pixelify+Sans:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Patrick+Hand&family=Pixelify+Sans:wght@500;700&display=swap">
 <style>
 /* Layout: one-screen game. Top-down lava lake fills the screen; player stands on a stone block, letter blocks sit around it across the lava. Slim deck below shows the word being built. Single dark look on purpose. */
 :root{
@@ -85,6 +85,18 @@ body{font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transpar
 .seg button:focus-visible{outline:2px solid var(--ink)}
 .linkbtn{all:unset;cursor:pointer;color:var(--muted);font-size:15px;text-decoration:underline;text-underline-offset:3px;align-self:center}
 .linkbtn:focus-visible{outline:2px solid var(--glow)}
+/* Settings: chunky volume sliders, easy for small thumbs */
+.vol{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:4px 10px}
+.vol-ico{font-size:26px;line-height:1;grid-row:span 2}
+.vol label{font-family:var(--display);font-weight:700;font-size:20px}
+.vol b{font-family:var(--display);font-size:20px;color:var(--glow);min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
+.vol input{grid-column:2 / 4;-webkit-appearance:none;appearance:none;width:100%;height:40px;margin:0;background:transparent;touch-action:pan-x;--p:50%}
+.vol input::-webkit-slider-runnable-track{height:14px;border:2px solid var(--deck-edge);background:linear-gradient(90deg,var(--glow) var(--p),#140d18 var(--p))}
+.vol input::-moz-range-track{height:14px;border:2px solid var(--deck-edge);background:linear-gradient(90deg,var(--glow) var(--p),#140d18 var(--p))}
+.vol input::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;margin-top:-11px;background:var(--ink);border:3px solid #a3300c;border-radius:0}
+.vol input::-moz-range-thumb{width:28px;height:28px;background:var(--ink);border:3px solid #a3300c;border-radius:0}
+.vol input:focus-visible{outline:2px solid var(--glow);outline-offset:2px}
+.vol.off .vol-ico{opacity:.4}
 textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line-height:1.45;background:#140d18;color:var(--ink);border:3px solid var(--deck-edge);padding:8px;box-sizing:border-box;border-radius:0}
 .practice{display:flex;flex-wrap:wrap;gap:6px}
 .practice > span{font-weight:700;font-size:17px;padding:3px 8px;background:#140d18;border:2px solid var(--bad);color:var(--ink)}
@@ -174,6 +186,45 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .start-row .btn{flex:1;width:auto;min-width:0;padding-inline:8px}
 .start-foot{display:flex;justify-content:space-between;align-items:center;padding:0 4px}
 .start-foot .linkbtn{align-self:auto}
+/* Pet Nest: eggs + Mythic pets */
+.nest-row .btn{flex:1}
+#nestBtn{position:relative}
+#nestDot{position:absolute;top:-7px;right:-7px;min-width:22px;height:22px;padding:0 5px;display:grid;place-items:center;background:var(--bad);color:#fff;font-size:14px;border:2px solid #120b15;animation:nestPing 1s ease-in-out infinite alternate}
+@keyframes nestPing{to{transform:scale(1.15)}}
+#nestCard .card{gap:10px;padding:14px}
+.nest-head{display:flex;align-items:center;gap:8px}
+.nest-head h2{flex:1}
+.nest-head .btn{width:auto;min-height:40px;padding:6px 12px}
+#nestPrev{width:100%;height:140px;display:block;background:#1a1220;border:3px solid var(--deck-edge)}
+.nest-news{background:#3a2a10;border:3px solid var(--glow);padding:8px 10px;font-size:15px;line-height:1.3}
+.nest-sec{font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.nest-eggs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.nest-egg{all:unset;box-sizing:border-box;background:#1d1424;border:3px solid var(--deck-edge);padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;cursor:pointer;touch-action:manipulation}
+.nest-egg.ready{border-color:var(--glow);box-shadow:0 0 12px rgba(255,182,39,.55)}
+.nest-egg .tier{font-family:var(--display);font-size:12px;letter-spacing:.06em}
+.nest-egg .left{font-size:12px;color:var(--muted);line-height:1.15}
+.nest-egg .go{font-family:var(--display);font-size:13px;background:var(--glow);color:#2a1405;padding:3px 8px}
+.nest-egg.ready canvas{animation:eggWob 1.4s ease-in-out infinite}
+.nest-egg.hatching canvas{animation:eggShake .18s linear infinite}
+@keyframes eggWob{0%,70%,100%{transform:rotate(0)}78%{transform:rotate(-9deg)}86%{transform:rotate(9deg)}94%{transform:rotate(-4deg)}}
+@keyframes eggShake{25%{transform:translate(-3px,0) rotate(-8deg)}75%{transform:translate(3px,0) rotate(8deg)}}
+.nest-bar{width:100%;height:8px;background:#140d18;border:1px solid var(--deck-edge)}
+.nest-bar i{display:block;height:100%;background:var(--ok)}
+.nest-empty{font-size:15px;color:var(--muted);background:#1d1424;border:3px dashed var(--deck-edge);padding:10px}
+.nest-pet{background:#1d1424;border:3px solid var(--deck-edge);padding:10px;display:grid;grid-template-columns:88px 1fr;gap:10px;align-items:center}
+.nest-pet.on{border-color:var(--ok)}
+.nest-pic{height:88px;display:flex;align-items:flex-end;justify-content:center;background:radial-gradient(ellipse at 50% 80%,var(--c),transparent 66%)}
+.nest-pet canvas,.nest-egg canvas,.nest-reveal canvas{image-rendering:pixelated;display:block}
+.nest-pet .nm{font-family:var(--display);font-size:18px;line-height:1}
+.nest-pet .sub{font-size:13px;color:var(--muted);line-height:1.2;margin:3px 0 6px}
+.nest-stg{display:flex;gap:5px;margin:6px 0}
+.nest-stg button{all:unset;box-sizing:border-box;width:36px;height:36px;border:2px solid var(--deck-edge);background:#140d18;display:grid;place-items:end center;padding-bottom:2px;cursor:pointer}
+.nest-stg button.on{border-color:var(--glow)}
+.nest-stg button.lock{opacity:.4}
+.nest-pet .btn{min-height:40px;font-size:15px;padding:6px 10px;width:auto}
+.nest-reveal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(14,8,16,.86);padding:16px}
+.nest-reveal .card{align-items:center;text-align:center;max-width:340px;animation:sfGrow .35s ease-out}
+.nest-reveal .pic{min-height:150px;display:flex;align-items:flex-end;justify-content:center;width:100%;background:radial-gradient(ellipse at 50% 75%,var(--c),transparent 62%)}
 /* compact end-of-round card: buttons stay on screen, info scrolls (iPhone mini Safari) */
 #winCard .card{padding:14px;gap:10px;min-height:0;overflow:hidden}
 #winCard .card > .win-body{flex-shrink:1}
@@ -240,9 +291,13 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       <button class="btn alt" id="mapBtn" type="button">World map</button>
       <button class="btn alt" id="startShopBtn" type="button">Shop · <span data-gems>0</span></button>
     </div>
+    <button class="btn alt td-entry" id="testBtn" type="button">📝 Test Day</button>
+    <div class="row start-row nest-row">
+      <button class="btn alt" id="nestBtn" type="button">🥚 Pet Nest<span id="nestDot" hidden>!</span></button>
+    </div>
     <div class="seg" data-seg aria-label="Difficulty"></div>
     <div class="start-foot">
-      <button class="linkbtn" data-music type="button">Music: on</button>
+      <button class="linkbtn" data-settings type="button">⚙️ Settings</button>
       <button class="linkbtn" id="editBtn" type="button">Grown-ups</button>
     </div>
   </div>
@@ -265,10 +320,19 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     <p class="small">One word per line. You can add a sentence after a bar, like:<br><b>friend | My friend likes to build forts.</b><br>Saved on this device only.</p>
     <textarea id="wordBox" aria-label="Spelling words, one per line"></textarea>
     <button class="btn go" id="saveWords" type="button">Save words</button>
+    <button class="btn alt" id="ttBtn" type="button">📈 Test Day scores</button>
     <div class="row">
       <button class="btn alt" id="resetWords" type="button" style="flex:1">Use sample words</button>
       <button class="btn alt" id="cancelEdit" type="button" style="flex:1">Cancel</button>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="ttCard" hidden>
+  <div class="card">
+    <h2>Test Day scores</h2>
+    <div id="ttBody" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button class="btn alt" id="ttBack" type="button">Back</button>
   </div>
 </div>
 
@@ -279,8 +343,31 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     <div class="seg" data-seg></div>
     <button class="btn go" id="resumeBtn" type="button">Keep playing</button>
     <button class="btn alt" id="restartBtn" type="button">Start over</button>
+    <button class="btn alt" data-settings type="button">⚙️ Settings</button>
     <button class="linkbtn" id="menuEditBtn" type="button">Grown-ups: change words</button>
-    <button class="linkbtn" data-music type="button">Music: on</button>
+  </div>
+</div>
+
+<div class="overlay" id="settingsCard" hidden>
+  <div class="card">
+    <h2>Settings</h2>
+    <div class="vol" data-vol="music">
+      <span class="vol-ico" aria-hidden="true">🎵</span>
+      <label for="volMusic">Music</label><b data-vol-num></b>
+      <input id="volMusic" type="range" min="0" max="10" step="1">
+    </div>
+    <div class="vol" data-vol="sfx">
+      <span class="vol-ico" aria-hidden="true">💥</span>
+      <label for="volSfx">Sounds</label><b data-vol-num></b>
+      <input id="volSfx" type="range" min="0" max="10" step="1">
+    </div>
+    <div class="vol" data-vol="voice">
+      <span class="vol-ico" aria-hidden="true">🗣️</span>
+      <label for="volVoice">Voice</label><b data-vol-num></b>
+      <input id="volVoice" type="range" min="2" max="10" step="1">
+    </div>
+    <p class="small">Still too quiet? Press the volume buttons on the side of the phone too.</p>
+    <button class="btn go" id="settingsDone" type="button">Done</button>
   </div>
 </div>
 
@@ -312,6 +399,18 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   </div>
 </div>
 
+<div class="overlay" id="nestCard" hidden>
+  <div class="card" role="dialog" aria-label="Pet Nest">
+    <div class="nest-head">
+      <h2>Pet Nest</h2>
+      <div class="chip"><span class="gem" aria-hidden="true"></span><span data-gems>0</span></div>
+      <button class="btn go" id="nestDone" type="button">Done</button>
+    </div>
+    <canvas id="nestPrev" aria-label="You and your pet"></canvas>
+    <div id="nestBody"></div>
+  </div>
+</div>
+
 <div class="overlay" id="shopCard" hidden>
   <div class="shopbox" role="dialog" aria-label="Shop">
     <div class="shop-head">
@@ -337,21 +436,42 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
    ============================================================ */
 (function(){
   const Native = window.AudioContext || window.webkitAudioContext;
-  const MUSIC_KEY = "lavaleap.music.v1";
+  const MUSIC_KEY = "lavaleap.music.v1";              // old on/off switch, still kept in step
+  const SET_KEY = "lavaleap.settings.v1";             // volumes 0..10 (Settings menu)
   let musicOn = true; try { musicOn = localStorage.getItem(MUSIC_KEY) !== "off"; } catch(e){}
-  if (!Native){ window.LLAudio = { sfx(){}, unlock(){}, setScene(){}, toggleMusic(){ return false; }, musicOn: () => false }; return; }
+  const VOL = { music: 7, sfx: 8, voice: 8 };
+  try { Object.assign(VOL, JSON.parse(localStorage.getItem(SET_KEY) || "null") || {}); } catch(e){}
+  for (const k in VOL) VOL[k] = Math.max(0, Math.min(10, Math.round(+VOL[k]) || 0));
+  if (VOL.voice < 2) VOL.voice = 2;                   // the voice reads the words, so it never goes silent
+  if (!musicOn) VOL.music = 0;                        // someone who switched music off keeps it off
+  let lastMusic = VOL.music || 7;
+  const saveVol = () => { try { localStorage.setItem(SET_KEY, JSON.stringify(VOL)); localStorage.setItem(MUSIC_KEY, VOL.music > 0 ? "on" : "off"); } catch(e){} };
+  if (!Native){ window.LLAudio = { sfx(){}, unlock(){}, setScene(){}, toggleMusic(){ return false; }, musicOn: () => false, vol: k => VOL[k], setVol(k, v){ VOL[k] = v; saveVol(); }, voiceGain: () => VOL.voice / 10 }; return; }
 
   // Every "new AudioContext()" gets the same context. iPhone allows only a few,
   // and only one that was resumed during a tap actually plays.
-  let ctx = null, out = null, musicBus = null, sfxBus = null;
+  // Three volume buses: music, sounds, voice. Modes that play into ctx.destination
+  // land on the sounds bus, so the Sounds slider covers every mode too.
+  let ctx = null, out = null, musicBus = null, sfxBus = null, voiceBus = null;
+  const G = { music: v => v * 0.1, sfx: v => v * 0.12, voice: v => v * 0.125 };   // 7 music = 1.75x the old level
   function get(){
     if (!ctx){
       try {
         ctx = new Native();
         ctx.close = () => Promise.resolve();          // modes must not kill the shared context
-        out = ctx.createGain(); out.gain.value = 1; out.connect(ctx.destination);
+        const speaker = ctx.destination;
+        // gentle limiter so louder music + voice never crackle on a phone speaker
+        let tail = speaker;
+        try {
+          const lim = ctx.createDynamicsCompressor();
+          lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.003; lim.release.value = 0.25;
+          lim.connect(speaker); tail = lim;
+        } catch(e){}
+        out = ctx.createGain(); out.gain.value = 1; out.connect(tail);
         musicBus = ctx.createGain(); musicBus.gain.value = 0; musicBus.connect(out);
-        sfxBus = ctx.createGain(); sfxBus.gain.value = 0.9; sfxBus.connect(out);
+        sfxBus = ctx.createGain(); sfxBus.gain.value = G.sfx(VOL.sfx); sfxBus.connect(out);
+        voiceBus = ctx.createGain(); voiceBus.gain.value = G.voice(VOL.voice); voiceBus.connect(out);
+        try { Object.defineProperty(ctx, "destination", { value: sfxBus, configurable: true }); } catch(e){}
       } catch(e){ ctx = null; }
     }
     return ctx;
@@ -431,11 +551,12 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   const ROOTS = [45, 41, 48, 43];
   const ARP = [[69, 72, 76, 72, 74, 72, 69, 67], [69, 72, 77, 72, 76, 74, 72, 69], [67, 72, 76, 79, 76, 72, 74, 76], [74, 71, 67, 71, 74, 79, 78, 74]];
   let musicTimer = null, nextT = 0, step = 0, scene = "main";
-  function sceneLevel(){ return !musicOn ? 0 : scene === "quiet" ? 0 : scene === "boss" ? 0.5 : 1; }
+  function sceneLevel(){ return !VOL.music ? 0 : scene === "quiet" ? 0 : scene === "boss" ? 0.5 : 1; }
   function applyLevel(){
     if (!ctx || !musicBus) return;
     const t = ctx.currentTime;
-    try { musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(0.4 * sceneLevel(), t, 0.25); } catch(e){}
+    try { musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(G.music(VOL.music) * sceneLevel(), t, 0.15); } catch(e){}
+    try { sfxBus.gain.setTargetAtTime(G.sfx(VOL.sfx), t, 0.05); voiceBus.gain.setTargetAtTime(G.voice(VOL.voice), t, 0.05); } catch(e){}
   }
   function startMusic(){
     if (!ctx) return;
@@ -447,7 +568,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         const bar = (step >> 3) % 4, s = step & 7, t = nextT;
         if (sceneLevel() > 0){
           tone(midi(ROOTS[bar] + (s % 2 ? 12 : 0)), STEP * 0.9, 0.16, "triangle", t, musicBus);
-          if (s % 2 === 0 || bar === 3) tone(midi(ARP[bar][s]), STEP * 0.8, 0.05, "square", t, musicBus);
+          if (s % 2 === 0 || bar === 3) tone(midi(ARP[bar][s]), STEP * 0.8, 0.08, "square", t, musicBus);   // tune carries on small speakers
           if (s === 0 || s === 4) tone(110, 0.09, 0.18, "sine", t, musicBus, 45);       // soft kick
           if (s === 2 || s === 6) tone(2400, 0.03, 0.025, "square", t, musicBus);       // hat
         }
@@ -460,8 +581,12 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     unlock,
     sfx(name){ try { SFX[name] && SFX[name](); } catch(e){} },
     setScene(s){ scene = s; applyLevel(); },
-    toggleMusic(){ musicOn = !musicOn; try { localStorage.setItem(MUSIC_KEY, musicOn ? "on" : "off"); } catch(e){} applyLevel(); return musicOn; },
-    musicOn: () => musicOn,
+    toggleMusic(){ if (VOL.music) { lastMusic = VOL.music; VOL.music = 0; } else VOL.music = lastMusic || 7; saveVol(); applyLevel(); return VOL.music > 0; },
+    musicOn: () => VOL.music > 0,
+    vol: k => VOL[k],
+    setVol(k, v){ VOL[k] = Math.max(k === "voice" ? 2 : 0, Math.min(10, Math.round(v))); if (k === "music" && VOL.music) lastMusic = VOL.music; saveVol(); applyLevel(); },
+    voiceOut: () => (get(), voiceBus),
+    voiceGain: () => Math.min(1, VOL.voice / 8),       // phone-voice fallback volume
     _ctx: () => ctx,
   };
 })();
@@ -1714,9 +1839,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   "use strict";
 
   const DIFF = {
-    easy:   { hpPer: 1,   choices: 3, rise: 0,      wrongRise: 0.25, knock: 0.22, windup: 11000 },
-    medium: { hpPer: 1.5, choices: 4, rise: 1 / 40, wrongRise: 0.25, knock: 0.2,  windup: 8500 },
-    hard:   { hpPer: 2,   choices: 4, rise: 1 / 22, wrongRise: 0.3,  knock: 0.18, windup: 6500 },
+    easy:   { hpPer: 1,   choices: 3, rise: 0,      wrongRise: 0.25, knock: 0.22, windup: 14000, hitCost: 0.5 },   // Easy: a hit costs half a heart (6 hits, not 3)
+    medium: { hpPer: 1.5, choices: 4, rise: 1 / 40, wrongRise: 0.25, knock: 0.2,  windup: 8500, hitCost: 1 },
+    hard:   { hpPer: 2,   choices: 4, rise: 1 / 22, wrongRise: 0.3,  knock: 0.18, windup: 6500, hitCost: 1 },
   };
   const NAME = "Sizzlejaw";
 
@@ -1735,6 +1860,8 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   ];
   const SPECIAL = { mini: ["Diamond Burst", "Crystal Storm"], super: "Super Diamond Blast", color: "#5ee0d0", glow: "#b8fff6" };
   const TAUNTS = { 2: "Grrr! Now I'm angry! You'll never spell these!", 3: "Last stand! I'm not done yet!" };
+  // What the boss says himself, in his own voice (taunts too). Instructions stay with the narrator.
+  const LINES = { hello: "Grrr! Here I come!", got: "Ha! Got you!", slow: "Too slow!", beaten: "Nooo! You beat me!", wins: "Ha ha! I win!" };
 
   /* ---------- sound-alike decoys for chunks ---------- */
   const ALTS = {
@@ -1784,6 +1911,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .lm-hearts{display:flex;gap:3px}
 .lm-heart{width:14px;height:12px;background:#ff7a6b;clip-path:polygon(0 25%,25% 0,50% 25%,75% 0,100% 25%,100% 50%,50% 100%,0 50%)}
 .lm-heart.off{background:#4b3a57}
+.lm-heart.half{background:linear-gradient(90deg,#ff7a6b 50%,#4b3a57 50%)}
 .lm-shield{width:12px;height:14px;background:#6aa8ff;clip-path:polygon(0 0,100% 0,100% 60%,50% 100%,0 60%)}
 .lm-boss{flex:1;min-width:0;flex-direction:column;align-items:stretch;gap:3px;padding:4px 8px}
 .lm-boss span{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#ffb627;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1888,8 +2016,10 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
      O glow, Y/W/E eyes, T/M teeth + mouth; A/B are extra colors. twist: see TWISTS below. ---------- */
   const BOSSES = [
     { id: "sizzle", name: "Sizzlejaw", world: "Ember Volcano", sprite: MON, pal: MPAL, twist: null, shot: "fire",
+      lines: { hello: "I am Sizzlejaw! Your words will melt!", got: "Ha! Toasty!", slow: "Too slow! Sizzle sizzle!", beaten: "Nooo! My lava is cooling!", wins: "Ha ha! The lava is mine!" },
       intro: "Lava monster! Pick the right tricky part to hit Sizzlejaw.", hint: "" },
     { id: "frostmaw", name: "Frostmaw", world: "Frost Cavern", twist: "freeze", shot: "ice",
+      lines: { hello: "I am Frostmaw! Feel the cold!", got: "Ha! Frozen!", slow: "Too slow! Brrr!", beaten: "Nooo! I'm melting!", wins: "Ha ha! Stay frozen!" },
       pal: { K:"#0c2238", R:"#7fc4e8", O:"#d8f6ff", Y:"#a8f0ff", W:"#ffffff", E:"#0c2238", T:"#ffffff", M:"#123a5c", A:"#e8fbff", B:"#3a7aa8" },
       lava: ["#e8fbff","#a8e6ff","#62c6f5","#3299dc","#1f74bd"], tint: "#3299dc",
       special: { mini: ["Ice Storm", "Frost Burst"], super: "Super Diamond Blast", color: "#a8f0ff" },
@@ -1897,6 +2027,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       intro: "Frostmaw the ice golem! He freezes your blocks. Tap the ice to crack it.", hint: "Tap ice to crack it!",
       sprite: ["..A...A..A...A..", ".KAK.KAKKAK.KAK.", ".KRRKRRRRRRKRRK.", "KRRRRRRRRRRRRRRK", "KRBBBRRRRRRBBBRK", "KRRYYYRRRRYYYRRK", "KRYWEYRRRRYEWYRK", "KRRYYYRORRYYYRRK", "KORRRRRRRRRRRROK", "KRTMMTMMTMMTMMRK", "KRMMMMMMMMMMMMRK", "KRMTMMTMMTMMTMRK", "KRRRRRRRRRRRRRRK", "KRRORRRRRRRRORRK", ".KRRRROORRRRRRK.", "....KKKKKKKK...."] },
     { id: "thornback", name: "Thornback", world: "Vine Jungle", twist: "shuffle", shot: "vine",
+      lines: { hello: "Thornback is hungry for letters!", got: "Ha! Tangled!", slow: "Too slow! The vines got you!", beaten: "Nooo! My poor vines!", wins: "Ha ha! The jungle wins!" },
       pal: { K:"#10240f", R:"#3f8a35", O:"#9be05a", Y:"#ffd166", W:"#fff1b8", E:"#10240f", T:"#f4e9d8", M:"#4a1a12", A:"#62c04a", B:"#2a5a22" },
       lava: ["#e3ff8a","#b8f04a","#7ed321","#4caf2a","#2f7d1c"], tint: "#4caf2a",
       special: { mini: ["Leaf Storm", "Vine Whip"], super: "Super Diamond Blast", color: "#9be05a" },
@@ -1904,6 +2035,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       intro: "Thornback the vine beast! His vines shuffle your blocks around. Watch closely!", hint: "Vines shuffle the blocks!",
       sprite: ["A..A.A....A.A..A", ".AA.AAA..AAA.AA.", "..AAKKKKKKKKAA..", ".AKRRRRRRRRRRKA.", "AKRRORRRRRRORRKA", ".KRYYYRRRRYYYRK.", "AKRYEWRRRRWEYRKA", ".KRYYYRRRRYYYRK.", "AKRRRRRBBRRRRRKA", ".KRRRRRRRRRRRRK.", "AKTMTMTMTMTMTMKA", ".KMMMMMMMMMMMMK.", "AKTMTMTMTMTMTMKA", ".KRRRRRRRRRRRRK.", "..KRRORRRRORRK..", "....KKKKKKKK...."] },
     { id: "dunestinger", name: "Dunestinger", world: "Sunscorch Desert", twist: "sand", shot: "rock",
+      lines: { hello: "Hsss! I am Dunestinger!", got: "Hsss! Got you!", slow: "Too slow! Hsss!", beaten: "Nooo! Back to the sand!", wins: "Hsss hsss! Lost in the desert!" },
       pal: { K:"#2c1606", R:"#c9822e", O:"#ff5a1f", Y:"#ffe08a", W:"#fff8e0", E:"#2c1606", T:"#f4e9d8", M:"#5a2a0a", A:"#a8601e", B:"#8a5420" },
       lava: ["#fff1b8","#ecc66e","#d89a3a","#b06a22","#7a4414"], tint: "#d89a3a",
       special: { mini: ["Sand Twister", "Sun Flare"], super: "Super Diamond Blast", color: "#ffe08a" },
@@ -1911,6 +2043,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       intro: "Dunestinger the sand scorpion! Sandstorms blow over your blocks. Wait for the sand to clear.", hint: "Sandstorms cover the blocks!",
       sprite: ["KK............KK", "KAK..........KAK", "KAAK...KK...KAAK", ".KAAK.KOOK.KAAK.", "..KAKKRRRRKKAK..", "...KRRRRRRRRK...", "..KRYYRRRRYYRK..", "..KYWEYRRYEWYK..", "..KRYYRRRRYYRK..", ".KRRRRRORRRRRRK.", ".KRTMTMTMTMTMRK.", ".KRMMMMMMMMMMRK.", ".KRTMTMTMTMTMRK.", "KRRRORRRRRRORRRK", "KRBRBRBRRBRBRBRK", "....KKKKKKKK...."] },
     { id: "glimmerjaw", name: "Glimmerjaw", world: "Crystal Caves", twist: "crystal", shot: { shape: "shard", core: "#ff8ae0", hi: "#ffffff", glow: "#7a3fd0", trail: ["#c9a8ff", "#ffd1f5"], word: "crystal shard" },
+      lines: { hello: "Clack clack! I am Glimmerjaw!", got: "Clack! Tricked you!", slow: "Too slow! Clack clack!", beaten: "Nooo! My shiny shell!", wins: "Clack clack! I win!" },
       pal: { K:"#160c26", R:"#6a4fb0", O:"#ff8ae0", Y:"#5ee0d0", W:"#e8fffb", E:"#160c26", T:"#f3e9ff", M:"#2a1450", A:"#c9a8ff", B:"#ff8ae0" },
       lava: ["#ffd1f5","#ff8ae0","#b06aff","#7a3fd0","#4a2490"], tint: "#b06aff",
       special: { mini: ["Prism Beam", "Gem Burst"], super: "Super Diamond Blast", color: "#ff8ae0" },
@@ -1918,6 +2051,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       intro: "Glimmerjaw the crystal crab! He makes crystal copies, so there is an extra block to trick you.", hint: "One extra trick block!",
       sprite: ["...A...AA...A...", "..AAA.AAAA.AAA..", "..ABA.ABBA.ABA..", "....KKKKKKKK....", "KRRRRRRRRRRRRRRK", "KRORRRRRRRRRRORK", "KRRYYYRRRRYYYRRK", "KRRYWEYRRYEWYRRK", "KRRYYYRRRRYYYRRK", "KRRRRRRRRRRRRRRK", "KRTMTMTMTMTMTMRK", "KRMMMMMMMMMMMMRK", "KRMTMTMTMTMTMTRK", "KRRRRRRRRRRRRRRK", ".KRAARRRRRRAARK.", "..KKKKKKKKKKKK.."] },
     { id: "stormbeak", name: "Stormbeak", world: "Sky Islands", twist: "wind", shot: { shape: "shard", core: "#ffd166", hi: "#ffffff", glow: "#4a7ec8", trail: ["#fff1b8", "#c8e6ff"], word: "lightning bolt" },
+      lines: { hello: "Kraaa! I am Stormbeak!", got: "Kraaa! Zapped!", slow: "Too slow! Kraaa!", beaten: "Nooo! The storm is over!", wins: "Kraaa! Blown away!" },
       pal: { K:"#132a4c", R:"#4a7ec8", O:"#ffd166", Y:"#c8e6ff", W:"#ffffff", E:"#132a4c", T:"#ffb627", M:"#a8601e", A:"#e8f4ff", B:"#2a5288" },
       lava: ["#ffffff","#e8f4ff","#c8e6ff","#8cbcf0","#4a7ec8"], tint: "#4a7ec8",
       special: { mini: ["Thunder Clap", "Gust Blast"], super: "Super Diamond Blast", color: "#ffd166" },
@@ -1925,6 +2059,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       intro: "Stormbeak the thunder bird! His wind makes your blocks sway. Tap carefully!", hint: "Wind blows the blocks!",
       sprite: ["......AAAA......", "....AAAAAAAA....", "....KKKKKKKK....", ".AKRRRRRRRRRRKA.", "AKRRRRRRRRRRRRKA", "KRRYYYRRRRYYYRRK", "KRYWEYRRRRYEWYRK", "KRRYYYRRRRYYYRRK", "KRRRRRTTTTRRRRRK", "KORRRTTTTTTRRROK", "KRRRRMMMMMMRRRRK", "KRRRRRTTTTRRRRRK", ".KRRRRRTTRRRRRK.", "AKRRORRRRRRORRKA", "AAKRRRRRRRRRRKAA", "A..KKKKKKKKKK..A"] },
     { id: "sporecap", name: "Sporecap", world: "Mushroom Marsh", twist: "spore", shot: { shape: "orb", core: "#c9a8ff", hi: "#ffe0f0", glow: "#5a2a88", trail: ["#e8d4b0", "#9b6bd8"], word: "spore ball" },
+      lines: { hello: "Poof! I am Sporecap!", got: "Poof! Got you!", slow: "Too slow! Sleepy time!", beaten: "Nooo! I'm squished!", wins: "Poof poof! I win!" },
       pal: { K:"#1e0f24", R:"#e8d4b0", O:"#c9a8ff", Y:"#9b6bd8", W:"#ffffff", E:"#1e0f24", T:"#ffffff", M:"#5a2a48", A:"#b83a7a", B:"#ffe0f0" },
       lava: ["#e3ff8a","#a8c84a","#7a8a3a","#5a6a2a","#3a4418"], tint: "#9b6bd8",
       special: { mini: ["Spore Cloud", "Toad Stomp"], super: "Super Diamond Blast", color: "#c9a8ff" },
@@ -1932,6 +2067,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       intro: "Sporecap the giant mushroom! Spore clouds hide your blocks. Tap a cloud to blow it away.", hint: "Tap clouds to blow them away!",
       sprite: ["....KKKKKKKK....", "..KKAAAAAAAAKK..", ".KAABBAAAABBAAK.", "KAABBBAAAABBBAAK", "KAAAAAABBAAAAAAK", "....KKKKKKKK....", "..KRRRRRRRRRRK..", "..KYYYRRRRYYYK..", "..KYWEYRRYEWYK..", "..KYYYRRRRYYYK..", "..KRRRRORRRRRK..", "..KRTMTMTMTMRK..", "..KRMMMMMMMMRK..", "..KRRRRRRRRRRK..", "...KRRORRORRK...", "....KKKKKKKKK..."] },
     { id: "gloomhelm", name: "Gloomhelm", world: "Obsidian Fortress", twist: "chaos", shot: "shadow",
+      lines: { hello: "I am Gloomhelm! No one passes my fortress!", got: "Ha! Not good enough!", slow: "Too slow, little hero!", beaten: "Impossible! You beat me!", wins: "The fortress stands! Ha ha!" },
       pal: { K:"#0f0b12", R:"#3a3344", O:"#b06aff", Y:"#ff3b1f", W:"#ffd166", E:"#0f0b12", T:"#c7b6c9", M:"#1a0a0a", A:"#c93312", B:"#1a1520" },
       lava: ["#ffb3ff","#d04aff","#8a1fd0","#5a1290","#2a0a50"], tint: "#8a1fd0",
       special: { mini: ["Shadow Strike", "Dark Quake"], super: "Super Diamond Blast", color: "#b06aff" },
@@ -2016,10 +2152,12 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     const PH = (BC.phases || PHASES);
     const SP = Object.assign({}, SPECIAL, BC.special || {});
     const TT = Object.assign({}, TAUNTS, BC.taunts || {});
+    const BL = Object.assign({}, LINES, BC.lines || {});
+    const bossSay = t => say(t, 1, true, "now", BC.id || "sizzle");   // a line the boss says, in his voice
     const reduce = global.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     /* speech + sfx */
-    const say = opts.say || function (text, rate, cancel) {
+    const say = opts.say || function (text, rate, cancel) {   // opts.say(text, rate, cancel, tag, bossId)
       try { if (!("speechSynthesis" in global)) return; if (cancel) speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = rate || 0.9; speechSynthesis.speak(u); } catch (e) {}
     };
     let ac = null;
@@ -2101,7 +2239,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     function setSay(t, cls) { R.say.textContent = t; R.say.className = "lm-say" + (cls ? " " + cls : ""); }
     function hud() {
       R.hearts.innerHTML = "";
-      for (let i = 0; i < maxHearts; i++) { const d = document.createElement("span"); d.className = "lm-heart" + (i < S.hearts ? "" : " off"); R.hearts.appendChild(d); }
+      for (let i = 0; i < maxHearts; i++) { const d = document.createElement("span"); d.className = "lm-heart" + (S.hearts >= i + 1 ? "" : S.hearts > i ? " half" : " off"); R.hearts.appendChild(d); }
       R.shield.hidden = !S.shield;
       R.hp.style.width = (100 * S.hp / S.hpMax) + "%";
       R.hp.parentNode.setAttribute("aria-valuenow", String(S.hp));
@@ -2117,10 +2255,10 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       add(fill ? c.t : "?", fill ? "gap fill" : "gap");
       for (let i = c.e; i < c.w.length; i++) add(c.w[i]);
     }
-    function speak(slow) {
+    function speak(slow, wait) {   // wait: queue behind the intro lines instead of cutting them
       const c = S.q; if (!c) return;
       const r = slow ? 0.5 : 0.85;
-      say(c.w, r, true, "prompt");
+      say(c.w, r, !wait, "prompt");
       if (c.sentence) say(c.sentence, slow ? 0.7 : 0.95, false, "prompt");
       say(c.w, r, false, "prompt");
     }
@@ -2151,7 +2289,8 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       tiles(false);
       setSay(tw.hint ? (ATK ? `Block the ${SHOT}! ${tw.hint}` : `${tw.hint} Which part fills the gap?`) : ASK);
       S.phase = "ask"; tw.ask();
-      later(() => speak(false), 250);
+      const first = !S.asked; S.asked = true;
+      later(() => speak(false, first), 250);
       if (ATK) ATK.arm(windup(), 250 + talkMs(S.q, false));
     }
 
@@ -2222,7 +2361,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         sfx.angry(); S.shake = reduce ? 0 : 900; S.flash = 0.6; hud();
         const t = TT[n] || `${BN} gets stronger!`;
         banner(`${BN}: ${ph.label || "Phase " + n}!<small>${t}</small>`);
-        setSay(t, "bad"); say(t, 1, true, "now");
+        setSay(t, "bad"); bossSay(t);
         opts.onPhase && opts.onPhase(n);
         later(ask, 2400);
       }, reduce ? 700 : 1700);
@@ -2286,10 +2425,10 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       later(ask, 900);
     }
     function reachPlayer() {
-      S.phase = "hurt"; S.hearts--; S.hurt = 1; sfx.roar(); hud();
+      S.phase = "hurt"; S.hearts = loseHeart(); S.hurt = 1; sfx.roar(); hud();
       if (S.hearts <= 0) { lose(); return; }
-      setSay(`${NAME} splashed you! Lost a heart.`, "bad");
-      say("Splash! Keep going!", 1, true, "now");
+      setSay(`${NAME} splashed you! Lost ${lostTxt()}.`, "bad");
+      bossSay(BL.got);
       S.target = 0.45;
       later(() => { S.phase = "ask"; setSay(ASK); }, 1300);
     }
@@ -2298,6 +2437,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     // Rough time the word (and sentence) take to say, so the clock starts after he has heard it.
     // Plus whatever line is still finishing first (the host's queue lets sentences end).
     function talkMs(c, slow) { const k = slow ? 1.7 : 1; return (say.left ? say.left() : 0) + k * (2 * (500 + c.w.length * 60) + (c.sentence ? c.sentence.length * 70 : 0)); }
+    // Easy hits cost half a heart; round to avoid float drift (0.5 steps are exact anyway).
+    function loseHeart() { return Math.max(0, Math.round((S.hearts - (D.hitCost || 1)) * 2) / 2); }
+    function lostTxt() { return (D.hitCost || 1) < 1 ? "half a heart" : "a heart"; }
     function windup() { return (atkOpt.windup || D.windup) / (S.attackSpeed || 1); }   // S.attackSpeed: hook for boss phases
     function fireHit(c, timedOut) {
       if (S.done) return;
@@ -2310,11 +2452,11 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         S.shield = false; hud(); sfx.hit();
         setSay(`Your shield blocked the ${SHOT}!`, "good");
       } else {
-        S.hearts--; S.hurt = 1; S.shake = reduce ? 0 : 350; hud();
+        S.hearts = loseHeart(); S.hurt = 1; S.shake = reduce ? 0 : 350; hud();
         opts.onHurt && opts.onHurt(c.key);
         if (S.hearts <= 0) { lose(); return; }
-        setSay(timedOut ? `Too slow! The ${SHOT} hit you. Lost a heart.` : `The ${SHOT} hit you! Lost a heart.`, "bad");
-        say(timedOut ? "Ouch! Pick faster next time!" : "Ouch! Try again!", 1, true, "now");
+        setSay(timedOut ? `Too slow! The ${SHOT} hit you. Lost ${lostTxt()}.` : `The ${SHOT} hit you! Lost ${lostTxt()}.`, "bad");
+        bossSay(timedOut ? BL.slow : BL.got);
       }
       later(() => { if (S.phase === "ask" && S.q === c && !S.done) { ATK.arm(windup(), 900 + (timedOut ? talkMs(c, false) : 0)); if (timedOut) speak(false); } }, 1200);
     }
@@ -2343,13 +2485,13 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     }
     function win() {
       finish(true); S.dead = 0.001; sfx.win(); burst(false, true);
-      setSay(`You beat ${NAME}!`, "good"); say(`You beat ${NAME}! Amazing spelling!`, 0.95, true, "now");
+      setSay(`You beat ${NAME}!`, "good"); bossSay(BL.beaten); say("Amazing spelling!", 0.95, false);
       const byKey = k => chunks.find(c => c.key === k);
       later(() => showCard(`${NAME} is defeated!`, `+${S.result.gems} diamonds!`, S.result.beaten.map(byKey), S.result.shaky.map(byKey)), 2000);
     }
     function lose() {
       finish(false); sfx.roar();
-      setSay(`${NAME} got away!`, "bad"); say(`${NAME} got away. Practice and come back!`, 0.95, true, "now");
+      setSay(`${NAME} got away!`, "bad"); bossSay(BL.wins); say("Practice and come back!", 0.95, false);
       later(() => showCard(`${NAME} got away!`, `You hit it ${S.hits} times. +${S.result.gems} diamonds. Practice these and come back!`, [], chunks.filter(c => S.stats[c.key].wrong > 0)), 1600);
     }
     function close() {
@@ -2508,14 +2650,15 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     hud();
     setSay(B.id === "sizzle" ? `${NAME} rises from the lava!` : `${NAME} appears!`, "bad");
     sfx.roar();
-    if (B.id === "sizzle") say(ATK ? `Lava monster! Pick the right tricky part to block the ${SHOT} and hit ${NAME}.` : `Lava monster! Pick the right tricky part to hit ${NAME}.`, 0.95, true);
-    else say(B.intro + (ATK ? ` Block the ${SHOT} with the right tricky part!` : ""), 0.95, true);
+    bossSay(BL.hello);
+    if (B.id === "sizzle") say(ATK ? `Lava monster! Pick the right tricky part to block the ${SHOT} and hit ${NAME}.` : `Lava monster! Pick the right tricky part to hit ${NAME}.`, 0.95, false);
+    else say(B.intro + (ATK ? ` Block the ${SHOT} with the right tricky part!` : ""), 0.95, false);
     S.target = 0.15;
     raf = requestAnimationFrame(frame);
 
     const ctrl = {
       stop() { if (!S.done) S.done = true; teardown(); },
-      addHeart() { if (S.done || S.hearts >= maxHearts) return false; S.hearts++; hud(); setSay("Glug glug! +1 heart.", "good"); return true; },
+      addHeart() { if (S.done || S.hearts >= maxHearts) return false; S.hearts = Math.min(maxHearts, S.hearts + 1); hud(); setSay("Glug glug! +1 heart.", "good"); return true; },
       shield() { if (S.done || S.shield) return false; S.shield = true; hud(); setSay("Shield up! Your next mistake is free.", "good"); return true; },
       glow() { if (S.phase !== "ask") return false; S.stats[S.q.key].glow = true; glowRight(); setSay("The glowing block is the right one.", "good"); return true; },
       state() { return { hp: S.hp, hpMax: S.hpMax, hearts: S.hearts, phase: S.phase, p: S.p, q: S.q && S.q.key, shot: ATK ? ATK.progress() : 0, blocks: S.blocks, bossPhase: S.bossPhase, pow: S.pow }; },
@@ -2525,7 +2668,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     return ctrl;
   }
 
-  global.LavaMonster = { start, chunkDecoys, DIFF, NAME, PHASES, SPECIAL, TAUNTS, BOSSES, BOSS_BY_ID };
+  global.LavaMonster = { start, chunkDecoys, DIFF, NAME, PHASES, SPECIAL, TAUNTS, LINES, BOSSES, BOSS_BY_ID };
 })(window);
 
 </script>
@@ -2609,11 +2752,13 @@ const CLIPS = (() => {
     next(); next();
   }).catch(() => {});
   // Text -> list of clip keys (with pauses), or null if any part has no clip.
-  function plan(text, rate){
+  // who = boss id: use that boss's own voice clips ("boss:<id>:<text>").
+  function plan(text, rate, who){
     if (!map) return null;
     const out = [];
     for (const s of segs(text)){
       const n = norm(s); if (!n) continue;
+      if (who){ const bk = "boss:" + who + ":" + n; if (!map[bk]) return null; out.push({ k: bk, gap: 0.15 }); continue; }
       const slow = rate <= 0.75 && map["slow:" + n] ? "slow:" + n : null;
       if (slow || map[n]) { out.push({ k: slow || n, gap: 0.12 }); continue; }
       const letters = n.split(" ");
@@ -2632,7 +2777,8 @@ const CLIPS = (() => {
 })();
 
 /* One queue for every spoken line, in the main game and in every mode.
-   say(text, rate, cancel, tag)
+   say(text, rate, cancel, tag, who)
+     who:          boss id (e.g. "sizzle") for a line the boss says himself, in his own voice.
      cancel false: wait in line.
      cancel true:  drop anything still waiting. The line playing now finishes
                    its sentence, unless it is a word prompt or a tap echo
@@ -2642,7 +2788,7 @@ const CLIPS = (() => {
                    banner, super blast, win/lose). It cuts whatever is playing, so
                    the voice never trails behind the animation.
    speechCancel() hard-stops everything (leaving a screen).
-   say.left() = ms until the current must-finish line ends, so timers can wait for it. */
+   say.left() = ms until the must-finish lines (playing + waiting) end, so timers can wait for them. */
 const SPEECH = { q: [], busy: false, gen: 0, nodes: [], timer: 0, cur: null, endAt: 0 };
 const speechEst = (text, rate) => (450 + String(text).length * 70) / Math.max(0.4, rate || 0.9);
 function speechStop(){
@@ -2659,7 +2805,7 @@ function speechNext(){
   const gen = SPEECH.gen;
   const done = () => { if (gen !== SPEECH.gen) return; clearTimeout(SPEECH.timer); SPEECH.busy = false; SPEECH.cur = null; SPEECH.endAt = 0; SPEECH.nodes = []; speechNext(); };
   const ctx = window.LLAudio && LLAudio._ctx && LLAudio._ctx();
-  const parts = ctx && ctx.state === "running" ? CLIPS.plan(job.text, job.rate) : null;
+  const parts = ctx && ctx.state === "running" ? CLIPS.plan(job.text, job.rate, job.who) : null;
   const fallback = () => {
     if (gen !== SPEECH.gen) return;
     if (!hasTTS) return done();
@@ -2667,6 +2813,8 @@ function speechNext(){
       const u = new SpeechSynthesisUtterance(job.text);
       if (voice) u.voice = voice;
       u.lang = "en-US"; u.rate = job.rate;
+      try { u.volume = LLAudio.voiceGain ? LLAudio.voiceGain() : 1; } catch(e){}
+      if (job.who) u.pitch = 0.6;   // no clip yet: at least make the boss sound deep
       u.onend = u.onerror = done;
       const ms = 1500 + job.text.length * 120 / Math.max(0.4, job.rate);
       SPEECH.endAt = performance.now() + speechEst(job.text, job.rate);
@@ -2681,7 +2829,7 @@ function speechNext(){
     if (gen !== SPEECH.gen) return;
     let t = ctx.currentTime + 0.03;
     bufs.forEach((b, i) => {
-      const src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination);
+      const src = ctx.createBufferSource(); src.buffer = b; src.connect(LLAudio.voiceOut ? LLAudio.voiceOut() : ctx.destination);
       src.start(t); SPEECH.nodes.push(src);
       if (i === bufs.length - 1) src.onended = done;   // audio time, so a paused app doesn't skip ahead
       t += b.duration + (i < bufs.length - 1 ? parts[i + 1].gap : 0);
@@ -2689,16 +2837,17 @@ function speechNext(){
     SPEECH.endAt = performance.now() + (t - ctx.currentTime) * 1000;
   }, fallback);
 }
-function say(text, rate, cancel, tag){
+function say(text, rate, cancel, tag, who){
   if (!canSpeak) return;
   if (cancel){
     SPEECH.q = [];
     if (SPEECH.busy && SPEECH.cur && (SPEECH.cur.cut || tag === "now")) speechStop();
   }
-  SPEECH.q.push({ text: String(text), rate: rate || 0.9, cut: tag === "prompt" || tag === "tap" });
+  SPEECH.q.push({ text: String(text), rate: rate || 0.9, cut: tag === "prompt" || tag === "tap", who: who || "" });
   speechNext();
 }
-say.left = () => SPEECH.busy && SPEECH.cur && !SPEECH.cur.cut ? Math.max(0, SPEECH.endAt - performance.now()) : 0;
+say.left = () => (SPEECH.busy && SPEECH.cur && !SPEECH.cur.cut ? Math.max(0, SPEECH.endAt - performance.now()) : 0)
+  + SPEECH.q.reduce((ms, j) => ms + (j.cut ? 0 : speechEst(j.text, j.rate) + 150), 0);   // + lines still waiting (boss intro)
 function speakWord(slow){
   if (!canSpeak){ setSay("Sound isn't working here. Ask a grown-up to read the word.", "bad"); return; }
   const it = current(); if (!it) return;
@@ -2720,6 +2869,10 @@ const SAVE = (() => {
   // world bosses (v7): which bosses he has beaten, by id. Sizzlejaw carries over from monsterBeaten.
   d.bossBeat = Object.assign({}, d.bossBeat);
   if (d.monsterBeaten) d.bossBeat.sizzle = true;
+  // pet eggs + Mythic pets (v17): eggs from Test Day chests, Mythic pets that grow with daily quizzes
+  d.eggs = Array.isArray(d.eggs) ? d.eggs : [];
+  d.mythic = Object.assign({}, d.mythic);
+  d.petNews = Array.isArray(d.petNews) ? d.petNews : [];
   return d;
 })();
 function save(){ store.set(SAVE_KEY, JSON.stringify(SAVE)); }
@@ -3150,6 +3303,7 @@ function renderShop(){
   const grid = $("shopGrid"), keepScroll = grid.scrollTop; grid.innerHTML = "";
   const list = shopTab === "potion" ? POTIONS : COS[shopTab].items;
   for (const [id, it] of Object.entries(list)){
+    if (it.mythic) continue;   // Mythic pets live in the Pet Nest
     const b = document.createElement("button"); b.type = "button"; b.className = "it";
     const th = document.createElement("span"); th.className = "th"; th.appendChild(thumb(shopTab, id));
     b.appendChild(th);
@@ -3160,9 +3314,10 @@ function renderShop(){
       const n = document.createElement("span"); n.className = "badge"; n.textContent = "×" + SAVE.inv[id]; b.appendChild(n);
     } else if (cur(shopTab) === id){ st.textContent = "✓ On"; b.classList.add("on"); }
     else if (owns(shopTab, id)) st.textContent = it.price === 0 ? "Free" : "Owned";
-    else if (locked(shopTab, id)){ st.textContent = mystery(shopTab, id) ? "🔒 New world" : `🔒 Beat ${it.bossName || "the monster"}`; st.classList.add("poor"); }
+    else if (locked(shopTab, id)){ st.textContent = it.chest ? "🎁 Chest only" : mystery(shopTab, id) ? "🔒 New world" : `🔒 Beat ${it.bossName || "the monster"}`; st.classList.add("poor"); }
     else { st.innerHTML = gemTxt(it.price); st.classList.add(SAVE.gems >= it.price ? "price" : "poor"); }
     b.appendChild(st);
+    if (it.chest) b.classList.add("chest");
     if (it.legend){ b.classList.add("legend"); const l = document.createElement("span"); l.className = "badge"; l.textContent = "★"; b.appendChild(l); }
     if (shopSel[shopTab] === id) b.classList.add("sel");
     const shown = mystery(shopTab, id) ? "Mystery pet" : it.name;
@@ -3173,7 +3328,7 @@ function renderShop(){
   const note = document.createElement("p"); note.className = "note";
   note.textContent = shopTab === "potion"
     ? `Use potions with the buttons next to Hear it. ${limitText()}`
-    : shopTab === "pet" ? "Beat each world's boss to tame it. ??? pets live in worlds you haven't reached yet."
+    : shopTab === "pet" ? "Beat each world's boss to tame it. ??? pets live in worlds you haven't reached yet. Eggs and Mythic pets are in the Pet Nest."
     : "Tap anything to try it on. Earn diamonds: 1 per word, 2 for a perfect word, double vs a boss.";
   grid.appendChild(note);
   grid.scrollTop = keepScroll;
@@ -3193,8 +3348,8 @@ function renderShopInfo(){
   const it = COS[shopTab].items[id];
   const myst = mystery(shopTab, id);
   $("pvName").textContent = myst ? "??? Mystery pet" : it.name;
-  $("pvDesc").textContent = myst ? "A boss lives in a world you haven't reached yet. Find it, beat it, then tame it!" : (locked(shopTab, id) || (it.legend && !owns(shopTab, id)) ? it.lockDesc : it.desc) || "";
-  if (locked(shopTab, id)){ btn.textContent = myst ? "Find this world" : `Beat ${it.bossName || "the monster"}`; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; return; }
+  $("pvDesc").textContent = it.chest && !owns(shopTab, id) ? "Chest-only! Win it from a Test Day reward chest." : myst ? "A boss lives in a world you haven't reached yet. Find it, beat it, then tame it!" : (locked(shopTab, id) || (it.legend && !owns(shopTab, id)) ? it.lockDesc : it.desc) || "";
+  if (locked(shopTab, id)){ btn.textContent = it.chest ? "Find it in a chest" : myst ? "Find this world" : `Beat ${it.bossName || "the monster"}`; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; return; }
   if (cur(shopTab) === id){ btn.textContent = "Equipped ✓"; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; }
   else if (owns(shopTab, id)){ btn.textContent = "Equip"; btn.classList.add("go"); btn.onclick = () => { setEq(shopTab, id); LLAudio.sfx("land"); renderShop(); }; }
   else if (SAVE.gems >= it.price){ btn.innerHTML = "Buy · " + gemTxt(it.price); btn.onclick = () => buyItem(shopTab, id); }
@@ -3298,9 +3453,28 @@ function renderSegs(){
   });
 }
 renderSegs();
-function renderMusic(){ document.querySelectorAll("[data-music]").forEach(b => b.textContent = "Music: " + (LLAudio.musicOn() ? "on" : "off")); }
-document.querySelectorAll("[data-music]").forEach(b => b.addEventListener("click", () => { LLAudio.toggleMusic(); renderMusic(); }));
-renderMusic();
+/* Settings: Music / Sounds / Voice volume (saved in lavaleap.settings.v1). */
+let volTry = 0;
+function renderVol(){
+  document.querySelectorAll("#settingsCard [data-vol]").forEach(row => {
+    const k = row.dataset.vol, v = LLAudio.vol(k), inp = row.querySelector("input");
+    inp.value = v; inp.style.setProperty("--p", ((v - inp.min) / (inp.max - inp.min) * 100) + "%");
+    row.querySelector("[data-vol-num]").textContent = v ? v : "Off";
+    row.classList.toggle("off", !v);
+  });
+}
+document.querySelectorAll("#settingsCard [data-vol]").forEach(row => {
+  const k = row.dataset.vol, inp = row.querySelector("input");
+  inp.addEventListener("input", () => {
+    LLAudio.setVol(k, +inp.value); renderVol();
+    // let him hear the new level (music plays on its own)
+    if (k === "sfx" && performance.now() - volTry > 150){ volTry = performance.now(); LLAudio.sfx("coin"); }
+  });
+  inp.addEventListener("change", () => { if (k === "voice") say("This is how loud I talk!", 0.95, true, "tap"); });
+});
+function openSettings(){ LLAudio.unlock(); renderVol(); $("settingsCard").hidden = false; }
+document.querySelectorAll("[data-settings]").forEach(b => b.addEventListener("click", openSettings));
+$("settingsDone").addEventListener("click", () => { $("settingsCard").hidden = true; LLAudio.sfx("land"); });
 
 function start(bossWords){
   cancelChunkModes(); LLAudio.unlock(); LLAudio.setScene("main");
@@ -3520,6 +3694,11 @@ const COS = {
                 pal: { H:"#eef2f7", D:"#1d2b53", R:"#7fd3ff", T:"#dfe6ee", M:"#ff7a1f", S:"#ffb627", P:"#c9d2dc", K:"#6b7280" } },
     dino:     { name: "Dino Suit", price: 400, desc: "Rawr! A comfy dino costume.", sprite: ["..R..R..",".HHHHHH.","HWHWWHWH","HSWDSWDH","HSSSSSSH","HSSMMSSH","..TTTT..",".TTRRTT.","HTTTTTTH","H.TTTT.H","..PPPP.T","..P..PTT",".KK..KK."],
                 pal: { H:"#4caf50", S:"#e7b58a", W:"#ffffff", D:"#1d2b53", M:"#a8563a", T:"#43a047", R:"#c5e86c", P:"#388e3c", K:"#2e7d32" } },
+    // chest-only (Test Day reward chests): price null = can't be bought
+    shadow:   { name: "Shadow Ninja", price: null, chest: "epic", desc: "A ninja made of night. Chest-only!", sprite: [".KKKKKK.","KKKKKKKK","RRRRRRRR","KSDDSDDK","KKKKKKKK",".KKKKKK.","..TTTT..",".TTRRTT.","STTTTTTS","S.TTTT.S","..PPPP..","..P..P..",".KK..KK."],
+                pal: { K:"#1a1030", S:"#c9a8ff", W:"#ffffff", D:"#b06aff", R:"#b06aff", T:"#2a1f45", P:"#1f1735" } },
+    magma:    { name: "Magma Knight", price: null, chest: "legendary", desc: "Armor forged in the volcano. Chest-only!", sprite: ["..RYYR..",".HHHHHH.","HHHHHHHH","HDYDDYDH","HHHHHHHH",".HHHHHH.","..TTTT..",".TTYYTT.","HTTTTTTH","H.TTTT.H","..PPPP..","..P..P..",".KK..KK."],
+                pal: { H:"#3a2230", D:"#1a1018", Y:"#ffd166", T:"#c93312", R:"#ff7a1f", P:"#2a1a22", K:"#1a1018" } },
   } },
   hat: { label: "Hats", items: {
     none:   { name: "No hat", price: 0, desc: "Nothing on your head." },
@@ -3529,6 +3708,9 @@ const COS = {
     tophat: { name: "Top Hat", price: 75, desc: "Very fancy.", over: 1, rows: ["..aaaa..","..aaaa..","..cccc..",".aaaaaa."], pal: { a:"#1f1726", c:"#e63946" } },
     wizard: { name: "Wizard Hat", price: 120, desc: "Spelling magic!", over: 1, rows: ["....a...","...aa...","...aac..","..aaaa..",".acaaaa.","aaaaaaaa"], pal: { a:"#5a3db8", c:"#ffd166" } },
     crown:  { name: "Gold Crown", price: 300, desc: "King of the lava.", over: 1, rows: [".a.aa.a.",".aaaaaa.",".acaaca."], pal: { a:"#ffd166", c:"#ef476f" } },
+    party:  { name: "Party Hat", price: null, chest: "rare", desc: "Every day is a party. Chest-only!", over: 1, rows: ["...cc...","...aa...","..abba..",".abaaba.","abaaaaba"], pal: { a:"#ff7ab6", b:"#5ee0d0", c:"#ffd166" } },
+    icecrown: { name: "Ice Crown", price: null, chest: "epic", desc: "A crown that never melts. Chest-only!", over: 1, rows: [".a.aa.a.",".abaaba.",".aaaaaa."], pal: { a:"#c8ecfc", b:"#4aa8ff" } },
+    halo:   { name: "Flame Halo", price: null, chest: "legendary", desc: "A ring of fire floats over you. Chest-only!", over: 1, rows: ["a.a..a.a","bababbab",".cccccc.","........"], pal: { a:"#fff15a", b:"#ff7a1f", c:"#ffd166" } },
   } },
   pet: { label: "Pets", items: {
     none:   { name: "No pet", price: 0, desc: "Just you." },
@@ -3562,12 +3744,17 @@ const COS = {
     gold:     { name: "Gold", price: 350, desc: "Solid gold. Your path turns to diamond.",
                 choice: { top:["#f3c64a","#ebbd3e"], side:"#9a6d0e", hi:"#fff0a8", lo:"#c28f17", fleck:"#ffffff", ink:"#4a3104" },
                 trail:  { top:["#5ee0d0","#52d6c6"], side:"#1d7f74", hi:"#c8fff8", lo:"#2fae9f", fleck:"#ffffff", ink:"#0a3b36" } },
+    emerald:  { name: "Emerald", price: null, chest: "rare", desc: "Shiny green gem blocks. Chest-only!",
+                choice: { top:["#7be3a0","#6fdb95"], side:"#1f7a45", hi:"#d6ffe5", lo:"#3fae6a", fleck:"#ffffff", ink:"#0b3a20" },
+                trail:  { top:["#ffd166","#f5c55a"], side:"#9a6d0e", hi:"#fff0a8", lo:"#c28f17", fleck:"#ffffff", ink:"#4a3104" } },
   } },
   lava: { label: "Lava", items: {
     classic: { name: "Classic Lava", price: 0, desc: "Hot and orange.", ramp: ["#ffd166","#ffb627","#ff7a1f","#f0521a","#c93312"], spark: "#ffe08a", ember: "#fff1b8" },
     slime:   { name: "Green Slime", price: 50, desc: "Gooey, bubbly slime.", ramp: ["#e3ff8a","#b8f04a","#7ed321","#4caf2a","#2f7d1c"], spark: "#f6ffc8", ember: "#eaffb0" },
     frost:   { name: "Frost Lava", price: 150, desc: "Freezing blue lava.", ramp: ["#a8e6ff","#62c6f5","#3299dc","#1f74bd","#15528f"], spark: "#e8fbff", ember: "#e8fbff" },
     rainbow: { name: "Rainbow Lava", price: 450, desc: "Every color at once!", rainbow: true, ramp: ["#fff","#ffd166","#ef476f","#9b8cff","#4361ee"], spark: "#ffffff", ember: "#ffffff" },
+    galaxy:  { name: "Galaxy Lava", price: null, chest: "epic", desc: "Lava full of stars. Chest-only!", ramp: ["#e8d8ff","#b06aff","#6a2fb8","#3a1a78","#1a0c40"], spark: "#ffffff", ember: "#e8d8ff" },
+    goldlava:{ name: "Molten Gold", price: null, chest: "legendary", desc: "A lake of liquid gold. Chest-only!", ramp: ["#fff8e0","#ffe08a","#ffd166","#e0a526","#a8730f"], spark: "#ffffff", ember: "#fff1b8" },
   } },
   trail: { label: "Trails", items: {
     none:     { name: "No trail", price: 0, desc: "Plain jumps." },
@@ -3575,6 +3762,7 @@ const COS = {
     bubbles:  { name: "Bubbles", price: 25, desc: "Float some bubbles." },
     confetti: { name: "Confetti", price: 50, desc: "Every jump is a party." },
     stars:    { name: "Stars", price: 90, desc: "Leave twinkling stars." },
+    rainbow:  { name: "Rainbow Sparks", price: null, chest: "rare", desc: "Sparks in every color. Chest-only!" },
   } },
 };
 // One tameable pet per world boss (Sizzlejaw's hand-made pet stays above). Frames come from the boss sprite.
@@ -3587,13 +3775,310 @@ const COS = {
     pal: b.pal, frames: [b.sprite, b.sprite, blink, b.sprite, chomp] };
 });
 COS.pet.items.sizzle.bossName = "Sizzlejaw";
+/* ---------- Mythic pets + pet eggs (quiz-only rewards) ----------
+   Eggs drop from Test Day chests (LavaPets.addEgg) and hatch after N daily quizzes (LavaPets.onQuizDone).
+   Mythic Eggs hatch one of 5 Mythic pets, which grow 3 stages the more quizzes he finishes.
+   Save fields (in lavaleap.save.v1): eggs [{uid,tier,got,need,done}], mythic {id:{stage,quizzes,look,got}},
+   petQuizDay (last day a quiz counted), petNews [ids that just grew]. Sprites: left halves, mirrored. */
+const LavaPets = (() => {
+  const K = "#1f1424";
+  function mirror(half){ return half.map(r => r + [...r].reverse().join("")); }
+  function build(st){
+    const g = (st.half ? mirror(st.half) : st.full.slice()).map(r => [...r]);
+    (st.over || []).forEach(([r, c, s]) => [...s].forEach((ch, i) => { if (ch !== " "){ while (g[r].length <= c + i) g[r].push("."); g[r][c + i] = ch; } }));
+    const w = Math.max(...g.map(r => r.length));
+    return g.map(r => r.join("").padEnd(w, "."));
+  }
+  const PETS = [
+  { id: "emberwing", name: "Emberwing", color: "#ff7a1f",
+    pal: { K, O:"#ff7a1f", R:"#c93312", M:"#7a1a0c", Y:"#ffd166", W:"#fff1b8", S:"#f4e9d8", s:"#c9b8a4" },
+    blurb: "A baby lava dragon that hatches from a glowing egg. The more you spell, the hotter its fire gets!",
+    stages: [
+      { name: "Ember Hatchling", half: [
+        "...K..","..KYK.","..KOKK",".KOOOO",".KOWKO",".KOKKO",".KOOOO","..KOMM","SKKOYY","sSKOYY","sSSKKK",".sSSSS","..ssss"] },
+      { name: "Emberwing Drake", half: [
+        "....K...","...KYK..","...KYOKK","..KOOOOO","K.KOWKOO","KKKOKKOO","KRRKOOOO","KRRRKOMM",".KRRKOOO","..KRKOYY","...KKOYY","....KOYY","....KOOK","....KKK."] },
+      { name: "Inferno Wyrm", half: [
+        "Y.........","KY......Y.","KRK....YOY","KRRK..KYOY","KRRRKKOOOO","KRRRKOYKOO","KRMRKOKKOO","KRMRRKOOOO","KRMMRKOMMM","KRMMRKOWMW",".KRMRKOOOO","..KRRKOYYY","...KRKOYYY","....KKOYYW","....KOOYYY","...KOOKOOO","..KOOK.KOO","..KKK...KK"] },
+    ] },
+  { id: "quillfox", name: "Quillfox", color: "#5bc8f5",
+    pal: { K, F:"#ff9a3c", f:"#d9661f", W:"#fff1b8", B:"#5bc8f5", b:"#2a75a5", G:"#ffd166" },
+    blurb: "A clever fox whose tail is a magic feather pen. It loves words and gets smarter every quiz.",
+    stages: [
+      { name: "Inkit", half: [
+        ".......",".K.....",".KK....",".KFK...",".KFFKKK","KFFFFFF","KFWKFFF","KFKKFFF","KWWWFFF",".KWWWWW","..KWWWK","..KFFFF","..KFWWW","..KKKKK"],
+        over: [[6,13,"Bb"],[7,13,"BB"],[8,13,"bB"],[9,12,"KK"],[10,12,"K"]] },
+      { name: "Quillfox", half: [
+        "........","..K.....","..KK....","..KFK...","..KFfK..","..KFFFKK",".KFFFFFF",".KFWKFFF",".KFKKFFF",".KWWWFFF","..KWWWWW","...KWWWK","...KFFFF","...KFWWW","...KFWWW","...KKKKK"],
+        over: [[3,14,"  B"],[4,13,"BBbB"],[5,13,"BbBB"],[6,13,"BBbK"],[7,14,"bBK"],[8,14,"BK"],[9,14,"K"]] },
+      { name: "Grand Scribe Fox", half: [
+        "..........","...G......","..GKG.....","...K......","...KK.....","...KFK....","...KFfK.GG","...KFFFKGK","..KFFFFFFF","..KFWKFFFF","..KFKKFFFF","..KWWWFFFF","...KWWWWWW","....KWWWWK","...KBKFFFF","..KBBKFWWW","..KBbKFWWW","...KKKFWWW","....KKKKKK"],
+        over: [[5,15,"  BB"],[6,14,"BBBbB"],[7,14,"BbBBB"],[8,14,"BBbBK"],[9,15,"bBBK"],[10,15,"BBK"],[11,16,"K"],[1,17,"G"],[3,16,"G"]] },
+    ] },
+  { id: "pebblit", name: "Pebblit", color: "#5ee0d0",
+    pal: { K, G:"#9a94a6", g:"#6d677a", H:"#bdb7c9", C:"#5ee0d0", c:"#1d7f74" },
+    blurb: "A tiny rock buddy with a crystal sprout. Feed it quizzes and it grows into a giant crystal titan!",
+    stages: [
+      { name: "Pebblit", half: [
+        "....KC","...KCc",".KKKKK",".KHHHH",".KHGGG",".KGCCG",".KGCCG",".KGGGG",".KgGKK",".KgggG","..KKgg","...KgK","...KK."] },
+      { name: "Boulderbash", half: [
+        "......KC",".....KCc","..KKKKKK","..KHHHHH",".KHGGGGG",".KGGCCGG",".KGGCCGG","KHKGGGGG","KGKGKKKK","KGKggGGG","KgKgggGG",".KKKgggg","...KgggK","...KggKK","...KKKK."] },
+      { name: "Crystal Titan", half: [
+        "........KC",".KC....KCc","KCcK..KCcc","KCcKKKKKKK","KcKHHHHHHH",".KHGGGGGGG",".KGGGCCGGG","KKGGGCCGGG","KCKGGGGGGG","KCcKGKCCCC","KcKGGGGGGG","KGGKgGGGCC","KGGKggGGCc","KggKgggGGG",".KKKgggggg","...KgggKKK","...KgggK..","...KKKKK.."] },
+    ] },
+  { id: "zappup", name: "Zappup", color: "#ffe14a",
+    pal: { K, U:"#4361ee", u:"#2a3a9e", L:"#ffe14a", W:"#e8f0ff" },
+    blurb: "A puppy made of thunder. It zips around with sparks and howls lightning when it's all grown up.",
+    stages: [
+      { name: "Zappup", half: [
+        ".K....",".KK...",".KLK..",".KUUKK","KUUUUL","KUWKUU","KUKKUU","KUUUWW",".KUWWW","..KWWK","..KUUU","..KUWW","..KKKK"] },
+      { name: "Thunderhowl", half: [
+        "..K.....","..KK....","..KLK...","..KUuK..","..KUUUKK",".KUUUUUL",".KUUUUUL",".KUWKUUU",".KUKKUUU",".KUUUUWW","..KUWWWW","...KWWWK","...KUUUU","..LKUUWW",".L.KUuWW","L..KKKKK"] },
+      { name: "Storm Alpha", half: [
+        "..L.......","..LK......","...KK.....","...KLK....","...KUuK...","...KUUUKKK","..KUUUUUUL","..KUUUUUUL",".KUULLUUUU",".KUULKUUUU",".KUUKKUUUU",".KUUUUUUWW","..KUUUWWWW","...KUWWWWK","..KUKUUUUU",".LKUUKUWWW","L.KUUKUWWW",".LKuuKUuWW","..KKKKKKKK"] },
+    ] },
+  { id: "voidcat", name: "Starprowl", color: "#a98bff",
+    pal: { K, P:"#5a4878", p:"#3a2d4e", V:"#a98bff", S:"#ffffff", Y:"#5ee0d0" },
+    blurb: "A shadow kitten from the night sky. Its fur fills up with stars, one for every quiz you finish.",
+    stages: [
+      { name: "Shadow Kit", half: [
+        "......",".K....",".KK...",".KVK..",".KPPKK","KPPPPP","KPYYPP","KPYKPP","KPPPPV",".KPPKK","..KPPP","..KPpp","..KKKK"] },
+      { name: "Nightprowl", half: [
+        "........","..K.....","..KK....","..KVK...","..KPPK..","..KPPPKK",".KPPSPPP",".KPYYPPP",".KPYKPPP",".KPPPPPV","..KPPPKK","...KPPPP","..KPKPSP","..KPKPpp","..KpKPpp","..KKKKKK"] },
+      { name: "Galaxy Panther", half: [
+        "....S.....","..........","...K......","...KK...S.","...KVK....","...KPVK...","...KPPPKKK","..KPPSPPPP","..KPPPPPSP",".KPPYYPPPP",".KPPYKPPPP","SKPPPPPPPV",".KPPPPPKKK","..KPPSPPPP","...KPPPPSP","..KPKPPPPP","..KPKSPpPP","..KpKPpppp","..KKKKKKKK"] },
+    ] },
+  ];
+  PETS.forEach(p => p.stages.forEach(s => s.grid = build(s)));
+  const EGG = { pal: { K, A:"#a98bff", B:"#ff7ab6", C:"#5ee0d0", D:"#ffd166", W:"#ffffff" },
+    grid: mirror(["...KK","..KAA",".KAWA",".KABB","KAAAB","KCCAA","KCCDD","KADDA","KAAAA",".KBBA",".KBBB","..KKK"]) };
+  // what each egg tier needs and gives. Shop-pet eggs hatch a pet he doesn't own yet, else diamonds.
+  const TIERS = {
+    common:    { name: "Common",    need: 1, col: ["#9a94a6", "#d8d2e2"], gems: 15,  pets: ["blob"] },
+    uncommon:  { name: "Uncommon",  need: 2, col: ["#3fa34d", "#9be05a"], gems: 25,  pets: ["blob", "bat"] },
+    rare:      { name: "Rare",      need: 2, col: ["#4361ee", "#8fb0ff"], gems: 50,  pets: ["bat", "ember"] },
+    epic:      { name: "Epic",      need: 3, col: ["#9b4dff", "#d0a8ff"], gems: 100, pets: ["ember", "dragon"] },
+    legendary: { name: "Legendary", need: 4, col: ["#e0a526", "#fff1b8"], gems: 200, pets: ["dragon"], legend: true },
+    mythic:    { name: "Mythic",    need: 5, mythic: true, gems: 300 },
+  };
+  const ORDER = Object.keys(TIERS);
+  const GROW = [0, 5, 15];                 // quizzes for stage 1, 2, 3 (a perfect quiz counts double)
+  const SIZE = [1.1, 1.35, 1.6];           // grown pets look bigger in the game
+  const BY = {}; PETS.forEach(p => BY[p.id] = p);
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const stageOf = q => q >= GROW[2] ? 3 : q >= GROW[1] ? 2 : 1;
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  function look(id){ const m = SAVE.mythic[id]; return m ? Math.max(1, Math.min(m.look || m.stage || 1, m.stage || 1)) : 1; }
+  function eggPal(tier){
+    const T = TIERS[tier] || TIERS.common;
+    return T.mythic ? EGG.pal : Object.assign({}, EGG.pal, { A: T.col[0], B: T.col[1], C: T.col[1], D: "#fff1b8" });
+  }
+  // Mythic pets live in the normal pet list so equipping + drawing work everywhere; the shop hides them.
+  PETS.forEach(p => {
+    COS.pet.items[p.id] = { mythic: true, price: 0, pal: p.pal, fps: 2,
+      get name(){ return p.stages[look(p.id) - 1].name; }, desc: p.blurb,
+      get frames(){ return [p.stages[look(p.id) - 1].grid]; },
+      get grow(){ return SIZE[look(p.id) - 1]; },
+      get aura(){ return look(p.id) === 3 ? p.color : null; } };
+  });
+  function bump(m, add){
+    const before = m.stage || 1;
+    m.quizzes = (m.quizzes || 0) + add; m.stage = stageOf(m.quizzes);
+    if (m.stage > before && (m.look || before) === before) m.look = m.stage;   // show the new look unless he picked an old one
+    return m.stage > before;
+  }
+  function news(id){ SAVE.petNews = (SAVE.petNews || []).filter(x => x !== id).concat(id); }
+
+  function addEgg(tier){
+    tier = TIERS[tier] ? tier : "common";
+    let uid = "e_" + Date.now(); while (SAVE.eggs.some(e => e.uid === uid)) uid += "x";
+    const e = { uid, tier, got: today(), need: TIERS[tier].need, done: 0 };
+    SAVE.eggs.push(e); save(); refreshBadge();
+    return e;
+  }
+  // call once when a daily Test Day quiz is finished: onQuizDone(rec) or onQuizDone(score, outOf)
+  function onQuizDone(a, b){
+    let score = a, n = b;
+    if (a && typeof a === "object"){ score = a.score; n = a.n; }
+    const day = today();
+    if (SAVE.petQuizDay === day) return { counted: false, grew: [] };   // one quiz a day counts
+    SAVE.petQuizDay = day;
+    const perfect = n ? score >= n : (score === 1 || score >= 100);
+    SAVE.eggs.forEach(e => { e.need = e.need || (TIERS[e.tier] || TIERS.common).need; if ((e.done || 0) < e.need) e.done = (e.done || 0) + 1; });
+    const grew = [];
+    for (const [id, m] of Object.entries(SAVE.mythic)) if (BY[id] && bump(m, perfect ? 2 : 1)){ grew.push(id); news(id); }
+    save(); refreshBadge();
+    return { counted: true, perfect, grew };
+  }
+  const ready = e => (e.done || 0) >= (e.need || 1);
+  function hatch(uid){
+    const i = SAVE.eggs.findIndex(e => e.uid === uid); if (i < 0 || !ready(SAVE.eggs[i])) return null;
+    const e = SAVE.eggs[i], T = TIERS[e.tier] || TIERS.common;
+    let out;
+    if (T.mythic){
+      const left = PETS.filter(p => !SAVE.mythic[p.id]);
+      if (left.length){ const p = pick(left); SAVE.mythic[p.id] = { stage: 1, quizzes: 0, look: 1, got: today() }; out = { kind: "mythic", id: p.id }; }
+      else {   // he has all 5: the egg gives his least-grown pet a big boost
+        const [id, m] = Object.entries(SAVE.mythic).sort((x, y) => (x[1].quizzes || 0) - (y[1].quizzes || 0))[0];
+        const grew = bump(m, 5); if (grew) news(id);
+        out = { kind: "boost", id, grew };
+      }
+    } else {
+      let pool = T.pets.filter(id => COS.pet.items[id] && !owns("pet", id));
+      if (T.legend) pool = pool.concat(Object.keys(COS.pet.items).filter(id => { const it = COS.pet.items[id]; return it.legend && !it.mythic && !owns("pet", id) && !locked("pet", id); }));
+      if (pool.length){ const id = pick(pool); SAVE.owned.pet.push(id); out = { kind: "pet", id }; }
+      else { SAVE.gems += T.gems; out = { kind: "gems", n: T.gems }; }
+    }
+    SAVE.eggs.splice(i, 1); save(); refreshBadge();
+    return out;
+  }
+  function refreshBadge(){
+    const b = document.getElementById("nestDot"); if (!b) return;
+    b.hidden = !(SAVE.eggs.some(ready) || (SAVE.petNews || []).length);
+  }
+  return { PETS, BY, EGG, TIERS, ORDER, GROW, addEgg, onQuizDone, hatch, ready, look, eggPal, stageOf, refreshBadge };
+})();
+window.LavaPets = LavaPets;
+/* Pet Nest screen: see eggs, hatch them, equip + restyle Mythic pets */
+const Nest = (() => {
+  let from = "startCard", raf = 0, t0 = 0, last = 0, busy = false;
+  const P = LavaPets;
+  function cv(grid, pal, px){
+    const c = document.createElement("canvas"); c.width = Math.ceil(grid[0].length * px); c.height = Math.ceil(grid.length * px);
+    drawGrid(c.getContext("2d"), grid, pal, c.width / 2, c.height, px, 0); return c;
+  }
+  const fit = (grid, pal, box) => { const k = box / Math.max(grid.length, grid[0].length); return cv(grid, pal, k >= 4 ? Math.floor(k) : k); };
+  function open(f){ from = f || "startCard"; $(from).hidden = true; render(); $("nestCard").hidden = false; $("nestCard").querySelector(".card").scrollTop = 0; start(); }
+  function close(){ $("nestCard").hidden = true; stop(); $(from).hidden = false; updateHud(); P.refreshBadge(); }
+  function render(){
+    updateHud();
+    const body = $("nestBody"); body.innerHTML = "";
+    const add = (html, cls) => { const d = document.createElement("div"); if (cls) d.className = cls; d.innerHTML = html; body.appendChild(d); return d; };
+    // news: pets that grew since he last looked
+    const nw = (SAVE.petNews || []).filter(id => P.BY[id] && SAVE.mythic[id]);
+    if (nw.length){
+      add(nw.map(id => `🎉 <b>${P.BY[id].name}</b> grew into <b>${P.BY[id].stages[SAVE.mythic[id].stage - 1].name}</b>!`).join("<br>"), "nest-news");
+      setTimeout(() => say(nw.map(id => `${P.BY[id].name} grew into ${P.BY[id].stages[SAVE.mythic[id].stage - 1].name}!`).join(" "), 1, true), 250);
+      SAVE.petNews = []; save();
+    }
+    // eggs
+    add(`Eggs · they hatch when you take quizzes`, "nest-sec");
+    if (!SAVE.eggs.length) add(`No eggs yet. Finish the daily <b>Test Day</b> quiz to win chests. Some chests have eggs inside!`, "nest-empty");
+    else {
+      const g = add("", "nest-eggs");
+      SAVE.eggs.slice().sort((a, b) => P.ready(b) - P.ready(a) || P.ORDER.indexOf(b.tier) - P.ORDER.indexOf(a.tier)).forEach(e => {
+        const T = P.TIERS[e.tier] || P.TIERS.common, rd = P.ready(e), left = (e.need || 1) - (e.done || 0);
+        const b = document.createElement("button"); b.type = "button"; b.className = "nest-egg" + (rd ? " ready" : "");
+        b.appendChild(cv(P.EGG.grid, P.eggPal(e.tier), 4));
+        b.insertAdjacentHTML("beforeend", `<span class="tier" style="color:${T.mythic ? "#ff7ab6" : T.col[1]}">${T.name.toUpperCase()}</span>` +
+          (rd ? `<span class="go">HATCH!</span>` : `<span class="nest-bar"><i style="width:${Math.round(100 * (e.done || 0) / (e.need || 1))}%"></i></span><span class="left">${left} more quiz${left > 1 ? "zes" : ""}</span>`));
+        b.setAttribute("aria-label", `${T.name} egg. ${rd ? "Ready to hatch!" : left + " more quizzes"}`);
+        b.addEventListener("click", () => rd ? doHatch(e.uid, b) : say(`${T.name} egg. ${left} more quiz${left > 1 ? "zes" : ""} until it hatches.`, 1, true, "tap"));
+        g.appendChild(b);
+      });
+    }
+    // mythic pets
+    const found = P.PETS.filter(p => SAVE.mythic[p.id]).length;
+    add(`Mythic pets · ${found} of ${P.PETS.length} found`, "nest-sec");
+    P.PETS.forEach(p => {
+      const m = SAVE.mythic[p.id], row = document.createElement("div");
+      row.className = "nest-pet" + (m && cur("pet") === p.id ? " on" : "");
+      row.style.setProperty("--c", m ? p.color + "44" : "transparent");
+      const pic = document.createElement("div"); pic.className = "nest-pic";
+      const lk = m ? P.look(p.id) : 1;
+      pic.appendChild(fit(p.stages[lk - 1].grid, m ? p.pal : SHADOW_PAL, 84));
+      row.appendChild(pic);
+      const r = document.createElement("div");
+      if (!m){
+        r.innerHTML = `<div class="nm" style="color:var(--muted)">??? Mythic pet</div><div class="sub" style="margin-top:4px">Hatch a Mythic Egg to meet it. Mythic Eggs only come from the daily quiz!</div>`;
+      } else {
+        const nxt = P.GROW[m.stage], q = m.quizzes || 0;
+        r.innerHTML = `<div class="nm" style="color:${p.color}">${p.stages[lk - 1].name}</div><div class="nest-stg"></div>` +
+          (nxt ? `<div class="nest-bar"><i style="width:${Math.round(100 * (q - P.GROW[m.stage - 1]) / (nxt - P.GROW[m.stage - 1]))}%"></i></div><div class="sub">${nxt - q} more to grow into ${p.stages[m.stage].name}. Perfect quiz = 2!</div>`
+                : `<div class="sub">Fully grown! ✨</div>`);
+        const sg = r.querySelector(".nest-stg");
+        p.stages.forEach((s, j) => {
+          const st = j + 1, b = document.createElement("button"); b.type = "button";
+          b.className = (st === lk ? "on" : "") + (st > m.stage ? " lock" : "");
+          b.appendChild(fit(s.grid, st > m.stage ? SHADOW_PAL : p.pal, 30));
+          b.setAttribute("aria-label", st > m.stage ? "Not grown yet" : s.name);
+          b.addEventListener("click", () => {
+            if (st > m.stage){ say(`Not yet! It grows after ${P.GROW[j] - q} more quizzes.`, 1, true, "tap"); return; }
+            m.look = st; save(); say(s.name, 1, true, "tap"); render();
+          });
+          sg.appendChild(b);
+        });
+        const on = cur("pet") === p.id, eb = document.createElement("button"); eb.type = "button";
+        eb.className = "btn" + (on ? " alt" : " go"); eb.textContent = on ? "✓ With you" : "Equip";
+        eb.addEventListener("click", () => { if (on) return; setEq("pet", p.id); LLAudio.sfx("land"); say(`${p.stages[lk - 1].name} is with you!`, 1, true); render(); });
+        r.appendChild(eb);
+      }
+      row.appendChild(r);
+      body.appendChild(row);
+    });
+    const tip = add(`Other pets are in the Shop.`, "small"); tip.style.textAlign = "center";
+  }
+  function doHatch(uid, el){
+    if (busy) return; busy = true;
+    el.classList.add("hatching"); LLAudio.sfx("step"); say("It's hatching!", 1, true);
+    setTimeout(() => {
+      busy = false;
+      const out = P.hatch(uid); if (!out){ render(); return; }
+      LLAudio.sfx("win"); reveal(out); render();
+    }, 1300);
+  }
+  function reveal(out){
+    const box = document.createElement("div"); box.className = "nest-reveal";
+    let title, text, grid, pal, color = "#ffb627", equip = null;
+    if (out.kind === "mythic" || out.kind === "boost"){
+      const p = P.BY[out.id], m = SAVE.mythic[out.id], st = p.stages[m.stage - 1];
+      grid = st.grid; pal = p.pal; color = p.color;
+      if (out.kind === "mythic"){ title = `${p.name}!`; text = `A <b>MYTHIC</b> pet! ${p.blurb}`; equip = out.id; }
+      else { title = "Mythic boost!"; text = out.grew ? `${p.name} grew into <b>${st.name}</b>!` : `${p.name} got 5 quizzes closer to growing up!`; }
+      if (out.grew) SAVE.petNews = (SAVE.petNews || []).filter(x => x !== out.id), save();
+    } else if (out.kind === "pet"){
+      const it = COS.pet.items[out.id]; grid = it.frames[0]; pal = it.pal; title = `${it.name}!`; text = `A new friend! ${it.desc || ""}`; equip = out.id;
+    } else { title = `+${out.n} diamonds!`; text = "You already have every pet this egg could hatch, so it was full of diamonds!"; }
+    const pic = grid ? fit(grid, pal, 140) : null;
+    box.innerHTML = `<div class="card" style="--c:${color}66"><h2>${title}</h2><div class="pic"></div><p style="font-size:16px">${text}</p><div class="row" style="width:100%"></div></div>`;
+    if (pic) box.querySelector(".pic").appendChild(pic); else box.querySelector(".pic").innerHTML = `<span style="font-size:72px">💎</span>`;
+    const row = box.querySelector(".row");
+    const btn = (label, cls, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + cls; b.textContent = label; b.style.flex = "1"; b.addEventListener("click", () => { fn && fn(); box.remove(); render(); }); row.appendChild(b); };
+    if (equip) btn("Equip now", "go", () => { setEq("pet", equip); LLAudio.sfx("land"); });
+    btn(equip ? "Later" : "Awesome!", equip ? "alt" : "go");
+    $("nestCard").appendChild(box);
+    say(out.kind === "gems" ? `${out.n} diamonds!` : out.kind === "mythic" ? `Wow! A Mythic pet! ${P.BY[out.id].name}!` : title, 1, true);
+  }
+  // live preview: hero + equipped pet standing over the lava
+  function start(){ stop(); t0 = last = performance.now(); raf = requestAnimationFrame(frame); }
+  function stop(){ cancelAnimationFrame(raf); raf = 0; }
+  function frame(now){
+    const c = $("nestPrev"), D = Math.min(window.devicePixelRatio || 1, 3), W = c.clientWidth, H = c.clientHeight;
+    if (!W || !H || $("nestCard").hidden){ raf = $("nestCard").hidden ? 0 : requestAnimationFrame(frame); return; }
+    if (c.width !== Math.round(W * D)){ c.width = Math.round(W * D); c.height = Math.round(H * D); }
+    const g = c.getContext("2d"), t = (now - t0) / 1000; g.setTransform(D, 0, 0, D, 0, 0); g.clearRect(0, 0, W, H);
+    const lvY = H - 14;
+    for (let x = 0; x < W; x += 8){ const w = Math.sin(x * 0.05 + t * 2) + Math.sin(x * 0.11 - t * 1.3); g.fillStyle = lavaCol(w, hash(x, 3), x / 8, 0, t); g.fillRect(x, lvY, 8, 14); }
+    const look = heroLook(), ps = (H * 0.5) / look.grid.length, hx = W * 0.4;
+    g.fillStyle = "#3b2c45"; g.fillRect(hx - ps * 6, lvY - 6, ps * 12, 6);
+    drawHero(g, hx, lvY - 6, ps, 0, look);
+    const pid = cur("pet");
+    if (pid !== "none" && COS.pet.items[pid]){ const fw = COS.pet.items[pid].frames[0][0].length; drawPet(g, pid, W * 0.66, lvY - 10, (H * 0.36) / fw, t); }
+    raf = requestAnimationFrame(frame);
+  }
+  return { open, close, render };
+})();
+$("nestDone").addEventListener("click", Nest.close);
+$("nestBtn").addEventListener("click", () => Nest.open("startCard"));
+LavaPets.refreshBadge();
 const SKINS = COS.skin.items;           // older code and modules read this
 const BLOCK_WRONG = { top:["#b0381a","#b0381a"], side:"#5a1a10", hi:"#bdb7c9", lo:"#6d677a", fleck:"#7a7487", ink:"#ffd7c9" };
 const COS_CATS = Object.keys(COS);
 function ownedList(cat){ return cat === "skin" ? SAVE.skins : SAVE.owned[cat]; }
-function owns(cat, id){ return COS[cat].items[id].price === 0 || ownedList(cat).includes(id); }
+function owns(cat, id){ const it = COS[cat].items[id]; if (it.mythic) return !!SAVE.mythic[id]; return it.price === 0 || ownedList(cat).includes(id); }
 function locked(cat, id){
   const it = COS[cat].items[id]; if (owns(cat, id)) return false;
+  if (it.chest) return true;   // chest-only: never for sale
   if (it.req === "monster") return !SAVE.monsterBeaten;
   if (it.boss) return !SAVE.bossBeat[it.boss];
   return false;
@@ -3637,7 +4122,18 @@ const SHADOW_PAL = new Proxy({}, { get: () => "#0e0910" });
 function drawPet(c2, id, cx, feetY, s, t){
   const P = COS.pet.items[id]; if (!P || !P.frames) return;
   const n = P.frames.length, fr = P.frames[((Math.floor(t * (P.fps || 4)) % n) + n) % n || 0];
-  drawGrid(c2, fr, mystery("pet", id) ? SHADOW_PAL : P.pal, cx, feetY + Math.sin(t * 3) * s * 0.8, s, 0);
+  s *= P.grow || 1;   // grown-up Mythic pets are bigger
+  const y = feetY + Math.sin(t * 3) * s * 0.8;
+  drawGrid(c2, fr, mystery("pet", id) ? SHADOW_PAL : P.pal, cx, y, s, 0);
+  if (P.aura){   // fully grown Mythic pets twinkle
+    const w = fr[0].length * s, h = fr.length * s;
+    c2.fillStyle = P.aura;
+    for (let i = 0; i < 5; i++){
+      const k = Math.sin(t * 3.1 + i * 2.3); if (k < 0.2) continue;
+      const a = i * 1.257 + t * 0.6, z = Math.round(s * (k > 0.8 ? 1.4 : 1));
+      c2.fillRect(Math.round(cx + Math.cos(a) * w * 0.62 - z / 2), Math.round(y - h / 2 + Math.sin(a) * h * 0.58 - z / 2), z, z);
+    }
+  }
 }
 function lavaCol(wave, v, c, r, t, id){
   const L = COS.lava.items[id || cur("lava")] || COS.lava.items.classic;
@@ -3671,6 +4167,7 @@ function spawnTrail(list, kind, x, y, k){
   if (kind === "sparks") list.push({ x: x + (r() - .5) * 10 * k, y, vx: (r() - .5) * 3, vy: -1 - r() * 2, life: 1, dur: 500, s: (2 + r() * 3) * k, c: ["#ffd166", "#ff7a1f", "#fff1b8"][r() * 3 | 0], grav: true });
   if (kind === "bubbles") list.push({ x: x + (r() - .5) * 14 * k, y, vx: (r() - .5) * 0.6, vy: -0.4 - r() * 0.6, life: 1, dur: 1100, s: (4 + r() * 5) * k, shape: "bubble", wob: r() * 6 });
   if (kind === "confetti") list.push({ x: x + (r() - .5) * 12 * k, y, vx: (r() - .5) * 3, vy: -1.5 - r() * 2, life: 1, dur: 1000, s: (3 + r() * 3) * k, c: CONFETTI[r() * 5 | 0], grav: true, shape: "conf", rot: r() * 6 });
+  if (kind === "rainbow") list.push({ x: x + (r() - .5) * 10 * k, y, vx: (r() - .5) * 3, vy: -1 - r() * 2, life: 1, dur: 650, s: (2 + r() * 3) * k, c: CONFETTI.concat("#4aa8ff", "#ff7a1f")[r() * 7 | 0], grav: true });
   if (kind === "stars") list.push({ x: x + (r() - .5) * 12 * k, y: y + (r() - .5) * 8 * k, vx: (r() - .5) * 0.6, vy: -0.2 - r() * 0.4, life: 1, dur: 1200, s: (3 + r() * 2) * k, c: r() < .6 ? "#ffd166" : "#ffffff", shape: "star" });
 }
 function drawPart(c2, p, x, y, t){
@@ -3935,7 +4432,7 @@ window.LLStreak = (() => {
   render();
   // Re-check when the app comes back after midnight etc.
   document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
-  return { roundDone, render, hideWin, state: () => ({ ...S, live: live() }), _set(o){ Object.assign(S, o); persist(); render(); } };
+  return { roundDone, render, hideWin, flame: flameSVG, state: () => ({ ...S, live: live() }), _set(o){ Object.assign(S, o); persist(); render(); } };
 })();
 </script>
 
@@ -3969,6 +4466,45 @@ window.LLStreak = (() => {
   let M = null; try { M = JSON.parse(store.get(MAP_KEY) || "null"); } catch(e){}
   if (!M || !Array.isArray(M.worlds)) M = { worlds: [], cur: 0, next: 1 };
   const persist = () => store.set(MAP_KEY, JSON.stringify(M));
+  /* ---------- test days: each world has the date of its real spelling test ----------
+     Next world opens when he beats the one before it OR that world's test day is over. */
+  const isoOf = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const dayOf = iso => new Date(iso + "T12:00:00");
+  const addDays = (iso, n) => { const d = dayOf(iso); d.setDate(d.getDate() + n); return isoOf(d); };
+  const validIso = v => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(dayOf(v));
+  const nextWed = () => { const d = new Date(); d.setDate(d.getDate() + ((3 - d.getDay() + 7) % 7)); return isoOf(d); };  // today if it's Wednesday
+  function defaultTest(){
+    const last = M.worlds[M.worlds.length - 1], nw = nextWed();
+    if (!last || !validIso(last.test)) return nw;
+    const after = addDays(last.test, 7);
+    return after > nw ? after : nw;
+  }
+  // migrate: worlds saved before test days existed. Newest = next Wednesday, older ones a week apart.
+  (function(){
+    let changed = false;
+    for (let i = M.worlds.length - 1; i >= 0; i--){
+      const w = M.worlds[i]; if (validIso(w.test)) continue;
+      const nx = M.worlds[i + 1];
+      w.test = nx && validIso(nx.test) ? addDays(nx.test, -7) : nextWed(); changed = true;
+    }
+    if (changed) store.set(MAP_KEY, JSON.stringify(M));
+  })();
+  const passed = w => validIso(w.test) && w.test < today();
+  const OPEN_STARS = 3;                       // stars in a world that open the next one early
+  const beaten = w => (w.stars || 0) >= OPEN_STARS;
+  function unlocked(i){
+    for (let j = 1; j <= i; j++){ const p = M.worlds[j - 1]; if (!p || !(beaten(p) || passed(p))) return false; }
+    return i >= 0 && i < M.worlds.length;
+  }
+  const isOpen = w => unlocked(M.worlds.indexOf(w));
+  const openCount = () => { let n = 0; while (n < M.worlds.length && unlocked(n)) n++; return n; };
+  const niceDay = (iso, opts) => validIso(iso) ? dayOf(iso).toLocaleDateString("en-US", opts || { weekday: "long", month: "short", day: "numeric" }) : "";
+  // the list for his NEXT real test (earliest test day today or later); falls back to the current world
+  function testWorld(){
+    const t = today(); let best = null;
+    M.worlds.forEach(w => { if (validIso(w.test) && w.test >= t && (!best || w.test < best.test)) best = w; });
+    return best;
+  }
   const byId = id => M.worlds.find(w => w.id === id);
   const idx = w => M.worlds.indexOf(w);
   const theme = w => THEMES[idx(w) % THEMES.length];
@@ -3980,15 +4516,28 @@ window.LLStreak = (() => {
     return "Week of " + d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
   function addWorld(lines){
-    const w = { id: M.next++, lines: lines.slice(), added: today(), stars: 0, best: 0, plays: 0, cleared: false };
+    const w = { id: M.next++, lines: lines.slice(), added: today(), test: defaultTest(), stars: 0, best: 0, plays: 0, cleared: false };
     M.worlds.push(w); M.cur = w.id; persist(); return w;
   }
   // make sure the list the game is using has a world (first run, or words changed elsewhere)
   function sync(){
     const lines = linesOf(wordList), s = sigOf(lines);
     const hit = M.worlds.find(w => sigOf(w.lines) === s);
-    if (hit){ if (M.cur !== hit.id){ M.cur = hit.id; persist(); } return null; }
-    return addWorld(lines);
+    if (hit){ if (M.cur !== hit.id){ M.cur = hit.id; persist(); } ensureOpen(); return null; }
+    const w = addWorld(lines); ensureOpen(); return w;
+  }
+  // the world he plays must be open: if not, go back to the newest open world
+  // a world opened since last time (his test day passed) and the one he's on is done: move him to the newest open world
+  function advanceIfDone(){
+    const n = openCount(), w = curWorld();
+    if (M.open != null && n > M.open && w && passed(w) && idx(w) < n - 1){ selectWorld(M.worlds[n - 1]); return true; }
+    return false;
+  }
+  function ensureOpen(){
+    const w = curWorld(); if (!w || isOpen(w)) return false;
+    const n = openCount(), back = M.worlds[Math.max(0, n - 1)];
+    if (back && back !== w) selectWorld(back);
+    return true;
   }
   function overlap(a, b){
     const A = new Set(parseList(a).map(x => x.w)), B = parseList(b).map(x => x.w);
@@ -4024,6 +4573,14 @@ window.LLStreak = (() => {
 .mstars{font-size:15px;letter-spacing:1px;color:#5a4a5e;text-shadow:1px 1px 0 #000;line-height:1}
 .mstars i{font-style:normal}.mstars i.on{color:var(--glow)}
 .mnode.lock .isl{filter:grayscale(1) brightness(.45)}
+.mnode .lk{font-size:12px;font-weight:700;color:#ffd166;background:rgba(14,8,16,.85);padding:1px 6px;text-shadow:1px 1px 0 #000}
+.mlock{font-size:16px;line-height:1.35;color:var(--ink)}
+.mlock b{color:var(--glow)}
+#testDays{margin-top:6px;display:flex;flex-direction:column;gap:6px}
+#testDays h3{margin:4px 0 0;font-size:18px}
+#testDays label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px}
+#testDays label span{flex:1;min-width:0}
+#testDays input[type=date]{font:inherit;font-size:16px;background:#140d18;color:var(--ink);border:3px solid var(--deck-edge);padding:4px 6px;border-radius:0;min-width:150px}
 .mhero{position:absolute;width:48px;height:66px;margin-left:-24px;pointer-events:none;image-rendering:pixelated;animation:mbob 1.1s ease-in-out infinite}
 @keyframes mbob{50%{transform:translateY(-5px)}}
 @media (prefers-reduced-motion: reduce){.mhero{animation:none}}
@@ -4121,22 +4678,42 @@ window.LLStreak = (() => {
   let mapFrom = "startCard", sel = null;
   function openMap(from, toast){
     if (sync()) toast = toast || "new";
+    const nOpen = openCount();
+    if (!toast && M.open != null && nOpen > M.open) toast = "opened";
+    advanceIfDone();
+    if (M.open !== nOpen){ M.open = nOpen; persist(); }
     mapFrom = from; $(from).hidden = true;
     sel = M.cur;
     card.hidden = false;
-    renderMap();
-    const w = curWorld();
+    const w = curWorld(), newest = M.worlds[M.worlds.length - 1];
+    if (toast === "new" && newest && !isOpen(newest)) toast = `New world spotted!<br>${wname(newest)} 🔒`;
+    if (toast === "opened"){ const o = M.worlds[nOpen - 1]; toast = o ? `World open!<br>${wname(o)}` : null; if (o) sel = o.id; }
     if (toast && w){
       const t = document.createElement("div"); t.className = "mtoast";
       t.innerHTML = toast === "new" ? `New world!<br>${wname(w)}` : toast;
       $("mapScroll").parentNode.appendChild(t); setTimeout(() => t.remove(), 2700);
-      say(toast === "new" ? "New world unlocked! " + wname(w) : String(toast).replace(/<[^>]+>/g, " "), 0.95, true);
+      say(toast === "new" ? "New world unlocked! " + wname(w) : String(toast).replace(/<[^>]+>/g, " ").replace("🔒", ""), 0.95, true);
       LLAudio.sfx && LLAudio.sfx("win");
     }
+    renderMap();
   }
   function closeMap(){ card.hidden = true; $(mapFrom).hidden = false; renderStartLine(); }
   $("mapDone").addEventListener("click", closeMap);
 
+  function testLabel(w){
+    if (!validIso(w.test)) return weekLabel(w.added);
+    if (w.test === today()) return "Test is today!";
+    return (passed(w) ? "Test was " : "Test: ") + niceDay(w.test, { weekday: "short", month: "short", day: "numeric" });
+  }
+  // kid-friendly: why is world i locked?
+  function lockHint(i, spoken){
+    const p = M.worlds[i - 1]; if (!p) return "";
+    if (!unlocked(i - 1)) return `Open World ${i} first!`;
+    const when = validIso(p.test) ? niceDay(addDays(p.test, 1)) : "";
+    return spoken
+      ? `Locked! Get 3 stars in ${wname(p)} to open it. Every word right on Medium or Hard${when ? ", or it opens by itself on " + when : ""}.`
+      : `Get <b>★★★</b> in <b>${wname(p)}</b> to open it!<br><span class="small">Every word right first try, on Medium or Hard.</span>${when ? `<br>Or it opens by itself on <b>${when}</b>.` : ""}`;
+  }
   function renderMap(){
     const track = $("mapTrack"), n = M.worlds.length, rows = n + 1, H = rows * ROW;
     track.innerHTML = ""; track.style.height = H + "px";
@@ -4168,12 +4745,15 @@ window.LLStreak = (() => {
     // islands
     M.worlds.forEach((w, i) => {
       const p = pos(i), t = theme(w), b = document.createElement("button");
-      b.type = "button"; b.className = "mnode" + (w.id === sel ? " sel" : "");
+      const open = unlocked(i);
+      b.type = "button"; b.className = "mnode" + (w.id === sel ? " sel" : "") + (open ? "" : " lock");
       b.style.left = p.x + "%"; b.style.top = (p.y - 52) + "px";
-      b.setAttribute("aria-label", `World ${i + 1}, ${wname(w)}, ${w.stars} stars`);
+      b.setAttribute("aria-label", open ? `World ${i + 1}, ${wname(w)}, ${w.stars} stars` : `World ${i + 1}, ${wname(w)}, locked. ${lockHint(i, true)}`);
       b.appendChild(islandCanvas(t, { flag: w.cleared }));
-      b.insertAdjacentHTML("beforeend", `<b>${wname(w)}</b><small>${weekLabel(w.added)}</small>${starsHtml(w.stars)}`);
-      b.addEventListener("click", () => { sel = w.id; say(wname(w), 0.95, true, "tap"); renderMap(); });
+      b.insertAdjacentHTML("beforeend", open
+        ? `<b>${wname(w)}</b><small>${testLabel(w)}</small>${starsHtml(w.stars)}`
+        : `<b>🔒 ${wname(w)}</b><span class="lk">★★★ in World ${i}!</span>`);
+      b.addEventListener("click", () => { sel = w.id; say(open ? wname(w) : lockHint(i, true), 0.95, true, open ? "tap" : undefined); renderMap(); });
       track.appendChild(b);
       if (w.id === M.cur){
         const h = document.createElement("canvas"); h.className = "mhero"; h.width = 16; h.height = 22;
@@ -4204,9 +4784,17 @@ window.LLStreak = (() => {
       return;
     }
     const w = byId(sel) || curWorld(); if (!w) { s.innerHTML = ""; return; }
-    const words = parseList(w.lines);
+    const words = parseList(w.lines), i = idx(w);
+    if (!unlocked(i)){
+      const prev = M.worlds[Math.max(0, openCount() - 1)];
+      s.innerHTML = `<h3>🔒 ${wname(w)}</h3>
+        <div class="mlock">${lockHint(i)}</div>
+        ${prev ? `<button class="btn go" type="button" id="mapPlay">Play ${wname(prev)}</button>` : ""}`;
+      if (prev) $("mapPlay").addEventListener("click", () => { selectWorld(prev); card.hidden = true; $("startCard").hidden = true; start(); });
+      return;
+    }
     s.innerHTML = `<h3>${wname(w)}</h3>
-      <div class="meta">${weekLabel(w.added)} · ${words.length} words ${starsHtml(w.stars)}${w.cleared ? " · Cleared!" : ""}</div>
+      <div class="meta">${testLabel(w)} · ${words.length} words ${starsHtml(w.stars)}${w.cleared ? " · Cleared!" : ""}</div>
       <div class="mwords">${words.map(x => `<span>${x.w}</span>`).join("")}</div>
       <button class="btn go" type="button" id="mapPlay">${w.cleared ? "Play again" : "Play this world"}</button>`;
     $("mapPlay").addEventListener("click", () => {
@@ -4221,10 +4809,10 @@ window.LLStreak = (() => {
     if (!$("editCard").hidden) return; // original handler refused (empty list)
     const lines = linesOf(wordList), s = sigOf(lines), wasNew = addingNew; addingNew = false;
     const hit = M.worlds.find(w => sigOf(w.lines) === s);
-    if (hit){ M.cur = hit.id; persist(); renderStartLine(); return; }
+    if (hit){ M.cur = hit.id; persist(); ensureOpen(); renderStartLine(); return; }
     const prev = curWorld();
-    if (prev && !wasNew && overlap(prev.lines, lines) >= 0.5){ prev.lines = lines; persist(); renderStartLine(); return; }
-    addWorld(lines); renderStartLine();
+    if (prev && !wasNew && overlap(prev.lines, lines) >= 0.5){ prev.lines = lines; persist(); renderTestDays(); renderStartLine(); return; }
+    addWorld(lines); ensureOpen(); renderTestDays(); renderStartLine();
     openMap("startCard", "new");
   });
 
@@ -4236,6 +4824,7 @@ window.LLStreak = (() => {
     try {
       sync();
       const w = curWorld(); if (!w) return;
+      const openBefore = openCount();
       const base = G.order.filter(x => !x.again).length || 1, perf = Math.min(G.perfect, base), r = perf / base;
       const stars = 1 + (r >= 0.75 ? 1 : 0) + (r >= 1 && diff !== "easy" ? 1 : 0);
       let bonus = 0; const firstClear = !w.cleared;
@@ -4244,17 +4833,54 @@ window.LLStreak = (() => {
       w.best = Math.max(w.best, perf); w.plays++;
       persist();
       if (bonus){ SAVE.gems += bonus; save(); updateHud(); }
-      const tip = w.stars < 2 ? "Get 3 of 4 words perfect for ★★." : w.stars < 3 ? "All perfect on Medium or Hard for ★★★." : "All 3 stars!";
-      winInfo.innerHTML = `${starsHtml(stars)}<br>${firstClear ? `<b>${wname(w)} cleared!</b> Flag planted.` : wname(w)}${bonus ? ` +${bonus} bonus diamonds.` : ""}<br><span class="small">${tip}</span>`;
+      const nextLocked = idx(w) + 1 < M.worlds.length && !unlocked(idx(w) + 1);
+      const tip = w.stars < 2 ? "Get 3 of 4 words perfect for ★★." : w.stars < 3 ? "All perfect on Medium or Hard for ★★★" + (nextLocked ? " and open the next world!" : ".") : "All 3 stars!";
+      const opened = openCount() > openBefore ? M.worlds[openCount() - 1] : null;
+      winInfo.innerHTML = `${starsHtml(stars)}<br>${firstClear ? `<b>${wname(w)} cleared!</b> Flag planted.` : wname(w)}${bonus ? ` +${bonus} bonus diamonds.` : ""}${opened ? `<br><b>🔓 ${wname(opened)} is open!</b>` : ""}<br><span class="small">${tip}</span>`;
+      if (opened){ M.open = openCount(); persist(); setTimeout(() => say(wname(opened) + " is open!", 0.95, false), firstClear ? 4200 : 2600); }
       winInfo.hidden = false;
       if (firstClear) setTimeout(() => say(wname(w) + " cleared!", 0.95, false), 2600);
     } catch(e){}
   };
 
-  sync(); renderStartLine();
+  /* ---------- Grown-ups word editor: test day for each world ---------- */
+  const td = document.createElement("div"); td.id = "testDays";
+  $("wordBox").insertAdjacentElement("afterend", td);
+  function renderTestDays(){
+    td.innerHTML = `<h3>Test days</h3><p class="small" style="margin:0">The next world opens when he gets 3 stars (every word right first try, on Medium or Hard) in the one before it, or the day after that world's test. A brand new list gets the Wednesday after the last one.</p>`;
+    M.worlds.slice().reverse().forEach(w => {
+      const i = idx(w), l = document.createElement("label");
+      l.innerHTML = `<span>World ${i + 1}: ${wname(w)}${w.id === M.cur ? " (now)" : ""}${unlocked(i) ? "" : " 🔒"}</span>`;
+      const inp = document.createElement("input"); inp.type = "date"; inp.value = validIso(w.test) ? w.test : "";
+      inp.setAttribute("aria-label", `Test day for World ${i + 1}`);
+      inp.addEventListener("change", () => {
+        if (!validIso(inp.value)) { inp.value = w.test || ""; return; }
+        w.test = inp.value; persist();
+        if (ensureOpen()){
+          $("wordBox").value = linesOf(wordList).join("\n");
+          // the world changed under a round in progress: end that round so it can't count for the other world
+          if (G.order.length){ toMainMenu(); $("startCard").hidden = true; $("editCard").hidden = false; editReturn = "startCard"; }
+        }
+        renderTestDays(); renderStartLine();
+      });
+      l.appendChild(inp); td.appendChild(l);
+    });
+  }
+  const baseOpenEditor = openEditor;
+  openEditor = function(){ sync(); baseOpenEditor.apply(this, arguments); renderTestDays(); };
+
+  sync();
+  // a world opened since last time (his test day passed) and the one he's on is done: move him to the newest open world
+  advanceIfDone();
+  if (M.open == null){ M.open = openCount(); persist(); }
+  renderStartLine();
+  // Test Day / countdown: date + words of his NEXT real test (not always the world he's playing)
+  window.LLTestDate = () => { const w = testWorld(); return w ? w.test : null; };
   window.LavaMap = { open: openMap, worlds: () => M.worlds,
+    unlocked: i => unlocked(i), testWorld: () => testWorld(),
+    testWords: () => { const w = testWorld(); return w ? parseList(w.lines) : wordList.slice(); },
     themeIndex: () => { const w = curWorld(); return w ? idx(w) % THEMES.length : 0; },          // picks the world boss
-    opened: i => i === 0 || M.worlds.some((w, j) => j % THEMES.length === i) };                   // boss pets: "???" until reached
+    opened: i => i === 0 || M.worlds.some((w, j) => j % THEMES.length === i && unlocked(j)) };                   // boss pets: "???" until reached
 })();
 </script>
 
@@ -5154,7 +5780,1059 @@ window.LavaEvents = (() => {
       .map(([w, e]) => ({ w, s: e.s || "" }));
   }
   function roundStart(){ caughtThisRound = []; }
-  window.LLFocus = { wordDone, afterRound, extraWords, roundStart, _today: today };
+  // Test Day: a word missed on the test goes straight to the workshop list
+  // (skips the "3 misses on 2 days" wait). Mastered words come back too.
+  function fromTest(missed){
+    const t = today();
+    missed.forEach(it => {
+      const e = entry(it.w, it.s);
+      if (!e.days.includes(t)) e.days.push(t);
+      if (e.days.length > 10) e.days = e.days.slice(-10);
+      e.miss = Math.max(e.miss + 1, 3); e.skip = 0; e.test = t;
+      if (e.state !== "redo") e.state = "ready";
+    });
+    save();
+  }
+  const canWorkshop = () => !!candidate();
+  window.LLFocus = { wordDone, afterRound, extraWords, roundStart, fromTest, canWorkshop, _today: today };
+})();
+</script>
+
+<style>
+/* ===== Test Day: calm "classroom" spelling test on lined paper ===== */
+.td-entry{font-size:18px;flex-direction:column;gap:0}
+.td-entry.done{background:#2e3a30;color:#bfe8c4;border:2px dashed #62d26f}
+.td-entry small.td-cd{display:block;font-size:14px;font-weight:600;opacity:.9;margin-top:2px}
+.td-slot:empty{display:none}
+.td-sx{display:flex;flex-direction:column;gap:8px}
+.td-slot{margin:10px auto 0;max-width:420px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.td-pill{align-self:center;background:#fff6d8;border:2px solid #e2a400;color:#6a4a00;border-radius:999px;padding:4px 14px;font-size:19px;text-align:center}
+.td-strk{display:flex;gap:10px;align-items:center;background:#fff;border:2px solid #d8e0ea;border-radius:12px;padding:8px 10px;font-size:18px;line-height:1.2;text-align:left}
+.td-strk small{color:#5a6a82;font-size:15px}
+.td-strk.grow{border-color:#ff9a3c;animation:tdGrow .6s ease-out}
+.td-fl{flex:none;display:grid;place-items:center;min-width:32px}
+@keyframes tdGrow{0%{transform:scale(.85)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+#ttCard .tt-weeks{display:flex;flex-direction:column;gap:8px}
+#ttCard .tt-w{display:grid;grid-template-columns:1fr 64px;grid-template-rows:auto auto;gap:3px 8px;align-items:center}
+#ttCard .tt-wl{grid-column:1 / 3;display:flex;justify-content:space-between;gap:8px;font-size:15px}
+#ttCard .tt-wl span{color:var(--muted);text-align:right}
+#ttCard .tt-bar{height:14px;background:#140d18;border:2px solid var(--deck-edge)}
+#ttCard .tt-bar i{display:block;height:100%;background:var(--ok)}
+#ttCard .tt-pct{font-weight:700;font-size:15px;text-align:right;white-space:nowrap}
+#ttCard .tt-pct .up{color:var(--ok);font-size:12px;margin-left:3px}
+#ttCard .tt-pct .dn{color:var(--bad);font-size:12px;margin-left:3px}
+#ttCard .tt-days{display:flex;flex-wrap:wrap;gap:6px}
+#ttCard .tt-days > div{background:#140d18;border:2px solid var(--deck-edge);padding:4px 8px;display:flex;flex-direction:column;align-items:center;min-width:52px;font-size:14px}
+#ttCard .tt-days b{font-size:17px}
+#ttCard .tt-days small{color:var(--muted);font-size:11px}
+.td{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:#dfe6ee;color:#1f2d45;font-family:"Patrick Hand","Andika",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;touch-action:manipulation;
+  padding:max(8px, env(safe-area-inset-top,0px)) max(10px, env(safe-area-inset-right,0px)) max(8px, env(safe-area-inset-bottom,0px)) max(10px, env(safe-area-inset-left,0px));box-sizing:border-box}
+.td *{box-sizing:border-box}
+.td-top{flex:none;display:flex;align-items:center;gap:8px;padding:2px 2px 8px}
+.td-ttl{flex:1;font-size:24px;line-height:1;color:#1f2d45}
+.td-ttl small{display:block;font-size:16px;color:#5a6a82}
+.td-x{appearance:none;border:2px solid #b5c1d0;background:#fff;color:#1f2d45;font:inherit;font-size:17px;padding:6px 12px;border-radius:10px;cursor:pointer}
+.td-paper{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;border-radius:4px;box-shadow:0 2px 0 #c4ccd6,0 8px 22px rgba(31,45,69,.18)}
+.td-sheet{position:relative;min-height:100%;padding:8px 14px 22px 58px;
+  background:linear-gradient(90deg,transparent 46px,#f0a3a3 46px,#f0a3a3 48px,transparent 48px),
+    repeating-linear-gradient(180deg,transparent 0 43px,#b9d0ec 43px 44px) 0 8px / 100% 44px,#fffdf6}
+.td-head{height:44px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;padding-bottom:5px;font-size:22px;color:#1f2d45}
+.td-head small{font-size:17px;color:#5a6a82}
+.td-line{position:relative;height:44px;display:flex;align-items:flex-end;padding-bottom:3px;font-size:31px;line-height:1;color:#22366b;letter-spacing:.02em;white-space:nowrap}
+.td-line i{position:absolute;left:-52px;width:40px;text-align:right;font-style:normal;font-size:21px;color:#8a97ab;bottom:7px}
+.td-line.now{background:rgba(255,236,150,.45)}
+.td-line.now i{color:#c0392b}
+.td-line .car{display:inline-block;width:3px;height:30px;margin-left:2px;background:#22366b;animation:tdblink 1s steps(1) infinite;vertical-align:bottom}
+@keyframes tdblink{50%{opacity:0}}
+.td-line .ph{color:#9aa6b8;font-size:22px}
+.td-line .ok{color:#1e8a3a;font-size:26px;margin-left:10px}
+.td-line .no{color:#c62828;font-size:26px;margin-left:10px}
+.td-line s{color:#7b8496;text-decoration-color:#c62828;text-decoration-thickness:2px}
+.td-line b{font-weight:400;color:#c62828;margin-left:10px;font-size:28px}
+.td-ctrl{flex:none;padding-top:8px;display:flex;flex-direction:column;gap:7px}
+.td-row{display:flex;gap:8px}
+.td-btn{appearance:none;border:0;border-radius:12px;font:inherit;font-size:22px;line-height:1;padding:12px 14px;cursor:pointer;background:#fff;color:#1f2d45;box-shadow:0 3px 0 #b5c1d0;flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
+.td-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #b5c1d0}
+.td-btn.go{background:#2f7d4a;color:#fff;box-shadow:0 3px 0 #1d5531}
+.td-btn.go:active{box-shadow:0 1px 0 #1d5531}
+.td-btn[disabled]{opacity:.45;pointer-events:none}
+.td-btn:focus-visible,.td-x:focus-visible,.td-k:focus-visible{outline:3px solid #f4b400;outline-offset:2px}
+.td-kb{display:flex;flex-direction:column;gap:6px;padding:6px 3px 2px;background:#c9d2dd;border-radius:10px}
+.td-kr{display:flex;justify-content:center;gap:5px}
+.td-k{appearance:none;border:0;border-radius:7px;background:#fff;color:#1f2d45;box-shadow:0 2px 0 #8d99a8;font-family:"Andika",system-ui,sans-serif;font-size:23px;height:46px;flex:0 1 calc((100% - 45px)/10);min-width:0;padding:0;cursor:pointer;touch-action:manipulation}
+.td-k:active,.td-k.hit{background:#e7edf5;transform:translateY(1px);box-shadow:0 1px 0 #8d99a8}
+.td-k.wide{flex-basis:calc((100% - 45px)/10*1.6);font-size:20px;background:#aab6c5}
+.td-k.sp{flex-basis:calc((100% - 45px)/10*3);font-size:15px}
+.td-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:12px 8px 8px 0;min-height:calc(100% - 52px)}
+.td-big{font-size:38px;line-height:1.05;margin:0;color:#1f2d45}
+.td-p{font-size:22px;line-height:1.3;margin:0;color:#33445f;max-width:300px}
+.td-list{font-size:21px;line-height:1.35;text-align:left;margin:0;padding-left:24px;color:#33445f}
+.td-stk{position:relative;width:132px;height:132px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;transform:rotate(-8deg);
+  box-shadow:0 0 0 5px #fff,0 0 0 7px rgba(0,0,0,.08),0 8px 18px rgba(0,0,0,.25);animation:tdstamp .5s cubic-bezier(.2,1.6,.4,1) both}
+.td-stk span{font-size:44px;line-height:1}
+.td-stk b{font-weight:400;font-size:19px;line-height:1.05;margin-top:2px;max-width:110px}
+@keyframes tdstamp{0%{transform:scale(2.4) rotate(-30deg);opacity:0}100%{transform:scale(1) rotate(-8deg);opacity:1}}
+.td-score{font-size:46px;line-height:1;color:#c62828;transform:rotate(-3deg)}
+.td-score small{font-size:24px}
+.td-res{display:flex;align-items:center;gap:16px;justify-content:center;height:176px}
+.td-ask{position:absolute;inset:0;z-index:2;background:rgba(31,45,69,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.td-ask > div{background:#fffdf6;border-radius:14px;padding:20px;max-width:340px;width:100%;display:flex;flex-direction:column;gap:12px;text-align:center}
+@media (prefers-reduced-motion: reduce){.td-stk{animation:none}.td-line .car{animation:none}}
+@media (max-height:640px){.td-k{height:40px}.td-btn{padding:9px 12px;font-size:20px}}
+</style>
+<script>
+/* ==========================================================================
+   TEST DAY (phase 1). Nick's rules, 2026-11-19:
+   - Like a real school test: all of this week's words in a shuffled order.
+     Each word is said, used in its sentence, then said again.
+   - Plain on-screen keyboard (no letter blocks, hints, lava, timers, potions),
+     calm lined-paper look. Own keyboard on purpose: the phone keyboard's
+     autocorrect / suggestions would give the spelling away.
+   - One try per word. Nothing is marked until the end: score out of N,
+     a grade sticker, and missed words go straight to Word Workshop.
+   - Once a day (local date). Starting the test uses up today's test; if the
+     app closes mid-test it picks up where he left off.
+   Save: NEW key lavaleap.test.v1 = { last, cur, hist[] } (no old keys touched).
+     hist entry: { d, n, score, miss:[word], ans:{word: typed}, early }
+   Later phases plug in via LLTest.on("finish", fn) / LLTest.history():
+     countdown to Wednesday, parent trend, rewards + streak.
+   ========================================================================== */
+(function(){
+  const KEY = "lavaleap.test.v1";
+  let T = null; try { T = JSON.parse(store.get(KEY) || "null"); } catch(e){}
+  T = Object.assign({ last: "", cur: null, hist: [] }, T || {});
+  const put = () => store.set(KEY, JSON.stringify(T));
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const hooks = { finish: [], open: [], close: [], intro: [], results: [], reward: [], button: [] };
+  const fire = (n, x) => hooks[n].forEach(f => { try { f(x); } catch(e){} });
+  const sfx = n => { try { LLAudio.sfx(n); } catch(e){} };
+  const niceDate = d => { try { const [y, m, dd] = d.split("-").map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }); } catch(e){ return d; } };
+
+  const GRADES = [
+    { at: 1,    em: "🌟", t: "Perfect!",         bg: "#e2a400" },
+    { at: 0.83, em: "🚀", t: "Super Speller!",   bg: "#2f7d4a" },
+    { at: 0.66, em: "👍", t: "Great Job!",       bg: "#2a6fb0" },
+    { at: 0.5,  em: "😊", t: "Good Work!",       bg: "#7a4fb5" },
+    { at: 0,    em: "💪", t: "Keep Practicing!", bg: "#c2571a" },
+  ];
+  const grade = (score, n) => GRADES.find(g => score / Math.max(1, n) >= g.at - 1e-9);
+  function sayGrade(g){
+    say({ "Perfect!": "Perfect score! You spelled every word!", "Super Speller!": "Super speller! Amazing job!",
+          "Great Job!": "Great job! You worked hard on that test.", "Good Work!": "Good work! Practice makes you stronger.",
+          "Keep Practicing!": "Nice try! Every test makes you a better speller." }[g.t], 0.95, true, "now");
+  }
+  function sayNumber(i){
+    say(["Number one.", "Number two.", "Number three.", "Number four.", "Number five.", "Number six.", "Number seven.", "Number eight.",
+         "Number nine.", "Number ten.", "Number eleven.", "Number twelve.", "Number thirteen.", "Number fourteen.", "Number fifteen."][i] || `Number ${i + 1}.`, 0.95, true, "prompt");
+  }
+  function sayWord(it){   // the teacher way: word, sentence, word
+    say(it.w, 0.85, false, "prompt");
+    if (it.s) say(it.s, 0.95, false, "prompt");
+    say(it.w, 0.85, false, "prompt");
+  }
+
+  // grade a test (finished, or stopped early) and keep it in history
+  function finish(cur, early){
+    const miss = [], ans = {};
+    let score = 0;
+    cur.order.forEach((it, i) => {
+      const a = (cur.ans[i] || "").trim().toLowerCase(); ans[it.w] = a;
+      if (a === it.w) score++; else miss.push(it);
+    });
+    const rec = { d: cur.d, n: cur.order.length, score, miss: miss.map(x => x.w), ans, early: !!early, mode: cur.mode || "type" };
+    T.hist.push(rec); if (T.hist.length > 120) T.hist = T.hist.slice(-120);
+    T.cur = null; put();
+    // only words he actually tried go to the workshop (blank lines from stopping early don't)
+    const tried = miss.filter(it => (cur.ans[cur.order.indexOf(it)] || "").trim());
+    if (tried.length && window.LLFocus && LLFocus.fromTest) LLFocus.fromTest(tried);
+    fire("finish", rec);
+    return rec;
+  }
+  // a test left unfinished on an earlier day gets graded with what he answered
+  if (T.cur && T.cur.d !== today()) finish(T.cur, true);
+
+  const takenToday = () => T.last === today();
+  // the list for his NEXT real test (world map knows it once two lists are live), else the current list
+  const testList = () => { try { const l = window.LavaMap && LavaMap.testWords && LavaMap.testWords(); if (l && l.length) return l; } catch(e){} return wordList; };
+  const lastRec = () => T.hist[T.hist.length - 1];
+
+  /* ---------- screen ---------- */
+  let root = null, back = null, state = null, keyH = null, hop = 0;   // hop: cancels a pending word change
+  const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+
+  function open(opts){
+    opts = opts || {};
+    back = opts.back || null;
+    speechCancel(); LLAudio.unlock(); LLAudio.setScene("quiet");
+    root = document.createElement("div"); root.className = "td"; root.setAttribute("role", "dialog"); root.setAttribute("aria-label", "Test Day");
+    document.body.appendChild(root);
+    fire("open", opts);
+    if (T.cur && T.cur.d === today()) return run();
+    if (takenToday()) return results(lastRec(), false);
+    intro(opts.mode || "type");
+  }
+  function close(){
+    speechCancel(); LLAudio.setScene("main");
+    if (keyH) document.removeEventListener("keydown", keyH), keyH = null;
+    if (root) root.remove(); root = null; state = null;
+    refresh(); fire("close");
+    if (back) back();
+  }
+  function head(sub){
+    return `<div class="td-head"><span>Spelling Test</span><small>${esc(sub || niceDate(today()))}</small></div>`;
+  }
+  function top(title, sub, x){
+    return `<div class="td-top"><div class="td-ttl">📝 ${title}${sub ? `<small>${sub}</small>` : ""}</div>${x ? `<button class="td-x" id="tdX" type="button">${x}</button>` : ""}</div>`;
+  }
+
+  function intro(mode){
+    const list = testList(), n = list.length;
+    root.innerHTML = top("Test Day", "", "Back") + `<div class="td-paper"><div class="td-sheet">${head()}
+      <div class="td-mid">
+        <p class="td-big">Test time!</p>
+        <div class="td-slot" id="tdIntroSlot"></div>
+        <ol class="td-list">
+          <li>Listen to the word.</li>
+          <li>Hear it in a sentence.</li>
+          <li>Type it on your paper.</li>
+        </ol>
+        <p class="td-p">One try for each word. You'll see how you did at the end. You can take <b>one test a day</b>.</p>
+      </div></div></div>
+      <div class="td-ctrl"><button class="td-btn go" id="tdGo" type="button">I'm ready! (${n} words)</button></div>`;
+    root.querySelector("#tdX").onclick = close;
+    fire("intro", { slot: root.querySelector("#tdIntroSlot"), mode });
+    const go = root.querySelector("#tdGo");
+    if (!n){ go.disabled = true; go.textContent = "No words yet"; return; }
+    go.onclick = () => {
+      T.cur = { d: today(), prev: T.last, mode, order: shuffle(list.map(x => ({ w: x.w, s: x.s || "" }))), ans: [] };
+      T.last = T.cur.d; put(); refresh();
+      say("Test time! Listen carefully.", 0.95, true, "now");
+      run();
+    };
+    say("It's test day! Listen to each word, then type it on your paper.", 0.95, true);
+  }
+
+  function run(){
+    const cur = T.cur, i = cur.ans.length;
+    if (i >= cur.order.length) return done(false);
+    state = { typed: "", i, lock: false };
+    const extra = [...new Set(cur.order.map(x => x.w).join("").replace(/[a-z]/g, ""))];
+    const keys = (r, last) => r.split("").map(c => `<button class="td-k" type="button" data-k="${esc(c)}">${c === " " ? "space" : esc(c)}</button>`).join("")
+      + (last ? `<button class="td-k wide" type="button" data-k="del" aria-label="Delete">⌫</button>` : "");
+    root.innerHTML = top("Test Day", `Word ${i + 1} of ${cur.order.length}`, "Stop") + `<div class="td-paper"><div class="td-sheet">${head()}<div id="tdLines"></div></div></div>
+      <div class="td-ctrl">
+        <div class="td-row"><button class="td-btn" id="tdHear" type="button">🔊 Hear again</button><button class="td-btn go" id="tdNext" type="button" disabled>${i + 1 < cur.order.length ? "Next ▶" : "Finish ✓"}</button></div>
+        <div class="td-kb" role="group" aria-label="Keyboard">
+          <div class="td-kr">${keys(ROWS[0])}</div><div class="td-kr">${keys(ROWS[1])}</div>
+          <div class="td-kr">${keys(ROWS[2] + extra.filter(c => c !== " ").join(""), true)}</div>
+          ${extra.includes(" ") ? `<div class="td-kr"><button class="td-k sp" type="button" data-k=" ">space</button></div>` : ""}
+        </div>
+      </div>`;
+    lines();
+    root.querySelector("#tdX").onclick = askStop;
+    root.querySelector("#tdHear").onclick = () => { speechCancel(); sayWord(cur.order[i]); };
+    root.querySelector("#tdNext").onclick = next;
+    root.querySelectorAll(".td-k").forEach(b => b.addEventListener("click", () => press(b.dataset.k)));
+    if (!keyH){
+      keyH = e => {
+        if (!state || state.lock || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (e.key === "Backspace") { e.preventDefault(); press("del"); }
+        else if (e.key === "Enter") { e.preventDefault(); next(); }
+        else if (e.key.length === 1 && /[a-z' \-]/i.test(e.key)) { e.preventDefault(); press(e.key.toLowerCase()); }
+      };
+      document.addEventListener("keydown", keyH);
+    }
+    sayNumber(i); sayWord(cur.order[i]);
+  }
+  function lines(){
+    const cur = T.cur, box = root.querySelector("#tdLines");
+    box.innerHTML = cur.order.map((it, j) => {
+      const txt = j < state.i ? esc(cur.ans[j] || "") : j === state.i ? (state.typed ? esc(state.typed) : "") + `<span class="car"></span>` : "";
+      return `<div class="td-line${j === state.i ? " now" : ""}"><i>${j + 1}.</i>${txt}</div>`;
+    }).join("");
+    const now = box.querySelector(".now"), paper = root.querySelector(".td-paper");
+    if (now && paper){ const want = now.offsetTop - paper.clientHeight / 2 + 22; paper.scrollTop = Math.max(0, want); }
+    root.querySelector("#tdNext").disabled = !state.typed.trim();
+  }
+  function press(k){
+    if (!state || state.lock) return;
+    if (k === "del") state.typed = state.typed.slice(0, -1);
+    else if (state.typed.length < 24) state.typed += k;
+    const b = root.querySelector(`.td-k[data-k="${CSS && CSS.escape ? CSS.escape(k) : k}"]`);
+    if (b){ b.classList.add("hit"); setTimeout(() => b.classList.remove("hit"), 90); }
+    lines();
+  }
+  function next(){
+    if (!state || state.lock || !state.typed.trim()) return;
+    state.lock = true;
+    T.cur.ans.push(state.typed.trim()); put();
+    sfx("land"); speechCancel();
+    const g = ++hop;
+    setTimeout(() => { if (root && T.cur && g === hop) run(); }, 250);
+  }
+  function askStop(){
+    const box = document.createElement("div"); box.className = "td-ask";
+    box.innerHTML = `<div><p class="td-big" style="font-size:30px">Stop the test?</p>
+      <p class="td-p">${T.cur && T.cur.ans.length ? "You get one test a day, so if you stop now, today's test is over." : "You can come back and take it later today."}</p>
+      <button class="td-btn go" type="button" data-a="keep">Keep going</button>
+      <button class="td-btn" type="button" data-a="stop">Stop test</button></div>`;
+    root.appendChild(box); if (state) state.lock = true;
+    hop++;   // Stop tapped mid word change: wait for his choice
+    box.querySelector('[data-a="keep"]').onclick = () => {
+      box.remove();
+      if (T.cur && state && T.cur.ans.length > state.i) return run();   // that word was already handed in
+      if (state) state.lock = false;
+    };
+    box.querySelector('[data-a="stop"]').onclick = () => {
+      box.remove();
+      // stopped before writing a single word: it doesn't use up today's test
+      if (!T.cur.ans.length){ T.last = T.cur.prev || ""; T.cur = null; put(); return close(); }
+      done(true);
+    };
+  }
+
+  function done(early){
+    hop++;
+    if (keyH) document.removeEventListener("keydown", keyH), keyH = null;
+    state = null;
+    const rec = finish(T.cur, early);
+    speechCancel();
+    if (!early) say("Pencils down! Let's see how you did.", 0.95, true, "now");
+    results(rec, true);
+  }
+
+  function results(rec, fresh){
+    if (!rec){ close(); return; }
+    const g = grade(rec.score, rec.n);
+    const words = Object.keys(rec.ans);
+    const row = (w, j) => {
+      const a = rec.ans[w] || "";
+      const ok = a === w;
+      return `<div class="td-line"><i>${j + 1}.</i>${ok ? esc(a) + `<span class="ok">✓</span>` :
+        (a ? `<s>${esc(a)}</s>` : `<span class="ph">(blank)</span>`) + `<b>${esc(w)}</b><span class="no">✗</span>`}</div>`;
+    };
+    const missed = rec.miss.length;
+    const ww = window.LLFocus && LLFocus.canWorkshop && LLFocus.canWorkshop();
+    root.innerHTML = top("Test Day", fresh ? "All done!" : "Today's test is done", "") + `<div class="td-paper"><div class="td-sheet">${head(niceDate(rec.d))}
+      <div class="td-res">
+        <div class="td-stk" style="background:${g.bg}"><span>${g.em}</span><b>${g.t}</b></div>
+        <div class="td-score">${rec.score}<small> / ${rec.n}</small></div>
+      </div>
+      ${words.map(row).join("")}
+      <p class="td-p" style="margin-top:14px;max-width:none">${missed ? (rec.miss.length === 1 ? "Your missed word goes" : "Your missed words go") + " to <b>Word Workshop</b> so you can catch them." : "You spelled every word. Wow!"}
+      ${fresh ? "" : "<br>Come back tomorrow for a new test!"}</p>
+      <div class="td-slot" id="tdResSlot"></div>
+    </div></div>
+      <div class="td-ctrl"><div class="td-row">
+        ${ww ? `<button class="td-btn go" id="tdWW" type="button">🛠 Word Workshop</button>` : ""}
+        <button class="td-btn${ww ? "" : " go"}" id="tdDone" type="button">Done</button>
+      </div></div>`;
+    root.querySelector("#tdDone").onclick = close;
+    const wb = root.querySelector("#tdWW");
+    if (wb) wb.onclick = () => {
+      // hand over to the workshop (it sits on top), come back to the results after
+      const shown = LLFocus.afterRound(() => { if (root) { LLAudio.setScene("quiet"); results(rec, false); } });
+      if (!shown) wb.remove();
+    };
+    if (fresh){ sfx("win"); setTimeout(() => { if (root) sayGrade(g); }, 1600); }
+    fire("results", { rec, fresh, slot: root.querySelector("#tdResSlot") });
+  }
+
+  /* ---------- start-menu button ---------- */
+  const btn = $("testBtn");
+  function refresh(){
+    if (!btn) return;
+    const t = takenToday() && !(T.cur && T.cur.d === today());
+    btn.classList.toggle("done", t);
+    btn.textContent = t ? "📝 Test done today ✓" : T.cur && T.cur.d === today() ? "📝 Finish today's test" : "📝 Test Day";
+    fire("button", btn);
+  }
+  if (btn) btn.addEventListener("click", () => {
+    $("startCard").hidden = true;
+    open({ back: () => { $("startCard").hidden = false; } });
+  });
+  refresh();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  setInterval(refresh, 60000);
+
+  window.LLTest = {
+    open, refresh, takenToday, today,
+    history: () => T.hist.slice(),
+    on: (n, f) => { if (hooks[n]) hooks[n].push(f); },
+    emit: fire,   // phase 2 fires "reward" through this
+    _grade: grade,
+  };
+})();
+</script>
+
+
+<script>
+/* ==========================================================================
+   TEST DAY (phase 2). Nick, 2026-11-19:
+   - Countdown to the real spelling test ("Real test in 3 days!"). The day
+     before is framed as the last practice day. Date comes from the world
+     map (window.LLTestDate(), "YYYY-MM-DD") when it has one, else the next
+     Wednesday.
+   - Test Day streak + diamonds for FINISHING a test (score doesn't matter).
+     A stopped-early test doesn't count. Weekends don't break the streak and
+     one missed school day is forgiven.
+   - Grown-ups area (behind the math gate): weekly score trend + trouble words.
+   Save: NEW key lavaleap.teststreak.v1 = { days, last, best, total, claimed[], paid{date:gems} }
+   Hook for chests/pets: LLTest.on("reward", ({ rec, gems, streak, prize, slot }) => ...)
+     fires once right after a finished test is paid, slot = empty div at the
+     bottom of the results paper.
+   ========================================================================== */
+(function(){
+  if (!window.LLTest) return;
+  const KEY = "lavaleap.teststreak.v1";
+  const FINISH_GEMS = 10;
+  const PRIZES = [{ d: 3, gems: 10 }, { d: 5, gems: 20 }, { d: 10, gems: 50 }];
+  let S = null; try { S = JSON.parse(store.get(KEY) || "null"); } catch(e){}
+  S = Object.assign({ days: 0, last: "", best: 0, total: 0, claimed: [], paid: {} }, S || {});
+  const persist = () => store.set(KEY, JSON.stringify(S));
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const key = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const today = () => key(new Date());
+  const dayNum = k => { const [y, m, d] = k.split("-").map(Number); return Date.UTC(y, m - 1, d) / 864e5; };
+  const fromNum = n => { const d = new Date(n * 864e5); return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0") + "-" + String(d.getUTCDate()).padStart(2, "0"); };
+  const dow = k => new Date(dayNum(k) * 864e5).getUTCDay();
+  const nice = (k, o) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, o || { weekday: "short", month: "short", day: "numeric" }); };
+
+  /* ---------- countdown ---------- */
+  function nextWed(k){ const n = dayNum(k); return fromNum(n + (3 - dow(k) + 7) % 7); }
+  function testDate(){
+    const t = today();
+    try {
+      const v = typeof window.LLTestDate === "function" ? window.LLTestDate() : null;
+      if (v && /^\d{4}-\d\d-\d\d$/.test(v) && dayNum(v) >= dayNum(t)) return v;
+    } catch(e){}
+    return nextWed(t);
+  }
+  const daysLeft = () => dayNum(testDate()) - dayNum(today());
+  function countLine(n){
+    if (n <= 0) return "🏁 Real test TODAY! You've got this!";
+    if (n === 1) return "⏰ Real test tomorrow! Last practice day!";
+    return `📅 Real test in ${n} days!`;
+  }
+
+  /* ---------- streak (school days only) ---------- */
+  // school days strictly between two dates (Sat/Sun don't count as missed)
+  function missed(from, to){
+    let c = 0; for (let n = dayNum(from) + 1; n < dayNum(to); n++){ const w = new Date(n * 864e5).getUTCDay(); if (w && w !== 6) c++; }
+    return c;
+  }
+  const alive = () => S.last && (S.last === today() || missed(S.last, today()) <= 1);
+  const live = () => alive() ? S.days : 0;
+
+  function pay(rec){
+    if (rec.early || S.paid[rec.d] != null) return null;
+    const t = rec.d;
+    if (S.last !== t){
+      if (alive()) S.days++; else { S.days = 1; S.claimed = []; }
+      S.last = t; S.best = Math.max(S.best, S.days);
+    }
+    S.total++;
+    let gems = FINISH_GEMS;
+    const prize = PRIZES.find(p => p.d === S.days && !S.claimed.includes(p.d));
+    if (prize){ S.claimed.push(prize.d); gems += prize.gems; }
+    S.paid[t] = gems;
+    const ks = Object.keys(S.paid).sort(); if (ks.length > 60) ks.slice(0, ks.length - 60).forEach(k => delete S.paid[k]);
+    persist();
+    try { SAVE.gems += gems; save(); updateHud(); } catch(e){}
+    return { gems, prize, streak: S.days };
+  }
+
+  const flame = (d, px) => { try { return LLStreak.flame(d, px); } catch(e){ return "🔥"; } };
+  const nextPrize = d => PRIZES.find(p => d < p.d && !S.claimed.includes(p.d));
+  function prizeLine(d){
+    const p = nextPrize(d); if (!p) return `Best test streak: ${Math.max(S.best, d)} days.`;
+    const n = p.d - d; return `${n} more test${n === 1 ? "" : "s"} to the ${p.d}-day prize (+${p.gems} diamonds).`;
+  }
+
+  /* ---------- hooks into the Test Day screens ---------- */
+  let fresh = null;   // payout from the test just finished, shown on the results screen
+  LLTest.on("finish", rec => { fresh = pay(rec); });
+
+  LLTest.on("button", btn => {
+    const sm = document.createElement("small"); sm.className = "td-cd"; sm.textContent = countLine(daysLeft());
+    btn.appendChild(sm);
+  });
+
+  LLTest.on("intro", ({ slot }) => {
+    if (!slot) return;
+    const n = daysLeft(), d = live();
+    slot.innerHTML = `<div class="td-pill">${esc(countLine(n))}</div>
+      <div class="td-strk"><span class="td-fl">${flame(d, 3)}</span><span>${d ? `<b>${d}-day test streak.</b> Finish today's test to keep it going!` : "Finish the test to light your <b>test streak</b> flame!"}<br><small>Finish = +${FINISH_GEMS} diamonds, any score.</small></span></div>`;
+    if (n === 1) say("Tomorrow is the real test. Today is your last practice day!", 0.95, false);
+    else if (n === 0) say("The real test is today. This is your warm up!", 0.95, false);
+  });
+
+  LLTest.on("results", ({ rec, fresh: isNew, slot }) => {
+    if (!slot) return;
+    const r = isNew ? fresh : null; fresh = null;
+    const d = live(), n = daysLeft();
+    let head, sub;
+    if (r){
+      head = r.streak > 1 ? `${r.streak}-day test streak!` : "Test streak flame lit!";
+      sub = `+${r.gems} diamonds for finishing!` + (r.prize ? ` (${r.prize.d}-day prize included)` : "");
+    } else if (rec.early){
+      head = d ? `${d}-day test streak` : "No test streak yet";
+      sub = "Finish every word next time to earn diamonds and grow your flame.";
+    } else {
+      head = d ? `${d}-day test streak` : "Test streak";
+      sub = S.paid[rec.d] ? `You earned +${S.paid[rec.d]} diamonds today.` : "";
+    }
+    const box = document.createElement("div"); box.className = "td-sx"; slot.prepend(box);
+    box.innerHTML = `<div class="td-strk${r ? " grow" : ""}"><span class="td-fl">${flame(r ? r.streak : d, 4)}</span><span><b>${esc(head)}</b>${sub ? `<br>${esc(sub)}` : ""}<br><small>${esc(prizeLine(r ? r.streak : d))}</small></span></div>
+      <div class="td-pill">${esc(countLine(n))}</div>`;
+    if (r){
+      try { LLAudio.sfx("coin"); } catch(e){}
+      setTimeout(() => say(r.prize ? `${r.streak} day test streak! Bonus diamonds!` : `Plus ${r.gems} diamonds for finishing your test!`, 0.95, false), 2600);
+      LLTest.emit("reward", { rec, gems: r.gems, streak: r.streak, prize: r.prize || null, slot });
+    }
+  });
+
+  /* ---------- grown-ups: weekly trend ---------- */
+  // tests are grouped by the Wednesday test they lead up to (Thu..Wed)
+  const weekOf = k => nextWed(k);
+  function trendHTML(){
+    const H = LLTest.history();
+    const td = testDate(), n = daysLeft();
+    let h = `<p class="small">Next real test: <b>${esc(nice(td))}</b> (${n <= 0 ? "today" : n === 1 ? "tomorrow" : `in ${n} days`}).<br>
+      Test streak: <b>${live()}</b> day${live() === 1 ? "" : "s"} · best ${S.best} · ${S.total} finished test${S.total === 1 ? "" : "s"}.</p>`;
+    if (!H.length) return h + `<p class="small">No Test Day tests yet. They show up here after he takes one.</p>`;
+    const weeks = {};
+    H.forEach(r => { const w = weekOf(r.d); (weeks[w] = weeks[w] || []).push(r); });
+    const wk = Object.keys(weeks).sort().reverse().slice(0, 8);
+    const stat = rs => { const f = rs.filter(r => !r.early), use = f.length ? f : rs;
+      const pct = Math.round(100 * use.reduce((a, r) => a + r.score / Math.max(1, r.n), 0) / use.length);
+      const best = use.reduce((b, r) => (r.score / r.n > b.score / b.n ? r : b), use[0]);
+      return { pct, best, done: f.length, all: rs.length }; };
+    const st = wk.map(w => stat(weeks[w]));
+    h += `<div class="label">Average score by test week</div><div class="tt-weeks">` + wk.map((w, i) => {
+      const s = st[i], prev = st[i + 1];
+      const diff = prev ? s.pct - prev.pct : null;
+      const arrow = diff == null ? "" : diff > 0 ? `<span class="up">▲${diff}</span>` : diff < 0 ? `<span class="dn">▼${-diff}</span>` : `<span>=</span>`;
+      return `<div class="tt-w"><div class="tt-wl"><b>${esc(nice(w, { month: "short", day: "numeric" }))} test</b><span>${s.done} test${s.done === 1 ? "" : "s"}${s.all > s.done ? ` (+${s.all - s.done} stopped)` : ""} · best ${s.best.score}/${s.best.n}</span></div>
+        <div class="tt-bar"><i style="width:${s.pct}%"></i></div><div class="tt-pct">${s.pct}%${arrow}</div></div>`;
+    }).join("") + `</div>`;
+    const cur = weeks[weekOf(today())] || weeks[wk[0]];
+    const curW = weeks[weekOf(today())] ? weekOf(today()) : wk[0];
+    h += `<div class="label">${esc(nice(curW, { month: "short", day: "numeric" }))} test week, day by day</div><div class="tt-days">` +
+      cur.map(r => `<div><span>${esc(nice(r.d, { weekday: "short" }))}</span><b>${r.score}/${r.n}</b>${r.early ? `<small>stopped</small>` : ""}</div>`).join("") + `</div>`;
+    const miss = {};
+    cur.forEach(r => r.miss.forEach(w => { miss[w] = (miss[w] || 0) + 1; }));
+    const mw = Object.keys(miss).sort((a, b) => miss[b] - miss[a] || a.localeCompare(b));
+    h += `<div class="label">Trouble words this week</div>` + (mw.length
+      ? `<div class="practice">${mw.map(w => `<span>${esc(w)}${miss[w] > 1 ? ` ×${miss[w]}` : ""}</span>`).join("")}</div>`
+      : `<p class="small">None missed. 🎉</p>`);
+    return h;
+  }
+  const card = document.getElementById("ttCard"), body = document.getElementById("ttBody");
+  const open = document.getElementById("ttBtn"), back = document.getElementById("ttBack");
+  if (card && open){
+    open.addEventListener("click", () => { body.innerHTML = trendHTML(); $("editCard").hidden = true; card.hidden = false; });
+    back.addEventListener("click", () => { card.hidden = true; $("editCard").hidden = false; });
+  }
+
+  LLTest.refresh();
+  window.LLTestDay = { testDate, daysLeft, streak: () => ({ ...S, live: live() }), trendHTML };
+})();
+</script>
+<script>
+/* ==========================================================================
+   QUIZ CHEST: a reward chest after every finished Test Day quiz.
+   - Tiers: Common, Uncommon, Rare, Epic, Legendary, and quiz-only Mythic.
+     Better score = better odds. Wednesday (real test day) = Epic or better.
+     Always something for finishing. Pity: Legendary+ at least every 10 chests,
+     Mythic at least every 25.
+   - Drops: diamonds, potions, chest-only cosmetics (COS items with `chest`),
+     pet eggs, and Mythic Eggs (eggs go through LavaPets.addEgg when the
+     Pet Nest is in; until then a stub stores them in SAVE.eggs).
+   - Opening: the chest lands, each tap upgrades it one tier (auto-advances),
+     effects grow with the tier, Mythic gets a dark fake-out first. Skip jumps
+     to the prize.
+   Save: NEW key lavaleap.chest.v1 = { pending[], last, since, sinceM, n, log[] }.
+   Hooks: LLTest "reward" or "finish" (roll), "results" (button), "close" (open).
+   ========================================================================== */
+(function(){
+  const KEY = "lavaleap.chest.v1";
+  let C = null; try { C = JSON.parse(store.get(KEY) || "null"); } catch(e){}
+  C = Object.assign({ pending: [], last: "", since: 0, sinceM: 0, n: 0, log: [] }, C || {});
+  const put = () => store.set(KEY, JSON.stringify(C));
+  const today = () => (window.LLTest && LLTest.today) ? LLTest.today() : new Date().toISOString().slice(0, 10);
+  const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  function pickW(w){ const t = w.reduce((a, b) => a + b, 0); let r = Math.random() * t; for (let i = 0; i < w.length; i++){ if ((r -= w[i]) < 0) return i; } return w.length - 1; }
+
+  const TIERS = [
+    { id:"common",    name:"Common",    c:"#d4ccd8", d:"#8d8496", wood:["#a8601e","#7a4214"], gem:"#ffffff" },
+    { id:"uncommon",  name:"Uncommon",  c:"#62d26f", d:"#2e8a3a", wood:["#a8601e","#7a4214"], gem:"#c5ffcb" },
+    { id:"rare",      name:"Rare",      c:"#4aa8ff", d:"#1f5fb0", wood:["#8a5430","#5e3418"], gem:"#c8e6ff" },
+    { id:"epic",      name:"Epic",      c:"#b06aff", d:"#6a2fb8", wood:["#4a2a5e","#2e1840"], gem:"#f0dcff" },
+    { id:"legendary", name:"Legendary", c:"#ffb627", d:"#c96a0a", wood:["#ffd166","#d18a1a"], gem:"#fff8e0", band:"#ff5a1f" },
+    { id:"mythic",    name:"Mythic",    c:"#ff7ab6", d:"#5ee0d0", wood:["#24123e","#160a28"], gem:"#ffffff", rainbow:true },
+  ];
+  const TI = id => Math.max(0, TIERS.findIndex(t => t.id === id));
+  const RAINBOW = ["#ff5a5a","#ffb627","#fff15a","#62d26f","#5ee0d0","#4aa8ff","#b06aff","#ff7ab6"];
+  const EGG_NEED = { common:1, uncommon:2, rare:2, epic:3, legendary:4, mythic:5 };
+
+  /* ---------- rolling ---------- */
+  function tierWeights(score, n, wed){
+    const p = n ? score / n : 0;
+    let w = p >= 1 ? [0,20,33,27,13,7] : p >= 0.8 ? [15,30,28,17,7,3] : p >= 0.5 ? [35,32,20,9,3,1] : [55,30,12,3,0,0];
+    if (wed){ const low = w[0] + w[1] + w[2]; w = [0, 0, 0, w[3] + low, w[4], w[5] * 2]; }
+    return w;
+  }
+  function chestItems(tier){
+    const out = [];
+    COS_CATS.forEach(cat => Object.entries(COS[cat].items).forEach(([id, it]) => { if (it.chest === tier && !owns(cat, id) && !C.pending.some(p => p.r.kind === "cos" && p.r.cat === cat && p.r.id === id)) out.push({ cat, id }); }));
+    return out;
+  }
+  function rollReward(tier){
+    if (tier === "mythic") return { kind: "egg", tier };
+    const G = { common:[10,20], uncommon:[25,40], rare:[50,80], epic:[100,150], legendary:[200,300] }[tier];
+    // kinds: gems, potion, egg, cosmetic
+    const W = { common:[60,30,10,0], uncommon:[40,30,20,10], rare:[30,15,30,25], epic:[25,0,35,40], legendary:[20,0,30,50] }[tier];
+    const k = ["gems", "potion", "egg", "cos"][pickW(W)];
+    if (k === "cos"){
+      const list = chestItems(tier);
+      if (list.length){ const it = list[rnd(0, list.length - 1)]; return { kind: "cos", cat: it.cat, id: it.id }; }
+      return { kind: "gems", n: Math.round(rnd(G[0], G[1]) * 1.5) };
+    }
+    if (k === "potion") return { kind: "potion", pot: ["health", "shield", "glow"][rnd(0, 2)], n: { common:1, uncommon:2, rare:3 }[tier] || 2 };
+    if (k === "egg") return { kind: "egg", tier };
+    return { kind: "gems", n: rnd(G[0], G[1]) };
+  }
+  function roll(rec){
+    const wed = new Date(rec.d + "T12:00:00").getDay() === 3;
+    let ti = pickW(tierWeights(rec.score, rec.n, wed));
+    if (C.since >= 9) ti = Math.max(ti, 4);
+    if (C.sinceM >= 24) ti = 5;
+    C.since = ti >= 4 ? 0 : C.since + 1;
+    C.sinceM = ti >= 5 ? 0 : C.sinceM + 1;
+    const tier = TIERS[ti].id;
+    return { tier, d: rec.d, wed, score: rec.score, n: rec.n, r: rollReward(tier) };
+  }
+  function onFinished(rec){
+    if (!rec || rec.early || C.last === rec.d) return;   // one chest per finished test
+    C.last = rec.d;
+    try { if (window.LavaPets && LavaPets.onQuizDone) LavaPets.onQuizDone(rec); } catch(e){}
+    C.pending.push(roll(rec)); put(); refreshBtn();
+  }
+
+  /* ---------- granting ---------- */
+  function addEgg(tier){
+    if (window.LavaPets && LavaPets.addEgg){ try { return LavaPets.addEgg(tier); } catch(e){} }
+    if (!Array.isArray(SAVE.eggs)) SAVE.eggs = [];
+    const e = { uid: "e_" + Date.now(), tier, got: today(), need: EGG_NEED[tier] || 1, done: 0 };
+    SAVE.eggs.push(e); save(); return e;
+  }
+  function grant(ch){
+    const r = ch.r;
+    if (r.kind === "gems") SAVE.gems += r.n;
+    else if (r.kind === "potion") SAVE.inv[r.pot] = (SAVE.inv[r.pot] || 0) + r.n;
+    else if (r.kind === "cos"){ if (COS[r.cat] && COS[r.cat].items[r.id] && !owns(r.cat, r.id)) ownedList(r.cat).push(r.id); else { r.kind = "gems"; r.n = 150; SAVE.gems += r.n; } }
+    else if (r.kind === "egg"){ const e = addEgg(r.tier); if (e && e.need != null) r.need = e.need; }
+    save();
+    C.n++; C.log.push({ d: ch.d, t: ch.tier, k: r.kind }); if (C.log.length > 60) C.log = C.log.slice(-60);
+    C.pending.shift(); put();
+    try { updateHud(); } catch(e){}
+    refreshBtn();
+  }
+  function rewardText(ch){
+    const r = ch.r, T = TIERS[TI(ch.tier)];
+    if (r.kind === "gems") return { name: r.n + " Diamonds", desc: r.n >= 100 ? "A huge pile of diamonds!" : "Added to your diamonds.", say: r.n + " diamonds!" };
+    if (r.kind === "potion"){ const p = POTIONS[r.pot]; return { name: r.n + " × " + p.name, desc: p.desc, say: r.n + " " + p.name + (r.n > 1 && !/s$/.test(p.name) ? "s" : "") + "!" }; }
+    if (r.kind === "cos"){ const it = COS[r.cat].items[r.id]; return { name: it.name, desc: "Chest-only " + ({ skin:"skin", hat:"hat", blocks:"blocks", lava:"lava", trail:"trail", pet:"pet" }[r.cat]) + "! You can't buy this in the shop.", say: it.name + "!" }; }
+    const need = r.need || EGG_NEED[r.tier] || 1;
+    if (r.tier === "mythic") return { name: "Mythic Egg", desc: `Only from daily quizzes! A Mythic pet hatches after ${need} more daily quizzes.`, say: "A Mythic Egg!" };
+    return { name: T.name + " Pet Egg", desc: `Hatches after ${need} more daily quiz${need > 1 ? "zes" : ""}.`, say: T.name + " pet egg!" };
+  }
+
+  /* ---------- pixel sprites ---------- */
+  const LID = ["..KKKKKKKKKKKK..",".KWWWWWWWWWWWWK.","KWwWWWWWWWWWWwWK","KMMMMMMMMMMMMMMK","KWWWWWWLLWWWWWWK","KMMMMMMLLMMMMMMK"];
+  const BASE = ["KWWWWWKGGKWWWWWK","KWwWWWKGGKWWwWWK","KWWWWWWKKWWWWWWK","KMMMMMMMMMMMMMMK","KWWwWWWWWWWWwWWK","KWWWWWWWWWWWWWWK","KMMMMMMMMMMMMMMK","KKKKKKKKKKKKKKKK"];
+  const mirror = h => h.map(r => r + [...r].reverse().join(""));
+  const EGG = (window.MythicPets && MythicPets.EGG && MythicPets.EGG.grid) || mirror(["...KK","..KAA",".KAWA",".KABB","KAAAB","KCCAA","KCCDD","KADDA","KAAAA",".KBBA",".KBBB","..KKK"]);
+  const GEM = ["...KKKK...","..KTTWTK..",".KTTWTTTK.","KTTTTTTTTK",".KTTTTTTK.","..KTTTTK..","...KTTK...","....KK...."];
+  const BOTTLE = ["...KKKK...","....KK....","....KK....","...KWWK...","..KRRRRK..",".KRWRRRRK.",".KRRRRRRK.",".KRRRRRRK.","..KRRRRK..","...KKKK..."];
+  const POT_COL = { health:"#ff4d5e", shield:"#4aa8ff", glow:"#5ee0d0" };
+  const EGG_PAL = { common:["#d4ccd8","#8d8496","#ffffff"], uncommon:["#62d26f","#c5ffcb","#2e8a3a"], rare:["#4aa8ff","#c8e6ff","#ffffff"],
+                    epic:["#b06aff","#ff7ab6","#f0dcff"], legendary:["#ffb627","#fff1b8","#ff5a1f"] };
+
+  /* ---------- styles + overlay ---------- */
+  const css = document.createElement("style");
+  css.textContent = `
+.qc{position:fixed;inset:0;z-index:80;overflow:hidden;touch-action:manipulation;background:#1a1220;color:var(--ink,#fff3e4);font-family:var(--body);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.qc canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.qc-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.qc-top{position:absolute;top:max(12px, env(safe-area-inset-top,0px));left:max(16px, env(safe-area-inset-left,0px));right:max(16px, env(safe-area-inset-right,0px));display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.qc-title{font-family:var(--display);font-weight:700;font-size:22px;color:var(--glow);text-shadow:2px 2px 0 #a3300c}
+.qc-skip{pointer-events:auto;appearance:none;border:2px solid var(--deck-edge);background:rgba(20,12,24,.8);color:var(--muted);font-family:var(--display);font-weight:700;font-size:15px;padding:8px 12px;min-height:40px;cursor:pointer}
+.qc-tier{position:absolute;left:0;right:0;text-align:center;font-family:var(--display);font-weight:700;font-size:40px;line-height:1;letter-spacing:.06em;opacity:0;pointer-events:none;text-shadow:3px 3px 0 rgba(0,0,0,.6)}
+.qc-tier.pop{animation:qcPop .55s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes qcPop{0%{opacity:0;transform:scale(.3)}60%{opacity:1;transform:scale(1.25)}100%{opacity:1;transform:scale(1)}}
+.qc-hint{position:absolute;left:0;right:0;text-align:center;font-family:var(--display);font-size:20px;opacity:0;transition:opacity .3s;pointer-events:none}
+.qc-hint.on{opacity:1;animation:qcBob 1s ease-in-out infinite}
+@keyframes qcBob{50%{transform:translateY(-6px)}}
+.qc-card{position:absolute;left:max(16px, env(safe-area-inset-left,0px));right:max(16px, env(safe-area-inset-right,0px));bottom:max(16px, env(safe-area-inset-bottom,0px));max-width:400px;margin:0 auto;box-sizing:border-box;background:var(--deck);border:4px solid var(--deck-edge);box-shadow:0 0 0 4px #120b15,0 18px 40px rgba(0,0,0,.5);padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;transform:translateY(140%);transition:transform .45s cubic-bezier(.2,1.3,.4,1)}
+.qc-card.on{transform:none}
+.qc-card .lbl{font-family:var(--display);font-size:14px;letter-spacing:.1em;text-transform:uppercase}
+.qc-card b{font-family:var(--display);font-size:26px;line-height:1.05}
+.qc-card p{margin:0;font-size:16px;color:var(--muted);line-height:1.35}
+.qc-card .row{display:flex;gap:8px;width:100%}
+.qc-card .btn{flex:1}
+.qc-rb{background:linear-gradient(90deg,#ff5a5a,#ffb627,#fff15a,#62d26f,#5ee0d0,#4aa8ff,#b06aff,#ff7ab6);-webkit-background-clip:text;background-clip:text;color:transparent!important;background-size:200% 100%;animation:qcRb 1.2s linear infinite}
+@keyframes qcRb{to{background-position:200% 0}}
+.qc-open{width:100%;margin-top:10px}
+.qc-entry{width:100%;animation:qcGlow 1.2s ease-in-out infinite}
+@keyframes qcGlow{50%{box-shadow:inset -4px -4px 0 rgba(0,0,0,.25), inset 4px 4px 0 rgba(255,255,255,.35), 0 0 16px 2px #ffb627}}
+.it.chest{border-color:#4a2a5e}
+@media (prefers-reduced-motion: reduce){.qc-hint.on,.qc-entry{animation:none}}
+`;
+  document.head.appendChild(css);
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let root = null, cv = null, g = null, W = 0, H = 0, DPR = 1, raf = 0, S = null, onAllDone = null, thumbs = {};
+  let parts = [], rings = [], cracks = [], stars = [], shake = 0, flashA = 0, rays = 0, dark = 0, beam = 0;
+  const el = {};
+
+  function build(){
+    root = document.createElement("div"); root.className = "qc"; root.setAttribute("role", "dialog"); root.setAttribute("aria-label", "Reward chest");
+    root.innerHTML = `<canvas></canvas><div class="qc-flash"></div>
+      <div class="qc-top"><span class="qc-title">Quiz Reward!</span><button class="qc-skip" type="button">Skip ▸▸</button></div>
+      <div class="qc-tier"></div><div class="qc-hint">Tap the chest!</div>
+      <div class="qc-card"><span class="lbl"></span><b></b><p></p><div class="row"></div></div>`;
+    document.body.appendChild(root);
+    cv = root.querySelector("canvas"); g = cv.getContext("2d");
+    el.flash = root.querySelector(".qc-flash"); el.skip = root.querySelector(".qc-skip"); el.tier = root.querySelector(".qc-tier");
+    el.hint = root.querySelector(".qc-hint"); el.card = root.querySelector(".qc-card");
+    el.lbl = el.card.querySelector(".lbl"); el.name = el.card.querySelector("b"); el.desc = el.card.querySelector("p"); el.row = el.card.querySelector(".row");
+    root.addEventListener("pointerdown", e => { if (e.target.closest("button")) return; tap(); });
+    el.skip.addEventListener("click", skip);
+    addEventListener("resize", fit); fit();
+    raf = requestAnimationFrame(frame);
+  }
+  function fit(){
+    if (!cv) return;
+    DPR = Math.min(2, window.devicePixelRatio || 1); W = root.clientWidth; H = root.clientHeight;
+    cv.width = W * DPR; cv.height = H * DPR; g.imageSmoothingEnabled = false;
+    const p = chestXY(), s = SC();
+    el.tier.style.top = (p.y + 9 * s + 12) + "px";
+    el.hint.style.top = (p.y + 9 * s + 64) + "px";
+  }
+  function teardown(){
+    cancelAnimationFrame(raf); raf = 0; removeEventListener("resize", fit);
+    if (root) root.remove(); root = null; S = null; thumbs = {};
+  }
+  const chestXY = () => ({ x: W / 2, y: Math.round(H * 0.38) });
+  const SC = () => Math.max(6, Math.min(9, Math.floor(Math.min(W / 48, H / 80))));
+
+  /* ---------- sound (shared context, lands on the Sounds volume) ---------- */
+  let ac = null;
+  function audio(){ try { LLAudio.unlock && LLAudio.unlock(); } catch(e){} if (!ac){ try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ ac = null; } } if (ac && ac.state === "suspended") ac.resume().catch(() => {}); return ac; }
+  function tone(f, dur, vol, type, delay, slide){
+    if (!ac || ac.state !== "running") return;
+    try {
+      const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), v = ac.createGain();
+      o.type = type || "square"; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+      v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(vol, t + 0.01); v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(v); v.connect(ac.destination); o.start(t); o.stop(t + dur + 0.05);
+    } catch(e){}
+  }
+  function noise(dur, vol, freq, delay){
+    if (!ac || ac.state !== "running") return;
+    try {
+      const t = ac.currentTime + (delay || 0), len = Math.ceil(ac.sampleRate * dur), b = ac.createBuffer(1, len, ac.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const s = ac.createBufferSource(), f = ac.createBiquadFilter(), v = ac.createGain();
+      s.buffer = b; f.type = "lowpass"; f.frequency.value = freq || 900; v.gain.value = vol; s.connect(f); f.connect(v); v.connect(ac.destination); s.start(t);
+    } catch(e){}
+  }
+  const SND = {
+    thud(){ noise(0.35, 0.5, 300); tone(90, 0.25, 0.25, "triangle", 0, 45); },
+    up(lv){ const b = [392,440,523,587,659,784][lv]; [1, 1.25, 1.5, 2].forEach((m, i) => tone(b * m, 0.18, 0.08, "square", i * 0.05)); },
+    open(lv){ noise(0.5, 0.3, 2400); const b = [523,587,659,784,880,1047][lv];
+      [1,1.26,1.5,2].forEach((m, i) => tone(b * m, 0.6, 0.07, lv >= 3 ? "sawtooth" : "square", 0.05 + i * 0.03));
+      if (lv >= 4){ [1,1.26,1.5,2,2.52,3].forEach((m, i) => tone(b * m, 0.35, 0.06, "square", 0.45 + i * 0.09)); tone(b * 4, 0.9, 0.05, "triangle", 1.0); } },
+    hush(){ tone(110, 1.4, 0.12, "sine", 0, 55); },
+    crack(){ noise(0.12, 0.4, 4000); tone(1800 + Math.random() * 800, 0.08, 0.05, "square"); },
+    mythic(){ tone(55, 1.6, 0.3, "sawtooth", 0, 30); noise(1.2, 0.35, 1200);
+      [523,659,784,1047,1319,1568,2093].forEach((f, i) => { tone(f, 0.5, 0.06, "triangle", 0.2 + i * 0.07); tone(f * 1.01, 0.5, 0.04, "sine", 0.2 + i * 0.07); });
+      [1047,1319,1568,2093].forEach((f, i) => tone(f, 1.2, 0.05, "square", 0.9 + i * 0.02)); },
+    collect(){ [784,988,1175,1568].forEach((f, i) => tone(f, 0.12, 0.08, "square", i * 0.06)); },
+  };
+
+  /* ---------- drawing helpers ---------- */
+  function grid(gr, pal, x, y, s){
+    for (let r = 0; r < gr.length; r++) for (let c = 0; c < gr[r].length; c++){
+      const ch = gr[r][c]; if (ch === ".") continue;
+      const col = typeof pal === "function" ? pal(ch, r, c) : pal[ch]; if (!col) continue;
+      g.fillStyle = col; g.fillRect(Math.round(x + c * s), Math.round(y + r * s), Math.ceil(s), Math.ceil(s));
+    }
+  }
+  const chestPal = (t, now) => ch => ch === "K" ? "#1f1424" : ch === "W" ? t.wood[0] : ch === "w" ? t.wood[1]
+    : ch === "M" ? (t.rainbow ? RAINBOW[(Math.floor(now / 70)) % 8] : (t.band || t.c)) : ch === "L" ? (t.rainbow ? "#ffffff" : "#ffd166") : ch === "G" ? t.gem : null;
+  const chestPalR = (t, now) => (ch, r, c) => ch === "M" && t.rainbow ? RAINBOW[(c + Math.floor(now / 70)) % 8] : chestPal(t, now)(ch);
+  function burst(n, x, y, cols, spd, o){
+    if (reduce) n = Math.ceil(n / 3);
+    o = o || {};
+    for (let i = 0; i < n; i++){
+      const a = o.up ? (-Math.PI / 2 + (Math.random() - .5) * (o.spread || 1.2)) : Math.random() * Math.PI * 2, v = spd * (0.4 + Math.random() * 0.8);
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, decay: 0.008 + Math.random() * 0.015, g: o.g == null ? 0.12 : o.g,
+        col: cols[i % cols.length], s: (o.size || 4) * (0.6 + Math.random() * 0.8), kind: o.kind || "sq" });
+    }
+  }
+  const ring = (x, y, col, sp, w) => rings.push({ x, y, r: 10, col, sp: sp || 6, w: w || 6, a: 1 });
+  const doShake = v => { if (!reduce) shake = Math.max(shake, v); };
+  const doFlash = v => { flashA = reduce ? Math.min(v, 0.3) : v; };
+
+  /* ---------- the sequence ---------- */
+  function play(ch){
+    S = { ch, target: TI(ch.tier), lv: 0, phase: "drop", y: -160, vy: 0, nextAt: 0, sh: 0, lidX: 0, lidY: 0, lidVx: 0, lidVy: 0, lidR: 0, levit: 0, openT: 0 };
+    parts = []; rings = []; cracks = []; stars = []; shake = 0; flashA = 0; rays = 0; dark = 0; beam = 0;
+    el.tier.className = "qc-tier"; el.tier.textContent = ""; el.card.classList.remove("on"); el.hint.classList.remove("on"); el.skip.hidden = false;
+    if (ch.r.kind === "cos"){ try { thumbs.cos = thumb(ch.r.cat, ch.r.id); } catch(e){} }
+  }
+  function showTier(i){
+    const t = TIERS[i];
+    el.tier.textContent = t.name.toUpperCase() + "!";
+    el.tier.className = "qc-tier" + (t.rainbow ? " qc-rb" : "");
+    el.tier.style.color = t.c; void el.tier.offsetWidth; el.tier.classList.add("pop");
+  }
+  function levelUp(){
+    const p = chestXY();
+    if (TIERS[S.lv + 1].rainbow) return mythicTurn();
+    S.lv++; const t = TIERS[S.lv];
+    SND.up(S.lv); showTier(S.lv);
+    burst(14 + S.lv * 10, p.x, p.y, [t.c, t.gem, "#fff"], 4 + S.lv, { size: 4 + S.lv });
+    ring(p.x, p.y, t.c, 5 + S.lv, 4 + S.lv * 2);
+    if (S.lv >= 3) doShake(6 + S.lv * 2);
+    if (S.lv >= 4) doFlash(0.7);
+    S.sh = 0.35;
+  }
+  function mythicTurn(){ S.phase = "hush"; S.hushT = performance.now(); el.tier.className = "qc-tier"; SND.hush(); el.hint.classList.remove("on"); }
+  const makeStars = () => { stars = []; for (let i = 0; i < 70; i++) stars.push({ x: Math.random(), y: Math.random(), p: Math.random() * 6 }); };
+  function openChest(){
+    const t = TIERS[S.lv], p = chestXY();
+    S.phase = "open"; S.openT = performance.now(); S.lidVy = -10 - S.lv * 1.5; S.lidVx = (Math.random() < .5 ? -1 : 1) * (1 + S.lv * 0.4);
+    el.hint.classList.remove("on"); el.skip.hidden = true;
+    SND.open(S.lv);
+    const cols = t.rainbow ? RAINBOW : [t.c, t.gem, "#fff", t.d];
+    burst(30 + S.lv * 25, p.x, p.y - 10, cols, 7 + S.lv * 1.5, { up: true, spread: 1.6 + S.lv * 0.3, size: 4 + S.lv, g: 0.15 });
+    ring(p.x, p.y, t.c, 7 + S.lv, 6 + S.lv * 2);
+    if (S.lv >= 2) rays = 1;
+    beam = 1;
+    if (S.lv >= 3) doShake(10 + S.lv * 3);
+    if (S.lv >= 4){ doFlash(1); const run = S; for (let i = 0; i < 40; i++) setTimeout(() => { if (S === run) burst(1, Math.random() * W, -10, t.rainbow ? RAINBOW : ["#ffd166","#ffb627","#fff1b8"], 1, { g: 0.08, size: 7, kind: "coin" }); }, i * 35); }
+    if (t.rainbow){ ring(p.x, p.y, "#fff", 12, 14); setTimeout(() => S && ring(p.x, p.y, "#5ee0d0", 9, 10), 200); setTimeout(() => S && ring(p.x, p.y, "#ff7ab6", 7, 8), 400); }
+    const run = S; setTimeout(() => { if (S === run) reveal(); }, 650 + S.lv * 110);
+  }
+  function reveal(){
+    const ch = S.ch, t = TIERS[S.lv];
+    grant(ch);                       // may swap a duplicate cosmetic for diamonds
+    const txt = rewardText(ch);
+    S.phase = "reveal";
+    el.lbl.textContent = t.name + " chest" + (ch.wed ? " · Test Day bonus" : "");
+    el.lbl.className = "lbl" + (t.rainbow ? " qc-rb" : ""); el.lbl.style.color = t.c;
+    el.name.textContent = txt.name; el.desc.textContent = txt.desc;
+    el.card.style.borderColor = t.rainbow ? "#ff7ab6" : t.c;
+    el.row.innerHTML = "";
+    const more = C.pending.length > 0;
+    if (ch.r.kind === "cos"){
+      const wear = document.createElement("button"); wear.type = "button"; wear.className = "btn go"; wear.textContent = "Wear it!";
+      wear.onclick = () => { setEq(ch.r.cat, ch.r.id); collect(); };
+      el.row.appendChild(wear);
+    }
+    const b = document.createElement("button"); b.type = "button"; b.className = "btn" + (ch.r.kind === "cos" ? " alt" : ""); b.textContent = more ? "Next chest!" : "Collect!";
+    b.onclick = collect; el.row.appendChild(b);
+    el.card.classList.add("on");
+    showTier(S.lv);
+    try { say((t.rainbow ? "Mythic! " : "") + txt.say, 0.95, true, "now"); } catch(e){}
+  }
+  function collect(){
+    SND.collect(); try { speechCancel(); } catch(e){}
+    if (C.pending.length){ play(C.pending[0]); return; }
+    teardown();
+    const f = onAllDone; onAllDone = null; if (f) f();
+  }
+  function skip(){
+    if (!S || S.phase === "open" || S.phase === "reveal") return;
+    audio();
+    S.lv = S.target; S.y = chestXY().y; S.vy = 0; S.levit = 0;
+    if (TIERS[S.lv].rainbow){ dark = 0.85; makeStars(); }
+    showTier(S.lv); openChest();
+  }
+  function tap(){
+    if (!S) return; audio();
+    if (S.phase === "wait" || S.phase === "charge") step();
+    else if (S.phase === "hush") S.hushT -= 600;
+  }
+  function step(){
+    if (S.lv < S.target){ S.phase = "charge"; levelUp(); } else openChest();
+    S.nextAt = performance.now() + 1000;
+  }
+
+  function frame(now){
+    if (!root) return;
+    raf = requestAnimationFrame(frame);
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g.fillStyle = "#1a1220"; g.fillRect(0, 0, W, H);
+    const lava = g.createLinearGradient(0, H * 0.62, 0, H);
+    lava.addColorStop(0, "rgba(255,90,31,0)"); lava.addColorStop(1, "rgba(255,90,31,.35)");
+    g.fillStyle = lava; g.fillRect(0, H * 0.62, W, H * 0.38);
+    if (!S) return;
+    const p = chestXY(), s = SC(), t = TIERS[S.lv];
+
+    if (S.phase === "drop"){
+      S.vy += 1.1; S.y += S.vy;
+      if (S.y >= p.y){ S.y = p.y;
+        if (S.vy > 4){ S.vy = -S.vy * 0.32; SND.thud(); doShake(8); burst(18, p.x, p.y + 7 * s, ["#5a4a62","#3b2c45","#8d8496"], 4, { up: true, spread: 2.6, size: 5, g: 0.2 }); }
+        else { S.vy = 0; S.phase = "wait"; S.nextAt = now + 1600; el.hint.classList.add("on"); } }
+    } else if (S.phase === "wait" || S.phase === "charge"){
+      if (now >= S.nextAt){ el.hint.classList.remove("on"); step(); }
+    } else if (S.phase === "hush"){
+      const k = Math.min(1, (now - S.hushT) / 1500);
+      dark = Math.max(dark, k * 0.85); S.levit = k;
+      if (!stars.length && k > 0.2) makeStars();
+      if (Math.random() < 0.06 + k * 0.25){ SND.crack(); cracks.push({ a: Math.random() * Math.PI * 2, l: 10 + Math.random() * 30 * k, c: RAINBOW[Math.floor(Math.random() * 8)] }); doShake(2 + k * 5); }
+      if (k >= 1){ S.lv = TIERS.length - 1; S.phase = "charge"; doFlash(1); doShake(18); SND.mythic(); showTier(S.lv);
+        burst(80, p.x, p.y, RAINBOW, 10, { size: 6 }); ring(p.x, p.y, "#fff", 10, 12); S.nextAt = now + 1100; }
+    }
+
+    if (dark > 0){
+      g.fillStyle = "rgba(4,2,10," + dark + ")"; g.fillRect(0, 0, W, H);
+      stars.forEach(st => { const a = 0.4 + 0.6 * Math.abs(Math.sin(now / 400 + st.p)); g.fillStyle = "rgba(255,255,255," + (a * dark) + ")"; g.fillRect(st.x * W, st.y * H * 0.9, 2, 2); });
+    }
+    let ox = 0, oy = 0;
+    if (shake > 0.3){ ox = (Math.random() - .5) * shake; oy = (Math.random() - .5) * shake; shake *= 0.88; } else shake = 0;
+    g.save(); g.translate(ox, oy);
+
+    if (rays > 0){
+      const n = 14, rot = now / 1400 * (S.lv >= 5 ? 2 : 1);
+      g.save(); g.translate(p.x, p.y); g.rotate(rot); g.globalAlpha = 0.18;
+      for (let i = 0; i < n; i++){
+        const a = i / n * Math.PI * 2; g.fillStyle = t.rainbow ? RAINBOW[i % 8] : t.c;
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a - 0.09) * H, Math.sin(a - 0.09) * H); g.lineTo(Math.cos(a + 0.09) * H, Math.sin(a + 0.09) * H); g.fill();
+      }
+      g.restore(); g.globalAlpha = 1;
+    }
+    const lvGlow = S.phase === "drop" ? 0 : (S.lv + 1) / 6;
+    if (lvGlow > 0){
+      const rad = (60 + lvGlow * 120) * (1 + 0.08 * Math.sin(now / 180));
+      const gr = g.createRadialGradient(p.x, p.y, 4, p.x, p.y, rad), gc = t.rainbow ? RAINBOW[Math.floor(now / 120) % 8] : t.c;
+      gr.addColorStop(0, gc + "cc"); gr.addColorStop(1, gc + "00");
+      g.fillStyle = gr; g.fillRect(p.x - rad, p.y - rad, rad * 2, rad * 2);
+    }
+    if (beam > 0 && S.phase !== "drop"){
+      const bw = 8 * s * (0.8 + 0.2 * Math.sin(now / 90)), bg = g.createLinearGradient(0, 0, 0, p.y), bc = t.rainbow ? RAINBOW[Math.floor(now / 100) % 8] : t.c;
+      bg.addColorStop(0, bc + "00"); bg.addColorStop(1, bc + "aa");
+      g.fillStyle = bg; g.fillRect(p.x - bw / 2, 0, bw, p.y);
+    }
+
+    // chest
+    const cy = S.phase === "drop" ? S.y : p.y - S.levit * 30 + (S.levit ? Math.sin(now / 300) * 4 : 0);
+    let wob = 0;
+    if (S.phase === "wait") wob = Math.sin(now / 90) * (Math.sin(now / 600) > 0.6 ? 0.06 : 0);
+    if (S.sh > 0){ wob = Math.sin(now / 30) * 0.12 * S.sh * (1 + S.lv * 0.3); S.sh -= 0.016; }
+    const cw = 16 * s, chH = 14 * s, pal = chestPalR(t, now);
+    g.save(); g.translate(p.x, cy + chH / 2); g.rotate(wob);
+    grid(BASE, pal, -cw / 2, -8 * s, s);
+    if (S.phase !== "open" && S.phase !== "reveal"){
+      const lift = (S.phase === "charge" && S.sh > 0) ? -Math.abs(Math.sin(now / 40)) * s * 0.8 : 0;
+      if (S.lv >= 1 && S.phase !== "drop"){ g.fillStyle = t.rainbow ? RAINBOW[Math.floor(now / 80) % 8] : t.gem; g.globalAlpha = 0.5 + 0.4 * Math.sin(now / 120); g.fillRect(-cw / 2 + s, -8 * s - s * 0.6 + lift, cw - 2 * s, s * 0.8); g.globalAlpha = 1; }
+      grid(LID, pal, -cw / 2, -14 * s + lift, s);
+    }
+    cracks.forEach(c => { g.strokeStyle = c.c; g.lineWidth = 3; g.beginPath(); g.moveTo(0, -4 * s); g.lineTo(Math.cos(c.a) * c.l * 2, -4 * s + Math.sin(c.a) * c.l * 1.4); g.stroke(); });
+    g.restore();
+
+    if (S.phase === "open" || S.phase === "reveal"){
+      S.lidVy += 0.5; S.lidY += S.lidVy; S.lidX += S.lidVx; S.lidR += S.lidVx * 0.02;
+      if (S.lidY < H){ g.save(); g.translate(p.x + S.lidX, cy + chH / 2 - 11 * s + S.lidY); g.rotate(S.lidR); grid(LID, pal, -cw / 2, -3 * s, s); g.restore(); }
+      const k = Math.min(1, (now - S.openT) / 700), e = 1 - Math.pow(1 - k, 3);
+      const iy = p.y - e * Math.min(H * 0.2, p.y - 90) + Math.sin(now / 350) * 5;
+      drawItem(t, S.ch.r, p.x, iy, (0.4 + e * 0.9) * s * 0.75, now);
+      if (k < 1 && Math.random() < 0.5) burst(2, p.x, iy, t.rainbow ? RAINBOW : [t.c, "#fff"], 2, { size: 3, g: 0 });
+      if (S.phase === "reveal" && Math.random() < 0.2) burst(1, p.x + (Math.random() - .5) * 80, iy + (Math.random() - .5) * 60, t.rainbow ? RAINBOW : [t.gem, "#fff"], 0.6, { size: 3, g: -0.02, kind: "spark" });
+    }
+    g.restore();
+
+    parts = parts.filter(q => q.life > 0);
+    parts.forEach(q => {
+      q.x += q.vx; q.y += q.vy; q.vy += q.g; q.vx *= 0.985; q.life -= q.decay;
+      g.globalAlpha = Math.max(0, Math.min(1, q.life * 1.4)); g.fillStyle = q.col;
+      if (q.kind === "coin"){ const w = q.s * Math.abs(Math.sin(now / 100 + q.x)); g.fillRect(q.x - w / 2, q.y - q.s / 2, Math.max(1.5, w), q.s); }
+      else if (q.kind === "spark"){ g.fillRect(q.x - q.s / 2, q.y - 0.5, q.s, 1.5); g.fillRect(q.x - 0.75, q.y - q.s / 2, 1.5, q.s); }
+      else g.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
+    });
+    g.globalAlpha = 1;
+    rings = rings.filter(r => r.a > 0.02);
+    rings.forEach(r => { r.r += r.sp; r.a *= 0.94; g.strokeStyle = r.col; g.globalAlpha = r.a; g.lineWidth = r.w; g.beginPath(); g.arc(r.x, r.y, r.r, 0, Math.PI * 2); g.stroke(); });
+    g.globalAlpha = 1;
+    if (flashA > 0.01){ el.flash.style.opacity = flashA; flashA *= 0.9; } else el.flash.style.opacity = 0;
+  }
+  function drawItem(t, r, x, y, s, now){
+    if (r.kind === "gems"){
+      const pal = { K:"#1f1424", T:"#5ee0d0", W:"#e8fffb" }, n = r.n >= 100 ? 5 : r.n >= 40 ? 4 : 3;
+      for (let i = 0; i < n; i++){ const dx = (i - (n - 1) / 2) * 9 * s * 0.8, dy = Math.abs(i - (n - 1) / 2) * 3 * s; grid(GEM, pal, x + dx - 5 * s, y + dy - 4 * s, s); }
+    } else if (r.kind === "potion"){
+      const n = Math.min(3, r.n), sc = s * 1.1;
+      for (let i = 0; i < n; i++){ const dx = (i - (n - 1) / 2) * 11 * sc; grid(BOTTLE, { K:"#1f1424", W:"#e8fffb", R: POT_COL[r.pot] || "#ff4d5e" }, x + dx - 5 * sc, y - 5 * sc + Math.abs(dx) * 0.15, sc); }
+    } else if (r.kind === "egg"){
+      const my = r.tier === "mythic", sc = s * (my ? 1.4 : 1.2), P = EGG_PAL[r.tier] || EGG_PAL.common;
+      g.save(); g.translate(x, y); g.rotate(Math.sin(now / 200) * 0.08);
+      grid(EGG, my ? (ch => ch === "K" ? "#1f1424" : ch === "W" ? "#fff" : RAINBOW[("ABCD".indexOf(ch) * 2 + Math.floor(now / 220)) % 8])
+                   : { K:"#1f1424", A:P[0], B:P[1], C:P[2], D:"#ffd166", W:"#ffffff" }, -5 * sc, -6 * sc, sc);
+      g.restore();
+    } else if (r.kind === "cos" && thumbs.cos){
+      const sz = 14 * s * 1.1;
+      g.save(); g.imageSmoothingEnabled = false; g.drawImage(thumbs.cos, x - sz / 2, y - sz / 2, sz, sz); g.restore();
+    }
+  }
+
+  /* ---------- open / entry points ---------- */
+  function open(done){
+    if (!C.pending.length){ done && done(); return false; }
+    if (root) return true;
+    onAllDone = done || null;
+    audio(); try { speechCancel(); } catch(e){}
+    build(); play(C.pending[0]);
+    return true;
+  }
+
+  // start-menu button while a chest is waiting (e.g. the app closed before he opened it)
+  let menuBtn = null;
+  function refreshBtn(){
+    const tb = $("testBtn");
+    if (!tb) return;
+    if (!menuBtn){
+      menuBtn = document.createElement("button"); menuBtn.type = "button"; menuBtn.className = "btn qc-entry"; menuBtn.id = "chestBtn";
+      menuBtn.addEventListener("click", () => { const sc = $("startCard"); if (sc) sc.hidden = true; open(() => { if (sc) sc.hidden = false; }); });
+      tb.insertAdjacentElement("afterend", menuBtn);
+    }
+    const n = C.pending.length;
+    menuBtn.hidden = !n;
+    menuBtn.textContent = n > 1 ? `🎁 Open ${n} chests!` : "🎁 Open your chest!";
+  }
+
+  if (window.LLTest){
+    LLTest.on("reward", x => onFinished(x && x.rec));
+    LLTest.on("finish", rec => onFinished(rec));
+    // a button on the results paper (when the results screen offers a slot)
+    LLTest.on("results", x => {
+      if (!x || !x.slot || !C.pending.length) return;
+      const b = document.createElement("button"); b.type = "button"; b.className = "td-btn go qc-open"; b.textContent = "🎁 Open your chest!";
+      b.onclick = () => { b.remove(); open(); };
+      x.slot.appendChild(b);
+    });
+    // leaving Test Day with a chest still closed: open it right away
+    LLTest.on("close", () => { if (C.pending.length) setTimeout(() => { const sc = $("startCard"); if (sc) sc.hidden = true; open(() => { if (sc) sc.hidden = false; }); }, 150); });
+  }
+  refreshBtn();
+
+  window.LLChest = { open, pending: () => C.pending.slice(), _roll: roll, _weights: tierWeights, _rollReward: rollReward,
+    _give(tier, r){ C.pending.push({ tier, d: today(), wed: false, score: 0, n: 0, r: r || rollReward(tier) }); put(); refreshBtn(); } };
 })();
 </script>
 
