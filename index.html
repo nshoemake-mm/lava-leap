@@ -63,7 +63,12 @@ body{font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transpar
 .tile.now{border-color:var(--glow)}
 .tile.show{border-color:var(--glow);color:var(--glow)}
 
-.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(14,8,16,.74);padding-block:max(16px, env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-bottom,0px));padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));overflow:auto;-webkit-user-select:text;user-select:text}
+.overlay{position:fixed;inset:0;z-index:20;display:grid;background:rgba(14,8,16,.74);padding-block:max(16px, env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-bottom,0px));padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));overflow:auto;-webkit-user-select:text;user-select:text}
+/* menus never spill off small screens: card is safely centered (auto margins fall back to top-aligned when tall),
+   capped to the screen, and scrolls inside itself */
+.overlay{overflow:hidden;overscroll-behavior:none;touch-action:none}
+.overlay > .card,.lm-over > .lm-card{margin:auto;max-height:100%;box-sizing:border-box;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+.overlay > .card > *,.lm-over > .lm-card > *{flex-shrink:0}
 .card{width:100%;max-width:400px;background:var(--deck);border:4px solid var(--deck-edge);box-shadow:0 0 0 4px #120b15, 0 18px 40px rgba(0,0,0,.5);padding:20px;display:flex;flex-direction:column;gap:14px}
 .card h1,.card h2{margin:0;font-family:var(--display);font-weight:700;line-height:1;text-wrap:balance}
 .card h1{font-size:44px;color:var(--glow);text-shadow:3px 3px 0 #a3300c}
@@ -169,6 +174,31 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .start-row .btn{flex:1;width:auto;min-width:0;padding-inline:8px}
 .start-foot{display:flex;justify-content:space-between;align-items:center;padding:0 4px}
 .start-foot .linkbtn{align-self:auto}
+/* compact end-of-round card: buttons stay on screen, info scrolls (iPhone mini Safari) */
+#winCard .card{padding:14px;gap:10px;min-height:0;overflow:hidden}
+#winCard .card > .win-body{flex-shrink:1}
+.win-body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:flex;flex-direction:column;gap:8px}
+.win-body h2{font-size:24px;text-align:center}
+#winCard .win-body p{font-size:16px;line-height:1.3}
+#winCard .win-body p.small{font-size:14px;margin-bottom:4px}
+#winCard #mapWin{font-size:15px;line-height:1.3}
+#winCard #mapWin .mstars{font-size:20px}
+#winCard .sf-win{min-height:0;padding:6px 10px;gap:10px}
+#winCard .sf-win .sf-pic{width:44px;min-height:40px}
+#winCard .sf-txt b{font-size:17px}
+#winCard .sf-txt span{font-size:14px}
+#winCard .practice{gap:4px}
+#winCard .practice > span{font-size:15px;padding:2px 6px}
+.win-actions{flex:none;display:flex;flex-direction:column;gap:8px}
+#winCard .btn{min-height:44px;padding-block:8px}
+#winCard #bossBtn{font-size:15px;line-height:1.15}
+#winCard .seg button{padding:5px 4px;font-size:15px}
+#winCard .seg button small{display:none}
+.win-body.more{-webkit-mask-image:linear-gradient(#000 calc(100% - 36px),transparent);mask-image:linear-gradient(#000 calc(100% - 36px),transparent)}
+.win-body > *{flex:none}
+.win-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.win-row .btn{width:auto;min-width:0;padding-inline:6px;font-size:16px;white-space:nowrap}
+.win-row .gem{width:12px;height:12px;flex:none;background:#5ee0d0;box-shadow:inset -3px -3px 0 #2a9d8f, inset 3px 3px 0 #b8fff6;transform:rotate(45deg)}
 #gateCard input{width:100%;box-sizing:border-box;font:700 24px var(--body);text-align:center;background:#140d18;color:var(--ink);border:3px solid var(--deck-edge);padding:8px;border-radius:0}
 #gateCard input.bad{border-color:var(--bad)}
 </style>
@@ -256,23 +286,29 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 
 <div class="overlay" id="winCard" hidden>
   <div class="card">
-    <h2 id="winTitle">You crossed the lava!</h2>
-    <p id="winScore"></p>
-    <div class="sf-win" id="winStreak" hidden></div>
-    <div id="winBeat" hidden>
-      <p class="small" style="margin-bottom:6px">Tricky parts defeated:</p>
-      <div class="practice" id="beatList"></div>
+    <div class="win-body">
+      <h2 id="winTitle">You crossed the lava!</h2>
+      <p id="winScore"></p>
+      <div class="sf-win" id="winStreak" hidden></div>
+      <div id="winBeat" hidden>
+        <p class="small">Tricky parts defeated:</p>
+        <div class="practice" id="beatList"></div>
+      </div>
+      <div id="winPractice" hidden>
+        <p class="small">Tricky parts to beat (3 clean rounds each):</p>
+        <div class="practice" id="practiceList"></div>
+      </div>
     </div>
-    <div id="winPractice" hidden>
-      <p class="small" style="margin-bottom:6px">Tricky parts to beat (3 clean rounds each):</p>
-      <div class="practice" id="practiceList"></div>
+    <div class="win-actions">
+      <button class="btn go" id="bossBtn" type="button" hidden>Fight the Lava Monster: double diamonds</button>
+      <div class="label">Difficulty for next round</div>
+      <div class="seg" data-seg></div>
+      <div class="win-row">
+        <button class="btn alt" id="againBtn" type="button">Play again</button>
+        <button class="btn alt" id="winShopBtn" type="button">Shop <span class="gem" aria-hidden="true"></span><span data-gems>0</span></button>
+        <button class="btn alt" id="mainMenuBtn" type="button">Main menu</button>
+      </div>
     </div>
-    <button class="btn go" id="bossBtn" type="button" hidden>Fight the Lava Monster: double diamonds</button>
-    <div class="label">Difficulty for next round</div>
-    <div class="seg" data-seg></div>
-    <button class="btn alt" id="againBtn" type="button">Play again</button>
-    <button class="btn alt" id="winShopBtn" type="button">Shop · <span data-gems>0</span> diamonds</button>
-    <button class="btn alt" id="mainMenuBtn" type="button">Main menu</button>
   </div>
 </div>
 
@@ -1812,7 +1848,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .lm-btn{appearance:none;border:0;cursor:pointer;flex:1;min-height:48px;font-family:var(--display,"Pixelify Sans",monospace);font-weight:700;font-size:17px;color:#2a1405;background:#ffb627;box-shadow:inset -4px -4px 0 rgba(0,0,0,.25),inset 4px 4px 0 rgba(255,255,255,.35);touch-action:manipulation}
 .lm-btn.alt{background:#4b3a57;color:#fff3e4;flex:0 0 auto;padding:0 16px}
 .lm-btn.go{background:#62d26f;color:#0e2a12}
-.lm-over{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:rgba(14,8,16,.74);padding:16px;overflow:auto;-webkit-user-select:text;user-select:text}
+.lm-over{position:fixed;inset:0;z-index:2;display:grid;background:rgba(14,8,16,.74);padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:text;user-select:text}
 .lm-card{width:100%;max-width:400px;box-sizing:border-box;background:#251b2c;border:4px solid #3b2c45;box-shadow:0 0 0 4px #120b15,0 18px 40px rgba(0,0,0,.5);padding:20px;display:flex;flex-direction:column;gap:12px}
 .lm-card h2{margin:0;font-family:var(--display,"Pixelify Sans",monospace);font-size:30px;line-height:1.05;color:#ffb627}
 .lm-card p{margin:0;font-size:18px;line-height:1.4}
@@ -3169,6 +3205,12 @@ function closeShop(){ $("shopCard").hidden = true; pvStop(); $(shopReturn).hidde
 $("shopDone").addEventListener("click", closeShop);
 $("startShopBtn").addEventListener("click", () => openShop("startCard"));
 $("winShopBtn").addEventListener("click", () => openShop("winCard"));
+(() => { // fade the bottom of the round summary while there is more to scroll to
+  const body = document.querySelector("#winCard .win-body"); if (!body) return;
+  const upd = () => body.classList.toggle("more", body.scrollHeight - body.clientHeight - body.scrollTop > 4);
+  body.addEventListener("scroll", upd, { passive: true });
+  if (window.ResizeObserver){ const ro = new ResizeObserver(upd); ro.observe(body); [...body.children].forEach(c => ro.observe(c)); }
+})();
 
 /* live preview: the hero hops between two blocks over the lava, wearing what's selected */
 let pv = null;
