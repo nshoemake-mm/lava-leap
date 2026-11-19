@@ -5308,7 +5308,7 @@ window.LavaEvents = (() => {
   const lastRec = () => T.hist[T.hist.length - 1];
 
   /* ---------- screen ---------- */
-  let root = null, back = null, state = null, keyH = null;
+  let root = null, back = null, state = null, keyH = null, hop = 0;   // hop: cancels a pending word change
   const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 
   function open(opts){
@@ -5416,7 +5416,8 @@ window.LavaEvents = (() => {
     state.lock = true;
     T.cur.ans.push(state.typed.trim()); put();
     sfx("land"); speechCancel();
-    setTimeout(() => { if (root) run(); }, 250);
+    const g = ++hop;
+    setTimeout(() => { if (root && T.cur && g === hop) run(); }, 250);
   }
   function askStop(){
     const box = document.createElement("div"); box.className = "td-ask";
@@ -5425,7 +5426,12 @@ window.LavaEvents = (() => {
       <button class="td-btn go" type="button" data-a="keep">Keep going</button>
       <button class="td-btn" type="button" data-a="stop">Stop test</button></div>`;
     root.appendChild(box); if (state) state.lock = true;
-    box.querySelector('[data-a="keep"]').onclick = () => { box.remove(); if (state) state.lock = false; };
+    hop++;   // Stop tapped mid word change: wait for his choice
+    box.querySelector('[data-a="keep"]').onclick = () => {
+      box.remove();
+      if (T.cur && state && T.cur.ans.length > state.i) return run();   // that word was already handed in
+      if (state) state.lock = false;
+    };
     box.querySelector('[data-a="stop"]').onclick = () => {
       box.remove();
       // stopped before writing a single word: it doesn't use up today's test
@@ -5435,6 +5441,7 @@ window.LavaEvents = (() => {
   }
 
   function done(early){
+    hop++;
     if (keyH) document.removeEventListener("keydown", keyH), keyH = null;
     state = null;
     const rec = finish(T.cur, early);
