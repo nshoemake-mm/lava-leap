@@ -1060,7 +1060,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     const g = geo();
     S.player.jump = { fx: g.ledgeX, fy: g.ledgeY, tx: b.x, ty: b.y - b.h * 0.5, t: 0, dur: reduceMotion ? 200 : 360, b };
     S.blocks.forEach(x => { if (x !== b) x.sink = 0.001; });
-    S.say(b.t, 1, true, "tap");
+    S.say(b.t.split("").join(", "), 1, true, "tap");   // a chunk ("ful") is spelled: letters have clips
     later(() => {
       if (!S) return;
       let i = S.chunk.e; while (i < S.word.length && !/[a-z]/.test(S.word[i])) i++;
@@ -2785,8 +2785,6 @@ const CLIPS = (() => {
       if (slow || map[n]) { out.push({ k: slow || n, gap: 0.12 }); continue; }
       const letters = n.split(" ");
       if (letters.every(c => c.length === 1 && map[c])) { letters.forEach(c => out.push({ k: c, gap: rate <= 0.85 ? 0.22 : 0.12 })); continue; }
-      // a tricky part on its own ("ful", "igh"): spell it
-      if (/^[a-z]{2,4}$/.test(n) && n.split("").every(c => map[c])) { n.split("").forEach(c => out.push({ k: c, gap: 0.18 })); continue; }
       // no clip: skip this bit (never the robot voice), and note it for the next voice update
       miss(n);
     }
@@ -3104,7 +3102,7 @@ function tapLetter(b){
   if (b.ch === want){
     G.phase = "jumping";
     clearChoices(b);
-    say(b.ch, 0.9, true, "tap"); LLAudio.sfx("jump");
+    say(String(b.ch).split("").join(", "), 0.9, true, "tap"); LLAudio.sfx("jump");
     jumpTo(b, () => {
       LLAudio.sfx("land");
       G.pos++; G.letterMisses = 0;
@@ -5535,6 +5533,7 @@ window.LavaEvents = (() => {
     win() { [523, 659, 784, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => tone(f, .22), i * 110)); },
   };
   const ownSay = (t, r, c, g) => (global.say || function () {})(t, r, c, g);   // clips only, never the phone voice
+  const spoken = t => t;   // marks a spoken line for the voice maker
 
   /* ---------- confetti (blocky) ---------- */
   function burst(root, x, y, n) {
@@ -5606,7 +5605,7 @@ window.LavaEvents = (() => {
     function build0() {
       step = 1; built = 0;
       pool = [...W.chunks.map((c, i) => ({ c, ok: i })), ...W.decoys.map(d => ({ c: d.c, why: d.why }))].sort(() => Math.random() - .5);
-      talk(`Build the word! Tap the blocks in order. Watch out for <em>traps</em>!`, "", "Build the word. Watch out for traps!"); build();
+      talk(`Build the word! Tap the blocks in order. Watch out for <em>traps</em>!`, "", spoken("Build the word. Watch out for traps!")); build();
     }
     function build() {
       const done = built === W.chunks.length;
@@ -5633,13 +5632,13 @@ window.LavaEvents = (() => {
     /* 3. Hide it (2 passes)  +  4. Solo */
     function fade(p) {
       step = 2; mode = p === 0 ? "ghost" : "holes"; pos = 0; misses = 0; newOpts();
-      if (p === 0) talk(`Copy it! Tap the letters to fill the boxes.`, "", "Copy it! Tap the letters.");
-      else talk(`Uh oh, the sneaky letters are <em>hiding</em>! Can you find them?`, "think", "The sneaky letters are hiding. Can you find them?");
+      if (p === 0) talk(`Copy it! Tap the letters to fill the boxes.`, "", spoken("Copy it! Tap the letters."));
+      else talk(`Uh oh, the sneaky letters are <em>hiding</em>! Can you find them?`, "think", spoken("The sneaky letters are hiding. Can you find them?"));
       spell();
     }
     function solo() {
       step = 3; mode = "solo"; pos = 0; misses = 0; slips = 0; peeks = 0; newOpts();
-      talk(`Look at it really hard... I'm going to cover it up!`, "think", `Look at it really hard. I'm going to cover it up.`);
+      talk(`Look at it really hard... I'm going to cover it up!`, "think", spoken(`Look at it really hard. I'm going to cover it up.`));
       spell(true);
     }
     function newOpts() {
@@ -5668,7 +5667,7 @@ window.LavaEvents = (() => {
         `<div class="ww-row">${mode === "solo" && !done ? `<button class="ww-btn alt" id="wwPeek">👀 Peek (costs a ★)</button>` : ""}${done ? `<button class="ww-btn go" id="wwNext">${nextLabel}</button>` : ""}</div>`);
       if (look) {
         const lid = $("#wwLid"); lid.hidden = false; lid.className = "ww-lid show"; lid.textContent = W.word;
-        let n = 3; const tick = () => { if (n > 0) { talk(`Remember it... <b>${n}</b>`, "think"); spellBubble(); n--; later(tick, 1000); } else { lid.className = "ww-lid"; lid.textContent = "hidden!"; talk(`Now spell it all by yourself!`, "", `Now spell ${W.word}, all by yourself!`); spellBubble(); later(() => spell(), 700); } };
+        let n = 3; const tick = () => { if (n > 0) { talk(`Remember it... <b>${n}</b>`, "think"); spellBubble(); n--; later(tick, 1000); } else { lid.className = "ww-lid"; lid.textContent = "hidden!"; talk(`Now spell it all by yourself!`, "", spoken(`Now spell ${W.word}, all by yourself!`)); spellBubble(); later(() => spell(), 700); } };
         later(tick, 900);
       }
       root.querySelectorAll(".ww-blk").forEach(b => b.onclick = () => tap(+b.dataset.i, b));
@@ -5716,7 +5715,7 @@ window.LavaEvents = (() => {
       $("#wwDone").onclick = () => close({ stars, slips, peeks, quit: false });
     }
 
-    talk(`Tap each block to hear it. Start with the bouncing one!`, "", `Let's catch the word ${W.word}. Tap each block to hear it.`);
+    talk(`Tap each block to hear it. Start with the bouncing one!`, "", spoken(`Let's catch the word ${W.word}. Tap each block to hear it.`));
     if (W.sentence) later(() => say(W.sentence, .9, false), 60);
     hear();
     return { close: () => close({ quit: true, stars: 0, slips, peeks }) };
