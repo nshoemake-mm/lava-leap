@@ -3993,8 +3993,10 @@ window.LLStreak = (() => {
     if (changed) store.set(MAP_KEY, JSON.stringify(M));
   })();
   const passed = w => validIso(w.test) && w.test < today();
+  const OPEN_STARS = 2;                       // stars in a world that open the next one early
+  const beaten = w => (w.stars || 0) >= OPEN_STARS;
   function unlocked(i){
-    for (let j = 1; j <= i; j++){ const p = M.worlds[j - 1]; if (!p || !(p.cleared || passed(p))) return false; }
+    for (let j = 1; j <= i; j++){ const p = M.worlds[j - 1]; if (!p || !(beaten(p) || passed(p))) return false; }
     return i >= 0 && i < M.worlds.length;
   }
   const isOpen = w => unlocked(M.worlds.indexOf(w));
@@ -4205,8 +4207,8 @@ window.LLStreak = (() => {
     if (!unlocked(i - 1)) return `Open World ${i} first!`;
     const when = validIso(p.test) ? niceDay(addDays(p.test, 1)) : "";
     return spoken
-      ? `Locked! Beat ${wname(p)} to open it${when ? ", or it opens by itself on " + when : ""}.`
-      : `Beat <b>${wname(p)}</b> to open it!${when ? `<br>Or it opens by itself on <b>${when}</b>.` : ""}`;
+      ? `Locked! Get 2 stars in ${wname(p)} to open it${when ? ", or it opens by itself on " + when : ""}.`
+      : `Get <b>★★</b> in <b>${wname(p)}</b> to open it!${when ? `<br>Or it opens by itself on <b>${when}</b>.` : ""}`;
   }
   function renderMap(){
     const track = $("mapTrack"), n = M.worlds.length, rows = n + 1, H = rows * ROW;
@@ -4246,7 +4248,7 @@ window.LLStreak = (() => {
       b.appendChild(islandCanvas(t, { flag: w.cleared }));
       b.insertAdjacentHTML("beforeend", open
         ? `<b>${wname(w)}</b><small>${testLabel(w)}</small>${starsHtml(w.stars)}`
-        : `<b>🔒 ${wname(w)}</b><span class="lk">Beat World ${i}!</span>`);
+        : `<b>🔒 ${wname(w)}</b><span class="lk">★★ in World ${i}!</span>`);
       b.addEventListener("click", () => { sel = w.id; say(open ? wname(w) : lockHint(i, true), 0.95, true, open ? "tap" : undefined); renderMap(); });
       track.appendChild(b);
       if (w.id === M.cur){
@@ -4327,7 +4329,8 @@ window.LLStreak = (() => {
       w.best = Math.max(w.best, perf); w.plays++;
       persist();
       if (bonus){ SAVE.gems += bonus; save(); updateHud(); }
-      const tip = w.stars < 2 ? "Get 3 of 4 words perfect for ★★." : w.stars < 3 ? "All perfect on Medium or Hard for ★★★." : "All 3 stars!";
+      const nextLocked = idx(w) + 1 < M.worlds.length && !unlocked(idx(w) + 1);
+      const tip = w.stars < 2 ? "Get 3 of 4 words perfect for ★★" + (nextLocked ? " and open the next world!" : ".") : w.stars < 3 ? "All perfect on Medium or Hard for ★★★." : "All 3 stars!";
       const opened = openCount() > openBefore ? M.worlds[openCount() - 1] : null;
       winInfo.innerHTML = `${starsHtml(stars)}<br>${firstClear ? `<b>${wname(w)} cleared!</b> Flag planted.` : wname(w)}${bonus ? ` +${bonus} bonus diamonds.` : ""}${opened ? `<br><b>🔓 ${wname(opened)} is open!</b>` : ""}<br><span class="small">${tip}</span>`;
       if (opened){ M.open = openCount(); persist(); setTimeout(() => say(wname(opened) + " is open!", 0.95, false), firstClear ? 4200 : 2600); }
@@ -4340,7 +4343,7 @@ window.LLStreak = (() => {
   const td = document.createElement("div"); td.id = "testDays";
   $("wordBox").insertAdjacentElement("afterend", td);
   function renderTestDays(){
-    td.innerHTML = `<h3>Test days</h3><p class="small" style="margin:0">The next world opens when he beats the one before it, or the day after that world's test. A brand new list gets the Wednesday after the last one.</p>`;
+    td.innerHTML = `<h3>Test days</h3><p class="small" style="margin:0">The next world opens when he gets 2 stars (3 of 4 words right first try) in the one before it, or the day after that world's test. A brand new list gets the Wednesday after the last one.</p>`;
     M.worlds.slice().reverse().forEach(w => {
       const i = idx(w), l = document.createElement("label");
       l.innerHTML = `<span>World ${i + 1}: ${wname(w)}${w.id === M.cur ? " (now)" : ""}${unlocked(i) ? "" : " 🔒"}</span>`;
