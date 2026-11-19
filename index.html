@@ -4030,6 +4030,12 @@ window.LLStreak = (() => {
     const w = addWorld(lines); ensureOpen(); return w;
   }
   // the world he plays must be open: if not, go back to the newest open world
+  // a world opened since last time (his test day passed) and the one he's on is done: move him to the newest open world
+  function advanceIfDone(){
+    const n = openCount(), w = curWorld();
+    if (M.open != null && n > M.open && w && passed(w) && idx(w) < n - 1){ selectWorld(M.worlds[n - 1]); return true; }
+    return false;
+  }
   function ensureOpen(){
     const w = curWorld(); if (!w || isOpen(w)) return false;
     const n = openCount(), back = M.worlds[Math.max(0, n - 1)];
@@ -4177,6 +4183,7 @@ window.LLStreak = (() => {
     if (sync()) toast = toast || "new";
     const nOpen = openCount();
     if (!toast && M.open != null && nOpen > M.open) toast = "opened";
+    advanceIfDone();
     if (M.open !== nOpen){ M.open = nOpen; persist(); }
     mapFrom = from; $(from).hidden = true;
     sel = M.cur;
@@ -4352,7 +4359,11 @@ window.LLStreak = (() => {
       inp.addEventListener("change", () => {
         if (!validIso(inp.value)) { inp.value = w.test || ""; return; }
         w.test = inp.value; persist();
-        if (ensureOpen()) $("wordBox").value = linesOf(wordList).join("\n");
+        if (ensureOpen()){
+          $("wordBox").value = linesOf(wordList).join("\n");
+          // the world changed under a round in progress: end that round so it can't count for the other world
+          if (G.order.length){ toMainMenu(); $("startCard").hidden = true; $("editCard").hidden = false; editReturn = "startCard"; }
+        }
         renderTestDays(); renderStartLine();
       });
       l.appendChild(inp); td.appendChild(l);
@@ -4363,10 +4374,7 @@ window.LLStreak = (() => {
 
   sync();
   // a world opened since last time (his test day passed) and the one he's on is done: move him to the newest open world
-  (function(){
-    const n = openCount(), w = curWorld();
-    if (M.open != null && n > M.open && w && passed(w) && idx(w) < n - 1) selectWorld(M.worlds[n - 1]);
-  })();
+  advanceIfDone();
   if (M.open == null){ M.open = openCount(); persist(); }
   renderStartLine();
   // Test Day / countdown: date + words of his NEXT real test (not always the world he's playing)
