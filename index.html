@@ -1792,6 +1792,22 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .lm-choice.glow{animation:lmGlow .5s infinite alternate}
 .lm-choice.right{background:#e0a526;color:#5a3a06;box-shadow:inset -5px -5px 0 #a8730f,inset 5px 5px 0 #ffe08a,0 5px 0 #8c5d10}
 @keyframes lmGlow{to{box-shadow:0 0 0 5px #5ee0d0,inset -5px -5px 0 #6d677a}}
+.lm-choice.lm-ice{color:transparent;background:#c8ecfc;box-shadow:inset -5px -5px 0 #5f9cbd,inset 5px 5px 0 #ffffff,0 5px 0 #2a75a5;position:relative}
+.lm-choice.lm-ice::after{content:"❄ tap";position:absolute;inset:0;display:grid;place-items:center;color:#16405a;font-size:18px}
+.lm-choice.lm-spore{color:transparent;background:#9b6bd8;box-shadow:inset -5px -5px 0 #5a2a88,inset 5px 5px 0 #c9a8ff,0 5px 0 #3a1a58;position:relative;animation:lmPuff .8s infinite alternate}
+.lm-choice.lm-spore::after{content:"☁ tap";position:absolute;inset:0;display:grid;place-items:center;color:#f3e9ff;font-size:18px}
+@keyframes lmPuff{to{transform:scale(1.04)}}
+.lm-choices.lm-shuf .lm-choice{opacity:.15;transform:scale(.8);pointer-events:none}
+.lm-choices.lm-sand .lm-choice:not(.sunk):not(.right){color:transparent;background:#ecc66e;box-shadow:inset -5px -5px 0 #b06a22,inset 5px 5px 0 #fff1b8,0 5px 0 #7a4414;transition:background .3s,color .3s}
+.lm-choices.lm-wind .lm-choice:not(.sunk){animation:lmSway 1.6s ease-in-out infinite alternate}
+.lm-choices.lm-wind .lm-choice:nth-child(2n){animation-delay:-.8s}
+.lm-choices.lm-wind .lm-choice:nth-child(3n){animation-duration:1.2s}
+.lm-choices.lm-gust .lm-choice{animation-name:lmGust}
+@keyframes lmSway{from{transform:translate(-7px,2px) rotate(-3deg)}to{transform:translate(7px,-2px) rotate(3deg)}}
+@keyframes lmGust{from{transform:translate(-14px,3px) rotate(-5deg)}to{transform:translate(14px,-3px) rotate(5deg)}}
+.lm-choice.lm-gem:not(.right):not(.sunk){background:linear-gradient(135deg,#d8c8ff,#9a94a6 60%,#ffd1f5)}
+.lm-choices.five{grid-template-columns:repeat(3,1fr)}
+.lm-tip{font-size:13px;color:#ffb627;text-align:center;min-height:0}
 .lm-row{display:flex;gap:8px}
 .lm-btn{appearance:none;border:0;cursor:pointer;flex:1;min-height:48px;font-family:var(--display,"Pixelify Sans",monospace);font-weight:700;font-size:17px;color:#2a1405;background:#ffb627;box-shadow:inset -4px -4px 0 rgba(0,0,0,.25),inset 4px 4px 0 rgba(255,255,255,.35);touch-action:manipulation}
 .lm-btn.alt{background:#4b3a57;color:#fff3e4;flex:0 0 auto;padding:0 16px}
@@ -1830,6 +1846,117 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   const PSPRITE = ["..HHHH..", ".HHHHHH.", "HHSSSSHH", "HSWDSWDS", ".SSSSSS.", ".SSMMSS.", "..TTTT..", ".TTRRTT.", "STTTTTTS", "S.TTTT.S", "..PPPP..", "..P..P..", ".KK..KK."];
   const PPAL = { H:"#4a2c1a", S:"#e7b58a", W:"#ffffff", D:"#1d2b53", M:"#a8563a", T:"#1fa39a", R:"#ffb627", P:"#2f3d78", K:"#2a1a12" };
 
+  /* ---------- one boss per world theme (index = LavaMap theme index). Original designs.
+     Sprite letters keep the same meaning for every boss: K outline, R body (cracks as it weakens),
+     O glow, Y/W/E eyes, T/M teeth + mouth; A/B are extra colors. twist: see TWISTS below. ---------- */
+  const BOSSES = [
+    { id: "sizzle", name: "Sizzlejaw", world: "Ember Volcano", sprite: MON, pal: MPAL, twist: null, shot: "fire",
+      intro: "Lava monster! Pick the right tricky part to hit Sizzlejaw.", hint: "" },
+    { id: "frostmaw", name: "Frostmaw", world: "Frost Cavern", twist: "freeze", shot: "ice",
+      pal: { K:"#0c2238", R:"#7fc4e8", O:"#d8f6ff", Y:"#a8f0ff", W:"#ffffff", E:"#0c2238", T:"#ffffff", M:"#123a5c", A:"#e8fbff", B:"#3a7aa8" },
+      lava: ["#e8fbff","#a8e6ff","#62c6f5","#3299dc","#1f74bd"], tint: "#3299dc",
+      special: { mini: ["Ice Storm", "Frost Burst"], super: "Super Diamond Blast", color: "#a8f0ff" },
+      taunts: { 2: "Brrr! I'll freeze your spelling solid!", 3: "Last stand! The cave will freeze forever!" },
+      intro: "Frostmaw the ice golem! He freezes your blocks. Tap the ice to crack it.", hint: "Tap ice to crack it!",
+      sprite: ["..A...A..A...A..", ".KAK.KAKKAK.KAK.", ".KRRKRRRRRRKRRK.", "KRRRRRRRRRRRRRRK", "KRBBBRRRRRRBBBRK", "KRRYYYRRRRYYYRRK", "KRYWEYRRRRYEWYRK", "KRRYYYRORRYYYRRK", "KORRRRRRRRRRRROK", "KRTMMTMMTMMTMMRK", "KRMMMMMMMMMMMMRK", "KRMTMMTMMTMMTMRK", "KRRRRRRRRRRRRRRK", "KRRORRRRRRRRORRK", ".KRRRROORRRRRRK.", "....KKKKKKKK...."] },
+    { id: "thornback", name: "Thornback", world: "Vine Jungle", twist: "shuffle", shot: "vine",
+      pal: { K:"#10240f", R:"#3f8a35", O:"#9be05a", Y:"#ffd166", W:"#fff1b8", E:"#10240f", T:"#f4e9d8", M:"#4a1a12", A:"#62c04a", B:"#2a5a22" },
+      lava: ["#e3ff8a","#b8f04a","#7ed321","#4caf2a","#2f7d1c"], tint: "#4caf2a",
+      special: { mini: ["Leaf Storm", "Vine Whip"], super: "Super Diamond Blast", color: "#9be05a" },
+      taunts: { 2: "Grrr! My vines will tangle your letters!", 3: "Last stand! The jungle is mine!" },
+      intro: "Thornback the vine beast! His vines shuffle your blocks around. Watch closely!", hint: "Vines shuffle the blocks!",
+      sprite: ["A..A.A....A.A..A", ".AA.AAA..AAA.AA.", "..AAKKKKKKKKAA..", ".AKRRRRRRRRRRKA.", "AKRRORRRRRRORRKA", ".KRYYYRRRRYYYRK.", "AKRYEWRRRRWEYRKA", ".KRYYYRRRRYYYRK.", "AKRRRRRBBRRRRRKA", ".KRRRRRRRRRRRRK.", "AKTMTMTMTMTMTMKA", ".KMMMMMMMMMMMMK.", "AKTMTMTMTMTMTMKA", ".KRRRRRRRRRRRRK.", "..KRRORRRRORRK..", "....KKKKKKKK...."] },
+    { id: "dunestinger", name: "Dunestinger", world: "Sunscorch Desert", twist: "sand", shot: "rock",
+      pal: { K:"#2c1606", R:"#c9822e", O:"#ff5a1f", Y:"#ffe08a", W:"#fff8e0", E:"#2c1606", T:"#f4e9d8", M:"#5a2a0a", A:"#a8601e", B:"#8a5420" },
+      lava: ["#fff1b8","#ecc66e","#d89a3a","#b06a22","#7a4414"], tint: "#d89a3a",
+      special: { mini: ["Sand Twister", "Sun Flare"], super: "Super Diamond Blast", color: "#ffe08a" },
+      taunts: { 2: "Hsss! I'll bury your words in sand!", 3: "Last stand! Feel my stinger!" },
+      intro: "Dunestinger the sand scorpion! Sandstorms blow over your blocks. Wait for the sand to clear.", hint: "Sandstorms cover the blocks!",
+      sprite: ["KK............KK", "KAK..........KAK", "KAAK...KK...KAAK", ".KAAK.KOOK.KAAK.", "..KAKKRRRRKKAK..", "...KRRRRRRRRK...", "..KRYYRRRRYYRK..", "..KYWEYRRYEWYK..", "..KRYYRRRRYYRK..", ".KRRRRRORRRRRRK.", ".KRTMTMTMTMTMRK.", ".KRMMMMMMMMMMRK.", ".KRTMTMTMTMTMRK.", "KRRRORRRRRRORRRK", "KRBRBRBRRBRBRBRK", "....KKKKKKKK...."] },
+    { id: "glimmerjaw", name: "Glimmerjaw", world: "Crystal Caves", twist: "crystal", shot: { shape: "shard", core: "#ff8ae0", hi: "#ffffff", glow: "#7a3fd0", trail: ["#c9a8ff", "#ffd1f5"], word: "crystal shard" },
+      pal: { K:"#160c26", R:"#6a4fb0", O:"#ff8ae0", Y:"#5ee0d0", W:"#e8fffb", E:"#160c26", T:"#f3e9ff", M:"#2a1450", A:"#c9a8ff", B:"#ff8ae0" },
+      lava: ["#ffd1f5","#ff8ae0","#b06aff","#7a3fd0","#4a2490"], tint: "#b06aff",
+      special: { mini: ["Prism Beam", "Gem Burst"], super: "Super Diamond Blast", color: "#ff8ae0" },
+      taunts: { 2: "Clack clack! My crystals will trick you!", 3: "Last stand! Shiny, shiny, not done yet!" },
+      intro: "Glimmerjaw the crystal crab! He makes crystal copies, so there is an extra block to trick you.", hint: "One extra trick block!",
+      sprite: ["...A...AA...A...", "..AAA.AAAA.AAA..", "..ABA.ABBA.ABA..", "....KKKKKKKK....", "KRRRRRRRRRRRRRRK", "KRORRRRRRRRRRORK", "KRRYYYRRRRYYYRRK", "KRRYWEYRRYEWYRRK", "KRRYYYRRRRYYYRRK", "KRRRRRRRRRRRRRRK", "KRTMTMTMTMTMTMRK", "KRMMMMMMMMMMMMRK", "KRMTMTMTMTMTMTRK", "KRRRRRRRRRRRRRRK", ".KRAARRRRRRAARK.", "..KKKKKKKKKKKK.."] },
+    { id: "stormbeak", name: "Stormbeak", world: "Sky Islands", twist: "wind", shot: { shape: "shard", core: "#ffd166", hi: "#ffffff", glow: "#4a7ec8", trail: ["#fff1b8", "#c8e6ff"], word: "lightning bolt" },
+      pal: { K:"#132a4c", R:"#4a7ec8", O:"#ffd166", Y:"#c8e6ff", W:"#ffffff", E:"#132a4c", T:"#ffb627", M:"#a8601e", A:"#e8f4ff", B:"#2a5288" },
+      lava: ["#ffffff","#e8f4ff","#c8e6ff","#8cbcf0","#4a7ec8"], tint: "#4a7ec8",
+      special: { mini: ["Thunder Clap", "Gust Blast"], super: "Super Diamond Blast", color: "#ffd166" },
+      taunts: { 2: "Kraaa! Thunder is coming!", 3: "Last stand! The storm gets stronger!" },
+      intro: "Stormbeak the thunder bird! His wind makes your blocks sway. Tap carefully!", hint: "Wind blows the blocks!",
+      sprite: ["......AAAA......", "....AAAAAAAA....", "....KKKKKKKK....", ".AKRRRRRRRRRRKA.", "AKRRRRRRRRRRRRKA", "KRRYYYRRRRYYYRRK", "KRYWEYRRRRYEWYRK", "KRRYYYRRRRYYYRRK", "KRRRRRTTTTRRRRRK", "KORRRTTTTTTRRROK", "KRRRRMMMMMMRRRRK", "KRRRRRTTTTRRRRRK", ".KRRRRRTTRRRRRK.", "AKRRORRRRRRORRKA", "AAKRRRRRRRRRRKAA", "A..KKKKKKKKKK..A"] },
+    { id: "sporecap", name: "Sporecap", world: "Mushroom Marsh", twist: "spore", shot: { shape: "orb", core: "#c9a8ff", hi: "#ffe0f0", glow: "#5a2a88", trail: ["#e8d4b0", "#9b6bd8"], word: "spore ball" },
+      pal: { K:"#1e0f24", R:"#e8d4b0", O:"#c9a8ff", Y:"#9b6bd8", W:"#ffffff", E:"#1e0f24", T:"#ffffff", M:"#5a2a48", A:"#b83a7a", B:"#ffe0f0" },
+      lava: ["#e3ff8a","#a8c84a","#7a8a3a","#5a6a2a","#3a4418"], tint: "#9b6bd8",
+      special: { mini: ["Spore Cloud", "Toad Stomp"], super: "Super Diamond Blast", color: "#c9a8ff" },
+      taunts: { 2: "Poof! My spores will make you sleepy!", 3: "Last stand! I'm not squished yet!" },
+      intro: "Sporecap the giant mushroom! Spore clouds hide your blocks. Tap a cloud to blow it away.", hint: "Tap clouds to blow them away!",
+      sprite: ["....KKKKKKKK....", "..KKAAAAAAAAKK..", ".KAABBAAAABBAAK.", "KAABBBAAAABBBAAK", "KAAAAAABBAAAAAAK", "....KKKKKKKK....", "..KRRRRRRRRRRK..", "..KYYYRRRRYYYK..", "..KYWEYRRYEWYK..", "..KYYYRRRRYYYK..", "..KRRRRORRRRRK..", "..KRTMTMTMTMRK..", "..KRMMMMMMMMRK..", "..KRRRRRRRRRRK..", "...KRRORRORRK...", "....KKKKKKKKK..."] },
+    { id: "gloomhelm", name: "Gloomhelm", world: "Obsidian Fortress", twist: "chaos", shot: "shadow",
+      pal: { K:"#0f0b12", R:"#3a3344", O:"#b06aff", Y:"#ff3b1f", W:"#ffd166", E:"#0f0b12", T:"#c7b6c9", M:"#1a0a0a", A:"#c93312", B:"#1a1520" },
+      lava: ["#ffb3ff","#d04aff","#8a1fd0","#5a1290","#2a0a50"], tint: "#8a1fd0",
+      special: { mini: ["Shadow Strike", "Dark Quake"], super: "Super Diamond Blast", color: "#b06aff" },
+      taunts: { 2: "You beat the others, but not me!", 3: "Last stand! The fortress never falls!" },
+      intro: "Gloomhelm, the fortress knight! He uses every boss trick. This is the final boss!", hint: "",
+      sprite: [".......AA.......", "......AAAA......", "....KKKAAKKK....", "..KKRRRRRRRRKK..", ".KRRRRRRRRRRRRK.", "KRRBBBBBBBBBBRRK", "KRBYYYBBBBYYYBRK", "KRBYWEYBBYEWYBRK", "KRBBBBBBBBBBBBRK", "KRRRRRRORRRRRRRK", "KRTMTMTMTMTMTMRK", "KRMMMMMMMMMMMMRK", "KRRRRRRRRRRRRRRK", "KORRRRORRORRRROK", ".KRRRRRRRRRRRRK.", "....KKKKKKKK...."] },
+  ];
+  const BOSS_BY_ID = Object.fromEntries(BOSSES.map(b => [b.id, b]));
+
+  /* ---------- boss twists: small tricks on the answer blocks ---------- */
+  const TWIST_HINT = { freeze: "Frozen! Tap the ice to crack it.", shuffle: "Vines shuffle the blocks!", sand: "Sandstorm! Wait for it to clear.",
+    wind: "Windy! The blocks are swaying.", spore: "Spores! Tap a cloud to blow it away.", crystal: "Crystal copy! One extra trick block." };
+  function makeTwist(kind, env) {
+    const easy = env.diff === "easy", hard = env.diff === "hard";
+    let iv = 0, sub = null;
+    const live = () => Array.from(env.box.querySelectorAll(".lm-choice")).filter(b => !b.classList.contains("sunk") && !b.disabled);
+    const every = (ms, fn) => { clearInterval(iv); iv = setInterval(() => { if (env.asking()) fn(); }, ms); };
+    const tw = { extra: 0, hint: "", pre() {}, ask() {}, tap() { return false; },
+      stop() { clearInterval(iv); env.box.classList.remove("lm-sand", "lm-wind", "lm-gust", "lm-shuf"); if (sub) sub.stop(); } };
+    const thaw = b => { if (b.classList.contains("lm-ice") || b.classList.contains("lm-spore")) { b.classList.remove("lm-ice", "lm-spore"); env.sfx(); return true; } return false; };
+    if (kind === "freeze") {
+      tw.ask = () => shuffle(live()).slice(0, easy ? 1 : 2).forEach(b => b.classList.add("lm-ice"));
+      tw.tap = thaw;
+    } else if (kind === "spore") {
+      tw.ask = () => every(easy ? 3400 : hard ? 2000 : 2600, () => {
+        const free = live().filter(b => !b.classList.contains("lm-spore"));
+        if (live().length - free.length >= (easy ? 1 : 2) || !free.length) return;
+        free[Math.random() * free.length | 0].classList.add("lm-spore");
+      });
+      tw.tap = thaw;
+    } else if (kind === "shuffle") {
+      tw.ask = () => every(easy ? 4200 : hard ? 2600 : 3300, () => {
+        const bs = Array.from(env.box.children); if (bs.length < 2) return;
+        env.box.classList.add("lm-shuf");
+        setTimeout(() => {
+          let nb = shuffle(bs), g = 0; while (nb.every((b, i) => b === bs[i]) && g++ < 9) nb = shuffle(bs);
+          nb.forEach(b => env.box.appendChild(b)); env.box.classList.remove("lm-shuf");
+        }, 200);
+      });
+    } else if (kind === "sand") {
+      tw.ask = () => every(easy ? 4600 : hard ? 3000 : 3700, () => {
+        env.box.classList.add("lm-sand");
+        setTimeout(() => env.box.classList.remove("lm-sand"), easy ? 1100 : hard ? 1900 : 1500);
+      });
+    } else if (kind === "wind") {
+      tw.ask = () => { env.box.classList.add("lm-wind"); if (hard) env.box.classList.add("lm-gust"); };
+    } else if (kind === "crystal") {
+      tw.extra = 1;
+      tw.ask = () => live().forEach(b => b.classList.add("lm-gem"));
+    } else if (kind === "chaos") {
+      const kinds = ["freeze", "shuffle", "sand", "wind", "spore", "crystal"]; let last = "";
+      tw.pre = () => {
+        if (sub) sub.stop();
+        let k; do { k = kinds[Math.random() * kinds.length | 0]; } while (k === last); last = k;
+        sub = makeTwist(k, env); tw.extra = sub.extra; tw.hint = TWIST_HINT[k];
+      };
+      tw.ask = () => sub && sub.ask();
+      tw.tap = b => !!sub && sub.tap(b);
+    }
+    return tw;
+  }
+
   function hash(a, b) { let h = (a * 374761393 + b * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
 
   let active = null;
@@ -1838,13 +1965,15 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     if (active) active.stop();
     opts = opts || {};
     const D = DIFF[opts.difficulty] || DIFF.medium;
+    const B = Object.assign({}, BOSSES[0], typeof opts.boss === "string" ? BOSS_BY_ID[opts.boss] : opts.boss);
+    const NAME = B.name;
     const seen = new Set();
     const chunks = (opts.chunks || []).map(c => ({ w: c.w, s: c.s, e: c.e, t: c.t || c.w.slice(c.s, c.e), key: c.key || (c.w + "|" + c.s), sentence: c.sentence || "" }))
       .filter(c => c.w && c.t && !seen.has(c.key) && seen.add(c.key));
     if (!chunks.length) { setTimeout(() => opts.onDone && opts.onDone({ won: false, quit: true, gems: 0, hits: 0, misses: 0, beaten: [], shaky: [], missed: [] }), 0); return { stop() {}, addHeart() { return false; }, shield() { return false; }, glow() { return false; } }; }
 
     const maxHearts = opts.hearts || 3;
-    const BC = opts.boss || {};
+    const BC = B;
     const BN = BC.name || NAME;
     const PH = (BC.phases || PHASES);
     const SP = Object.assign({}, SPECIAL, BC.special || {});
@@ -1882,7 +2011,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 
     /* boss projectile (fireball for Sizzlejaw), see BossAttack */
     const atkOpt = opts.attack === false ? null : (opts.attack || {});
-    const ATK = atkOpt && global.BossAttack ? global.BossAttack.create({ look: atkOpt.look || (opts.boss && opts.boss.shot) || "fire", tone, reduce }) : null;
+    const ATK = atkOpt && global.BossAttack ? global.BossAttack.create({ look: atkOpt.look || B.shot || "fire", tone, reduce }) : null;
     const SHOT = ATK ? ATK.look.word : "";
     const ASK = ATK ? `Block the ${SHOT}! Which part fills the gap?` : "Which part fills the gap?";
 
@@ -1892,7 +2021,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     root.id = "lmRoot";
     root.innerHTML = `
       <div id="lmStage">
-        <canvas id="lmCanvas" aria-label="${NAME} the lava monster rises from the lava."></canvas>
+        <canvas id="lmCanvas" aria-label="${NAME} the boss rises up."></canvas>
         <div class="lm-hud">
           <div class="lm-chip"><span class="lm-hearts" data-r="hearts" aria-label="Hearts"></span><span class="lm-shield" data-r="shield" hidden aria-label="Shield on"></span></div>
           <div class="lm-chip lm-boss" data-r="bossChip"><span>${NAME}<em data-r="ph"></em></span><div class="lm-bar" role="progressbar" aria-label="${NAME} health"><i data-r="hp"></i></div><div class="lm-pwrow"><div class="lm-pow" data-r="powBar" role="progressbar" aria-label="Power"><i data-r="pow"></i></div></div></div>
@@ -1927,6 +2056,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     S.hp = S.hpMax;
     // full meter = every hit clean with an average-length chunk
     S.powMax = Math.max(2, S.hpMax * chunks.reduce((a, c) => a + c.t.length, 0) / chunks.length);
+    const tw = makeTwist(B.twist, { box: R.choices, diff: opts.difficulty, asking: () => S.phase === "ask" && !S.done, sfx: () => tone(900, 1500, 0.12, "triangle", 0.06) });
     let T = 0, lastT = performance.now(), raf = 0, timers = [];
     const later = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
 
@@ -1972,26 +2102,28 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     function ask() {
       if (S.done) return;
       S.q = nextChunk(); S.last = S.q; S.tries = 0;
-      const opts2 = shuffle([S.q.t].concat(chunkDecoys(S.q.t, D.choices - 1)));
-      R.choices.innerHTML = ""; R.choices.className = "lm-choices" + (opts2.length === 3 ? " three" : "");
+      tw.stop(); tw.pre();
+      const opts2 = shuffle([S.q.t].concat(chunkDecoys(S.q.t, D.choices - 1 + tw.extra)));
+      R.choices.innerHTML = ""; R.choices.className = "lm-choices" + (opts2.length === 3 ? " three" : opts2.length >= 5 ? " five" : "");
       opts2.forEach(t => {
         const b = document.createElement("button"); b.type = "button"; b.className = "lm-choice"; b.textContent = t; b.dataset.t = t;
         b.addEventListener("click", () => pick(b));
         R.choices.appendChild(b);
       });
       tiles(false);
-      setSay(ASK);
-      S.phase = "ask";
+      setSay(tw.hint ? (ATK ? `Block the ${SHOT}! ${tw.hint}` : `${tw.hint} Which part fills the gap?`) : ASK);
+      S.phase = "ask"; tw.ask();
       later(() => speak(false), 250);
       if (ATK) ATK.arm(windup(), 250 + talkMs(S.q, false));
     }
 
     function pick(b) {
       if (S.phase !== "ask" || b.classList.contains("sunk")) return;
+      if (tw.tap(b)) return;                       // cracked ice / blew away a spore cloud
       const c = S.q, st = S.stats[c.key];
       if (b.dataset.t === c.t) {
         const clean = S.tries === 0 && !st.glow;
-        S.phase = "throw";
+        S.phase = "throw"; tw.stop();
         b.classList.add("right");
         R.choices.querySelectorAll(".lm-choice").forEach(x => { if (x !== b) x.classList.add("sunk"); });
         if (clean) st.right++;
@@ -2017,7 +2149,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         later(() => { if (S.phase === "ask") speak(false); }, 600);
       }
     }
-    function glowRight() { R.choices.querySelectorAll(".lm-choice").forEach(x => { if (x.dataset.t === S.q.t) x.classList.add("glow"); }); }
+    function glowRight() { R.choices.querySelectorAll(".lm-choice").forEach(x => { if (x.dataset.t === S.q.t) { x.classList.remove("lm-ice", "lm-spore"); x.classList.add("glow"); } }); }
 
     /* ---------- phases + power moves ---------- */
     const phaseOf = n => PH[n - 1] || PH[PH.length - 1];
@@ -2146,7 +2278,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     }
 
     function finish(won, quit) {
-      if (S.done) return; S.done = true; S.phase = "end";
+      if (S.done) return; S.done = true; S.phase = "end"; tw.stop();
       const keys = chunks.map(c => c.key);
       const missed = keys.filter(k => S.stats[k].wrong > 0);
       const beaten = won ? keys.filter(k => S.stats[k].wrong === 0 && S.stats[k].right > 0 && !S.stats[k].glow) : [];
@@ -2188,7 +2320,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     R.slow.addEventListener("click", () => { speak(true); if (ATK && S.q) ATK.hold(talkMs(S.q, true)); });
 
     function teardown() {
-      cancelAnimationFrame(raf); timers.forEach(clearTimeout); ro.disconnect();
+      cancelAnimationFrame(raf); timers.forEach(clearTimeout); ro.disconnect(); tw.stop();
       try { ac && ac.close(); } catch (e) {}
       root.remove(); if (active === ctrl) active = null;
     }
@@ -2217,7 +2349,8 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         const wave = Math.sin(T * 1.6 + c * 0.55 + r * 0.35) + Math.sin(T * 0.9 - c * 0.21 + r * 0.6);
         let col = wave > 1.3 ? "#ffd166" : wave > 0.6 ? "#ffb627" : wave > -0.4 ? "#ff7a1f" : wave > -1.2 ? "#f0521a" : "#c93312";
         if (hash(c, r) > 0.93 && wave > -0.4) col = "#ffe08a";
-        if (opts.lavaColor) col = opts.lavaColor(wave, hash(c, r), c, r, T);
+        if (B.lava) { const L = B.lava; col = wave > 1.3 ? L[0] : wave > 0.6 ? L[1] : wave > -0.4 ? L[2] : wave > -1.2 ? L[3] : L[4]; if (hash(c, r) > 0.93 && wave > -0.4) col = L[0]; }
+        else if (opts.lavaColor) col = opts.lavaColor(wave, hash(c, r), c, r, T);
         ctx.fillStyle = col; ctx.fillRect(c * cell, r * cell, cell + 1, cell + 1);
       }
       const vg = ctx.createLinearGradient(0, 0, 0, H * 0.35);
@@ -2236,12 +2369,12 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       const blinkNow = (T % 3.7) < 0.12;
       const angry = (S.p > 0.7 || S.bossPhase > 1) && !S.dead;
       for (let r = 0; r < 16 && r < Math.ceil(show); r++) for (let c = 0; c < 16; c++) {
-        let k = MON[r][c]; if (k === ".") continue;
+        let k = B.sprite[r][c]; if (k === ".") continue;
         if (k === "R" && hash(c + 7, r + 3) < dmg * 0.45) k = "O";                 // cracks grow as it weakens
-        let col = MPAL[k];
+        let col = B.pal[k] || "#f0f";
         if (k === "O" || k === "Y") { const pulse = 0.5 + 0.5 * Math.sin(T * 4 + c + r); if (pulse > 0.8) col = "#ffd166"; }
         if (angry && (k === "Y" || k === "W")) col = (T * 6 | 0) % 2 ? "#ff3b1f" : col;
-        if ((k === "W" || k === "E") && blinkNow) col = MPAL.R;
+        if ((k === "W" || k === "E") && blinkNow) col = B.pal.R;
         if (S.flash > 0 && (T * 20 | 0) % 2) col = "#ffffff";
         ctx.fillStyle = col;
         ctx.fillRect(x0 + c * ps, top + r * ps, ps, ps);
@@ -2329,9 +2462,10 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 
     /* intro */
     hud();
-    setSay(`${NAME} rises from the lava!`, "bad");
+    setSay(B.id === "sizzle" ? `${NAME} rises from the lava!` : `${NAME} appears!`, "bad");
     sfx.roar();
-    say(ATK ? `Lava monster! Pick the right tricky part to block the ${SHOT} and hit ${NAME}.` : `Lava monster! Pick the right tricky part to hit ${NAME}.`, 0.95, true);
+    if (B.id === "sizzle") say(ATK ? `Lava monster! Pick the right tricky part to block the ${SHOT} and hit ${NAME}.` : `Lava monster! Pick the right tricky part to hit ${NAME}.`, 0.95, true);
+    else say(B.intro + (ATK ? ` Block the ${SHOT} with the right tricky part!` : ""), 0.95, true);
     S.target = 0.15;
     raf = requestAnimationFrame(frame);
 
@@ -2347,7 +2481,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     return ctrl;
   }
 
-  global.LavaMonster = { start, chunkDecoys, DIFF, NAME, PHASES, SPECIAL, TAUNTS };
+  global.LavaMonster = { start, chunkDecoys, DIFF, NAME, PHASES, SPECIAL, TAUNTS, BOSSES, BOSS_BY_ID };
 })(window);
 
 </script>
@@ -2437,6 +2571,9 @@ const SAVE = (() => {
   // cosmetics (v10): owned lists + what's equipped. Skins stay in d.skins / d.skin.
   d.owned = Object.assign({ hat: [], pet: [], blocks: [], lava: [], trail: [] }, d.owned);
   d.eq = Object.assign({ hat: "none", pet: "none", blocks: "stone", lava: "classic", trail: "none" }, d.eq);
+  // world bosses (v7): which bosses he has beaten, by id. Sizzlejaw carries over from monsterBeaten.
+  d.bossBeat = Object.assign({}, d.bossBeat);
+  if (d.monsterBeaten) d.bossBeat.sizzle = true;
   return d;
 })();
 function save(){ store.set(SAVE_KEY, JSON.stringify(SAVE)); }
@@ -2755,7 +2892,7 @@ function win(){
     list.appendChild(s);
   });
   $("winPractice").hidden = weak.length === 0;
-  $("bossBtn").hidden = weakChunkList().length === 0;
+  $("bossBtn").hidden = weakChunkList().length === 0; bossBtnText();
   updateHud();
   say(G.perfect === n ? "Perfect! You crossed the lava!" : (G.boss ? "Boss Chunk done!" : "You crossed the lava!"), 0.95, true);
   if (window.LLStreak) LLStreak.roundDone();
@@ -2827,7 +2964,8 @@ function thumb(cat, id){
   const none = () => { g.strokeStyle = "#6d5a74"; g.lineWidth = 8; g.beginPath(); g.arc(56, 56, 30, 0, Math.PI * 2); g.moveTo(35, 77); g.lineTo(77, 35); g.stroke(); };
   if (cat === "skin"){ const L = heroLook(id, "none"); drawGrid(g, L.grid, L.pal, 56, 106, 100 / L.grid.length, 0); }
   else if (cat === "hat"){ if (!it.rows) none(); else { const L = heroLook(cur("skin"), id); drawGrid(g, L.grid, L.pal, 56, 108, 104 / L.grid.length, 0); } }
-  else if (cat === "pet"){ if (!it.frames) none(); else { const f = it.frames[0]; const s = 84 / Math.max(f.length, f[0].length); drawGrid(g, f, it.pal, 56, 56 + f.length * s / 2, s, 0); } }
+  else if (cat === "pet"){ if (!it.frames) none(); else { const f = it.frames[0]; const s = 84 / Math.max(f.length, f[0].length); drawGrid(g, f, mystery(cat, id) ? SHADOW_PAL : it.pal, 56, 56 + f.length * s / 2, s, 0);
+    if (mystery(cat, id)){ g.fillStyle = "#ffb627"; g.font = "700 40px 'Pixelify Sans', monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 56, 60); } } }
   else if (cat === "blocks"){ paintBlock(g, 6, 8, 56, it.choice, 0.2, 0.2, 0.7); g.fillStyle = it.choice.ink; g.font = "700 36px Andika, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("a", 34, 38); paintBlock(g, 50, 46, 54, it.trail, 0.2, 0.7, 0.3); }
   else if (cat === "lava"){ const cell = 14; for (let x = 0; x < 8; x++) for (let y = 0; y < 8; y++){ const w = Math.sin(1 + x * 0.55 + y * 0.35) + Math.sin(0.5 - x * 0.21 + y * 0.6); g.fillStyle = lavaCol(w, hash(x, y), x, y, 0.5, id); g.fillRect(x * cell, y * cell, cell, cell); } }
   else if (cat === "trail"){
@@ -2863,26 +3001,28 @@ function renderShop(){
     const b = document.createElement("button"); b.type = "button"; b.className = "it";
     const th = document.createElement("span"); th.className = "th"; th.appendChild(thumb(shopTab, id));
     b.appendChild(th);
-    const nm = document.createElement("b"); nm.textContent = it.name; b.appendChild(nm);
+    const nm = document.createElement("b"); nm.textContent = mystery(shopTab, id) ? "???" : it.name; b.appendChild(nm);
     const st = document.createElement("span"); st.className = "st";
     if (shopTab === "potion"){
       st.innerHTML = gemTxt(it.price); st.classList.add(SAVE.gems >= it.price ? "price" : "poor");
       const n = document.createElement("span"); n.className = "badge"; n.textContent = "×" + SAVE.inv[id]; b.appendChild(n);
     } else if (cur(shopTab) === id){ st.textContent = "✓ On"; b.classList.add("on"); }
     else if (owns(shopTab, id)) st.textContent = it.price === 0 ? "Free" : "Owned";
-    else if (locked(shopTab, id)){ st.textContent = "🔒 Beat the monster"; st.classList.add("poor"); }
+    else if (locked(shopTab, id)){ st.textContent = mystery(shopTab, id) ? "🔒 New world" : `🔒 Beat ${it.bossName || "the monster"}`; st.classList.add("poor"); }
     else { st.innerHTML = gemTxt(it.price); st.classList.add(SAVE.gems >= it.price ? "price" : "poor"); }
     b.appendChild(st);
     if (it.legend){ b.classList.add("legend"); const l = document.createElement("span"); l.className = "badge"; l.textContent = "★"; b.appendChild(l); }
     if (shopSel[shopTab] === id) b.classList.add("sel");
-    b.setAttribute("aria-label", `${it.name}. ${st.textContent}`);
-    b.addEventListener("click", () => { shopSel[shopTab] = id; say(it.name, 1, true); renderShop(); });
+    const shown = mystery(shopTab, id) ? "Mystery pet" : it.name;
+    b.setAttribute("aria-label", `${shown}. ${st.textContent}`);
+    b.addEventListener("click", () => { shopSel[shopTab] = id; say(shown, 1, true); renderShop(); });
     grid.appendChild(b);
   }
   const note = document.createElement("p"); note.className = "note";
   note.textContent = shopTab === "potion"
     ? `Use potions with the buttons next to Hear it. ${limitText()}`
-    : "Tap anything to try it on. Earn diamonds: 1 per word, 2 for a perfect word, double vs the Lava Monster.";
+    : shopTab === "pet" ? "Beat each world's boss to tame it. ??? pets live in worlds you haven't reached yet."
+    : "Tap anything to try it on. Earn diamonds: 1 per word, 2 for a perfect word, double vs a boss.";
   grid.appendChild(note);
   grid.scrollTop = keepScroll;
   renderShopInfo();
@@ -2899,8 +3039,10 @@ function renderShopInfo(){
     return;
   }
   const it = COS[shopTab].items[id];
-  $("pvName").textContent = it.name; $("pvDesc").textContent = (locked(shopTab, id) || (it.legend && !owns(shopTab, id)) ? it.lockDesc : it.desc) || "";
-  if (locked(shopTab, id)){ btn.textContent = "Beat the monster"; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; return; }
+  const myst = mystery(shopTab, id);
+  $("pvName").textContent = myst ? "??? Mystery pet" : it.name;
+  $("pvDesc").textContent = myst ? "A boss lives in a world you haven't reached yet. Find it, beat it, then tame it!" : (locked(shopTab, id) || (it.legend && !owns(shopTab, id)) ? it.lockDesc : it.desc) || "";
+  if (locked(shopTab, id)){ btn.textContent = myst ? "Find this world" : `Beat ${it.bossName || "the monster"}`; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; return; }
   if (cur(shopTab) === id){ btn.textContent = "Equipped ✓"; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; }
   else if (owns(shopTab, id)){ btn.textContent = "Equip"; btn.classList.add("go"); btn.onclick = () => { setEq(shopTab, id); LLAudio.sfx("land"); renderShop(); }; }
   else if (SAVE.gems >= it.price){ btn.innerHTML = "Buy · " + gemTxt(it.price); btn.onclick = () => buyItem(shopTab, id); }
@@ -3018,19 +3160,28 @@ function toMainMenu(){
   $("startCard").hidden = false;
 }
 $("mainMenuBtn").addEventListener("click", toMainMenu);
+/* World bosses: the current world's theme picks the boss (World 1 Ember Volcano = Sizzlejaw). */
+function worldBoss(){
+  const L = window.LavaMonster; if (!L || !L.BOSSES) return { id: "sizzle", name: "Sizzlejaw" };
+  const i = window.LavaMap && LavaMap.themeIndex ? LavaMap.themeIndex() : 0;
+  return L.BOSSES[i] || L.BOSSES[0];
+}
+function bossBtnText(){ $("bossBtn").textContent = `Fight ${worldBoss().name}: double diamonds`; }
 $("bossBtn").addEventListener("click", () => {
   const chunks = weakChunkList(); if (!chunks.length || !window.LavaMonster) return;
   $("winCard").hidden = true; G.phase = "boss"; LLAudio.setScene("boss");
-  chunkMode = LavaMonster.start({ chunks, difficulty: diff, say, hearts: HEARTS, palette: heroLook().pal, sprite: heroLook().grid, lavaColor: (w, v, c, r, t) => lavaCol(w, v, c, r, t),
+  const boss = worldBoss();
+  chunkMode = LavaMonster.start({ chunks, difficulty: diff, say, hearts: HEARTS, palette: heroLook().pal, sprite: heroLook().grid, lavaColor: (w, v, c, r, t) => lavaCol(w, v, c, r, t), boss,
     onDone(r){
       chunkMode = null; SAVE.session++; LLAudio.setScene("main");
       r.missed.forEach(k => { const sp = SAVE.spots[k]; if (sp){ sp.miss++; sp.streak = 0; sp.last = SAVE.session; } });
       r.beaten.forEach(k => { const sp = SAVE.spots[k]; if (sp){ sp.streak = BEAT_AT; sp.last = SAVE.session; } });
-      if (r.won && !SAVE.monsterBeaten){ SAVE.monsterBeaten = true; setTimeout(() => say("You beat Sizzlejaw! Now you can tame your own in the shop!", 0.95, false), 2500); }
+      if (r.won && boss.id === "sizzle") SAVE.monsterBeaten = true;
+      if (r.won && !SAVE.bossBeat[boss.id]){ SAVE.bossBeat[boss.id] = true; setTimeout(() => say(`You beat ${boss.name}! Now you can tame your own in the shop!`, 0.95, false), 2500); }
       SAVE.gems += r.gems; save(); updateHud();
-      G.phase = "win"; $("bossBtn").hidden = weakChunkList().length === 0;
-      $("winTitle").textContent = r.won ? "Lava Monster defeated!" : (r.quit ? "You got away!" : "The monster got away!");
-      $("winScore").textContent = r.quit ? "The monster is still waiting for you." : `+${r.gems} diamonds from the monster fight!`;
+      G.phase = "win"; $("bossBtn").hidden = weakChunkList().length === 0; bossBtnText();
+      $("winTitle").textContent = r.won ? `${boss.name} defeated!` : (r.quit ? "You got away!" : `${boss.name} got away!`);
+      $("winScore").textContent = r.quit ? `${boss.name} is still waiting for you.` : `+${r.gems} diamonds from the boss fight!`;
       const beat = $("beatList"); beat.innerHTML = "";
       r.beaten.forEach(k => { const sp = SAVE.spots[k]; if (!sp) return; const s = document.createElement("span"); s.className = "beat"; s.innerHTML = chunkLabel(sp); beat.appendChild(s); });
       $("winBeat").hidden = !r.beaten.length; $("winPractice").hidden = true;
@@ -3268,12 +3419,32 @@ const COS = {
     stars:    { name: "Stars", price: 90, desc: "Leave twinkling stars." },
   } },
 };
+// One tameable pet per world boss (Sizzlejaw's hand-made pet stays above). Frames come from the boss sprite.
+(window.LavaMonster && LavaMonster.BOSSES || []).forEach((b, i) => {
+  if (i === 0 || COS.pet.items[b.id]) return;
+  const blink = b.sprite.map(r => r.replace(/[WE]/g, "R")), chomp = b.sprite.map(r => r.replace(/T/g, "M"));
+  COS.pet.items[b.id] = { name: "Tame " + b.name, price: 1000, legend: true, boss: b.id, bossName: b.name, bossWorld: i, fps: 3,
+    desc: `A mini ${b.name} from ${b.world}. Legendary friend!`,
+    lockDesc: `Legendary! Beat ${b.name} in ${b.world} to unlock it, then save up 1000 diamonds.`,
+    pal: b.pal, frames: [b.sprite, b.sprite, blink, b.sprite, chomp] };
+});
+COS.pet.items.sizzle.bossName = "Sizzlejaw";
 const SKINS = COS.skin.items;           // older code and modules read this
 const BLOCK_WRONG = { top:["#b0381a","#b0381a"], side:"#5a1a10", hi:"#bdb7c9", lo:"#6d677a", fleck:"#7a7487", ink:"#ffd7c9" };
 const COS_CATS = Object.keys(COS);
 function ownedList(cat){ return cat === "skin" ? SAVE.skins : SAVE.owned[cat]; }
 function owns(cat, id){ return COS[cat].items[id].price === 0 || ownedList(cat).includes(id); }
-function locked(cat, id){ const it = COS[cat].items[id]; return it.req === "monster" && !SAVE.monsterBeaten && !owns(cat, id); }
+function locked(cat, id){
+  const it = COS[cat].items[id]; if (owns(cat, id)) return false;
+  if (it.req === "monster") return !SAVE.monsterBeaten;
+  if (it.boss) return !SAVE.bossBeat[it.boss];
+  return false;
+}
+// a boss pet from a world theme he hasn't opened yet: shown as a "???" silhouette
+function mystery(cat, id){
+  const it = COS[cat].items[id];
+  return !!(it && it.bossWorld > 0 && !owns(cat, id) && !SAVE.bossBeat[it.boss] && !(window.LavaMap && LavaMap.opened && LavaMap.opened(it.bossWorld)));
+}
 function cur(cat){ const id = cat === "skin" ? SAVE.skin : SAVE.eq[cat]; return COS[cat].items[id] ? id : Object.keys(COS[cat].items)[0]; }
 function setEq(cat, id){ if (cat === "skin") SAVE.skin = id; else SAVE.eq[cat] = id; save(); }
 
@@ -3304,10 +3475,11 @@ function drawGrid(c2, grid, pal, cx, feetY, s, squash){
 function drawSprite(c2, pal, cx, feetY, s, squash){ drawGrid(c2, SPRITE, pal, cx, feetY, s, squash); }
 function drawHero(c2, cx, feetY, s, squash, look){ look = look || heroLook(); drawGrid(c2, look.grid, look.pal, cx, feetY, s, squash); }
 function drawPlayer(cx, feetY, s, squash){ drawHero(ctx, cx, feetY, s, squash); }
+const SHADOW_PAL = new Proxy({}, { get: () => "#0e0910" });
 function drawPet(c2, id, cx, feetY, s, t){
   const P = COS.pet.items[id]; if (!P || !P.frames) return;
-  const fr = P.frames[Math.floor(t * (P.fps || 4)) % P.frames.length];
-  drawGrid(c2, fr, P.pal, cx, feetY + Math.sin(t * 3) * s * 0.8, s, 0);
+  const n = P.frames.length, fr = P.frames[((Math.floor(t * (P.fps || 4)) % n) + n) % n || 0];
+  drawGrid(c2, fr, mystery("pet", id) ? SHADOW_PAL : P.pal, cx, feetY + Math.sin(t * 3) * s * 0.8, s, 0);
 }
 function lavaCol(wave, v, c, r, t, id){
   const L = COS.lava.items[id || cur("lava")] || COS.lava.items.classic;
@@ -3922,7 +4094,9 @@ window.LLStreak = (() => {
   };
 
   sync(); renderStartLine();
-  window.LavaMap = { open: openMap, worlds: () => M.worlds };
+  window.LavaMap = { open: openMap, worlds: () => M.worlds,
+    themeIndex: () => { const w = curWorld(); return w ? idx(w) % THEMES.length : 0; },          // picks the world boss
+    opened: i => i === 0 || M.worlds.some((w, j) => j % THEMES.length === i) };                   // boss pets: "???" until reached
 })();
 </script>
 
