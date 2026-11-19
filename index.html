@@ -1484,6 +1484,164 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 </script>
 <script>
 /* ============================================================
+   BOSS ATTACK: projectiles a boss throws at the player, one per question.
+   Boss-agnostic: any boss fight can use it with its own look.
+
+     const atk = BossAttack.create({ look, tone, reduce });
+       look   "fire" | "ice" | "vine" | "rock" | "shadow"  or a look object
+              { shape: "orb"|"shard"|"leaf"|"rock", core, hi, glow, trail:[colors], word }
+       tone   optional (f1, f2, dur, type, vol, delay) sound fn
+     atk.arm(ms, delayMs)  start a wind-up that lands after ms (after a delayMs pause)
+     atk.hold(ms)          freeze the projectile for ms (e.g. while the word is spoken)
+     atk.block()           correct answer: shatter it with "BLOCKED!" (true if one was live)
+     atk.strike()          wrong answer: it rushes in and lands
+     atk.shatter(text)     shield or potion: break it without a block reward
+     atk.update(dt)        returns "hit" on the frame it lands
+     atk.draw(ctx, from, to, size, span)   from/to = {x,y}; span = arc width in px
+     atk.progress()        0..1 how close it is; atk.live() true while it is coming
+   BossAttack.addLook(name, look) registers a new look for a new boss.
+   ============================================================ */
+(function (global) {
+  "use strict";
+  const SHAPES = {
+    orb:   ["..GGG..", ".GCCCG.", "GCHHCCG", "GCHCCCG", "GCCCCCG", ".GCCCG.", "..GGG.."],
+    shard: ["...G...", "..GCG..", ".GCHCG.", "GCHHCCG", ".GCCCG.", "..GCG..", "...G..."],
+    leaf:  ["....GGG", "..GGCCG", ".GCHCCG", "GCHCCG.", "GCCCG..", ".GCG...", "G......"],
+    rock:  [".GGGG..", "GCCHCG.", "GCHCCCG", "GCCCCCG", ".GCCCCG", ".GGCCG.", "...GG.."],
+  };
+  const LOOKS = {
+    fire:   { shape: "orb",   core: "#ff7a1f", hi: "#fff1b8", glow: "#c93312", trail: ["#ffd166", "#ff5a1f", "#ffb627"], word: "fireball" },
+    ice:    { shape: "shard", core: "#9fe8ff", hi: "#ffffff", glow: "#3a7bd5", trail: ["#d8f6ff", "#6ec6ff", "#ffffff"], word: "ice shard" },
+    vine:   { shape: "leaf",  core: "#62d26f", hi: "#d9ffb0", glow: "#1f6b2a", trail: ["#9be37a", "#3e9a3c"], word: "thorn" },
+    rock:   { shape: "rock",  core: "#9a8a7a", hi: "#e2d6c4", glow: "#4a3e34", trail: ["#6d5f52", "#b9a894"], word: "boulder" },
+    shadow: { shape: "orb",   core: "#9b8cff", hi: "#efe9ff", glow: "#3b2c6b", trail: ["#c9bfff", "#6b5bd6"], word: "shadow ball" },
+  };
+  function addLook(name, look) { LOOKS[name] = Object.assign({}, LOOKS.fire, look); return LOOKS[name]; }
+  function resolve(look) {
+    if (!look) return LOOKS.fire;
+    if (typeof look === "string") return LOOKS[look] || LOOKS.fire;
+    return Object.assign({}, LOOKS.fire, look);
+  }
+
+  const CHARGE = 0.16;      // share of the wind-up spent growing in the boss's mouth
+
+  function create(o) {
+    o = o || {};
+    const L = resolve(o.look), grid = SHAPES[L.shape] || SHAPES.orb;
+    const tone = o.tone || function () {}, reduce = !!o.reduce;
+    const A = { st: "idle", t: 0, dur: 1, hold: 0, k: 0, from: 0, side: 1, beeps: 0, pos: null, parts: [], pop: null };
+
+    function arm(ms, delay) {
+      A.st = "wind"; A.t = 0; A.k = 0; A.dur = Math.max(1500, ms || 8000); A.hold = delay || 0;
+      A.side = -A.side; A.beeps = 0; A.pos = null;
+      tone(110, 240, 0.45, "sawtooth", 0.035);
+    }
+    function hold(ms) { if (A.st === "wind") A.hold = Math.max(A.hold, ms); }
+    function live() { return A.st === "wind" || A.st === "strike"; }
+    function strike() {
+      if (!live()) return false;
+      A.st = "strike"; A.from = A.k; A.t = 0; A.dur = reduce ? 160 : 420; A.hold = 0;
+      tone(380, 950, 0.22, "triangle", 0.06);
+      return true;
+    }
+    function shatter(text, good) {
+      if (!live()) return false;
+      A.st = "idle"; burst(22, true);
+      A.pop = { text: text, t: 0, good: good !== false };
+      return true;
+    }
+    function block() {
+      if (!shatter("BLOCKED!", true)) return false;
+      tone(880, 1320, 0.12, "square", 0.07); tone(660, 990, 0.18, "square", 0.05, 0.08);
+      return true;
+    }
+    function land() {
+      A.st = "idle"; burst(26, false);
+      A.pop = { text: "OUCH!", t: 0, good: false };
+      tone(160, 40, 0.5, "sawtooth", 0.09); tone(70, 30, 0.6, "triangle", 0.14);
+      return "hit";
+    }
+    function clear() { A.st = "idle"; }
+    function progress() { return A.st === "wind" || A.st === "strike" ? A.k : 0; }
+
+    function update(dt) {
+      if (A.pop) { A.pop.t += dt; if (A.pop.t > 900) A.pop = null; }
+      if (A.st === "wind") {
+        if (A.hold > 0) { A.hold -= dt; return null; }
+        A.t += dt; A.k = Math.min(1, A.t / A.dur);
+        const left = A.dur - A.t;               // tick-tick-tick in the last 1.5 s
+        if (A.beeps < 3 && left < 1500 - A.beeps * 500) { A.beeps++; tone(760 + A.beeps * 120, 760 + A.beeps * 120, 0.07, "square", 0.045); }
+        if (A.k >= 1) return land();
+      } else if (A.st === "strike") {
+        A.t += dt; A.k = A.from + (1 - A.from) * Math.min(1, A.t / A.dur);
+        if (A.t >= A.dur) return land();
+      }
+      return null;
+    }
+
+    function burst(n, good) {
+      const p = A.pos; if (!p) return;
+      const cols = good ? L.trail.concat([L.hi]) : ["#ff7a6b", L.core, L.hi];
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 5;
+        A.parts.push({ x: p.x, y: p.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, life: 1, s: 3 + Math.random() * 5, c: cols[i % cols.length] });
+      }
+    }
+
+    function draw(ctx, from, to, size, span) {
+      if (live()) {
+        let x, y, s;
+        if (A.k < CHARGE) {                       // growing in the mouth, shaking
+          const g = A.k / CHARGE;
+          x = from.x + (reduce ? 0 : Math.sin(A.t / 25) * 2); y = from.y; s = size * (0.35 + 0.45 * g);
+        } else {
+          const f = (A.k - CHARGE) / (1 - CHARGE);
+          x = from.x + (to.x - from.x) * f + A.side * Math.sin(f * Math.PI) * span;
+          y = from.y + (to.y - from.y) * f - Math.sin(f * Math.PI) * 20;
+          s = size * (0.8 + 0.5 * f);
+          if (!reduce && Math.random() < 0.7) A.parts.push({ x: x + (Math.random() - .5) * s * .5, y: y + (Math.random() - .5) * s * .5, vx: (Math.random() - .5), vy: -0.6 - Math.random(), life: 0.7, s: 2 + Math.random() * s * 0.18, c: L.trail[Math.random() * L.trail.length | 0] });
+        }
+        A.pos = { x, y };
+        // target marker on the player once it is past halfway
+        if (A.k > 0.5) {
+          const pulse = 0.5 + 0.5 * Math.sin(performance.now() / (A.k > 0.8 ? 70 : 140));
+          ctx.save(); ctx.strokeStyle = `rgba(255,90,60,${0.35 + 0.5 * pulse})`; ctx.lineWidth = 3;
+          ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.ellipse(to.x, to.y + size * 0.6, size * 1.1, size * 0.45, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+        }
+        const px = Math.max(2, Math.round(s / 7)), n = grid.length, ox = Math.round(x - px * n / 2), oy = Math.round(y - px * n / 2);
+        const flick = (performance.now() / 90 | 0) % 2;
+        for (let r = 0; r < n; r++) for (let c = 0; c < grid[r].length; c++) {
+          const k = grid[r][c]; if (k === ".") continue;
+          ctx.fillStyle = k === "C" ? L.core : k === "H" ? L.hi : (flick && (r + c) % 2 ? L.trail[0] : L.glow);
+          ctx.fillRect(ox + c * px, oy + r * px, px, px);
+        }
+      }
+      A.parts = A.parts.filter(p => p.life > 0);
+      for (const p of A.parts) {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.025;
+        ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.fillStyle = p.c;
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s);
+      }
+      ctx.globalAlpha = 1;
+      if (A.pop && A.pos) {
+        const k = A.pop.t / 900, sz = Math.round(22 + 10 * Math.min(1, k * 4));
+        ctx.save(); ctx.globalAlpha = Math.max(0, 1 - k * k);
+        ctx.font = `700 ${sz}px "Pixelify Sans", ui-monospace, monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        const ty = A.pos.y - 26 - k * 30;
+        ctx.lineWidth = 5; ctx.strokeStyle = "#1a1220"; ctx.strokeText(A.pop.text, A.pos.x, ty);
+        ctx.fillStyle = A.pop.good ? "#5ee0d0" : "#ff7a6b"; ctx.fillText(A.pop.text, A.pos.x, ty);
+        ctx.restore();
+      }
+    }
+
+    return { arm, hold, strike, block, shatter, clear, update, draw, progress, live, look: L };
+  }
+
+  global.BossAttack = { create, addLook, LOOKS, SHAPES };
+})(window);
+</script>
+<script>
+/* ============================================================
    LAVA MONSTER boss round for Lava Leap (stage 3 of the tricky-part ladder)
    Self-contained: injects its own CSS, DOM overlay, canvas and sounds.
    Touches no globals of the main game and never writes localStorage.
@@ -1497,6 +1655,10 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
        say,           // optional speech fn say(text, rate, cancel); default: built-in speechSynthesis
        palette,       // optional player sprite palette (main game: SKINS[SAVE.skin].pal)
        onChunk,       // optional (key, right:boolean) called on every answer
+       attack,        // optional { look, windup } projectile per question (needs window.BossAttack);
+                      //   look defaults to opts.boss.shot, then "fire". false = old creep-closer rules.
+                      //   Right pick before it lands blocks it; wrong pick or time out = it hits = -1 heart.
+       onBlock, onHurt, // optional (key) hooks for a blocked / landed projectile
        onDone,        // (result) called once, after the kid closes the result card
      });
      ctrl.stop()      // tear down without calling onDone
@@ -1516,9 +1678,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   "use strict";
 
   const DIFF = {
-    easy:   { hpPer: 1,   choices: 3, rise: 0,      wrongRise: 0.25, knock: 0.22 },
-    medium: { hpPer: 1.5, choices: 4, rise: 1 / 40, wrongRise: 0.25, knock: 0.2 },
-    hard:   { hpPer: 2,   choices: 4, rise: 1 / 22, wrongRise: 0.3,  knock: 0.18 },
+    easy:   { hpPer: 1,   choices: 3, rise: 0,      wrongRise: 0.25, knock: 0.22, windup: 11000 },
+    medium: { hpPer: 1.5, choices: 4, rise: 1 / 40, wrongRise: 0.25, knock: 0.2,  windup: 8500 },
+    hard:   { hpPer: 2,   choices: 4, rise: 1 / 22, wrongRise: 0.3,  knock: 0.18, windup: 6500 },
   };
   const NAME = "Sizzlejaw";
 
@@ -1670,6 +1832,12 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.18, "square", 0.06, i * 0.12)); },
     };
 
+    /* boss projectile (fireball for Sizzlejaw), see BossAttack */
+    const atkOpt = opts.attack === false ? null : (opts.attack || {});
+    const ATK = atkOpt && global.BossAttack ? global.BossAttack.create({ look: atkOpt.look || (opts.boss && opts.boss.shot) || "fire", tone, reduce }) : null;
+    const SHOT = ATK ? ATK.look.word : "";
+    const ASK = ATK ? `Block the ${SHOT}! Which part fills the gap?` : "Which part fills the gap?";
+
     /* DOM */
     if (!document.getElementById("lmCss")) { const st = document.createElement("style"); st.id = "lmCss"; st.textContent = CSS; document.head.appendChild(st); }
     const root = document.createElement("div");
@@ -1703,7 +1871,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       p: -0.35, target: 0.15, phase: "intro", q: null, queue: [], last: null, tries: 0,
       stats: Object.fromEntries(chunks.map(c => [c.key, { right: 0, wrong: 0, glow: false }])),
       gems: 0, hits: 0, misses: 0, done: false, flash: 0, shake: 0, hurt: 0, dead: 0, blink: 0,
-      bolt: null, parts: [], drums: 0, roarT: 0, result: null,
+      bolt: null, parts: [], drums: 0, roarT: 0, result: null, blocks: 0, struck: false,
     };
     S.hp = S.hpMax;
     let T = 0, lastT = performance.now(), raf = 0, timers = [];
@@ -1755,9 +1923,10 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         R.choices.appendChild(b);
       });
       tiles(false);
-      setSay("Which part fills the gap?");
+      setSay(ASK);
       S.phase = "ask";
       later(() => speak(false), 250);
+      if (ATK) ATK.arm(windup(), 250 + talkMs(S.q, false));
     }
 
     function pick(b) {
@@ -1769,6 +1938,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         b.classList.add("right");
         R.choices.querySelectorAll(".lm-choice").forEach(x => { if (x !== b) x.classList.add("sunk"); });
         if (clean) st.right++;
+        if (ATK && ATK.block()) { S.blocks++; opts.onBlock && opts.onBlock(c.key); }
         const earn = clean ? 4 : 2; S.gems += earn; S.hits++;
         opts.onChunk && opts.onChunk(c.key, true);
         tiles(true);
@@ -1781,7 +1951,8 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         opts.onChunk && opts.onChunk(c.key, false);
         b.classList.add("sunk");
         sfx.wrong();
-        if (S.shield) { S.shield = false; hud(); setSay(`Shield blocked it! That's ${b.dataset.t.toUpperCase()}.`, "bad"); }
+        if (ATK) { if (ATK.strike()) S.struck = true; setSay(`That's ${b.dataset.t.toUpperCase()}. Here comes the ${SHOT}!`, "bad"); }
+        else if (S.shield) { S.shield = false; hud(); setSay(`Shield blocked it! That's ${b.dataset.t.toUpperCase()}.`, "bad"); }
         else { S.target = Math.min(1.05, S.target + D.wrongRise); S.shake = reduce ? 0 : 350; setSay(`${NAME} creeps closer! That's ${b.dataset.t.toUpperCase()}.`, "bad"); }
         if (S.tries >= 2) glowRight();
         later(() => { if (S.phase === "ask") speak(false); }, 600);
@@ -1801,7 +1972,31 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       setSay(`${NAME} splashed you! Lost a heart.`, "bad");
       say("Splash! Keep going!", 1, true);
       S.target = 0.45;
-      later(() => { S.phase = "ask"; setSay("Which part fills the gap?"); }, 1300);
+      later(() => { S.phase = "ask"; setSay(ASK); }, 1300);
+    }
+
+    /* ---------- boss projectile ---------- */
+    // Rough time the word (and sentence) take to say, so the clock starts after he has heard it.
+    function talkMs(c, slow) { const k = slow ? 1.7 : 1; return k * (2 * (500 + c.w.length * 60) + (c.sentence ? c.sentence.length * 70 : 0)); }
+    function windup() { return (atkOpt.windup || D.windup) / (S.attackSpeed || 1); }   // S.attackSpeed: hook for boss phases
+    function fireHit(c, timedOut) {
+      if (S.done) return;
+      if (timedOut) {                                   // ran out of time: counts as a miss on this chunk
+        const st = S.stats[c.key]; S.tries++; S.misses++; st.wrong++;
+        opts.onChunk && opts.onChunk(c.key, false);
+        if (S.tries >= 2) glowRight();
+      }
+      if (S.shield) {
+        S.shield = false; hud(); sfx.hit();
+        setSay(`Your shield blocked the ${SHOT}!`, "good");
+      } else {
+        S.hearts--; S.hurt = 1; S.shake = reduce ? 0 : 350; hud();
+        opts.onHurt && opts.onHurt(c.key);
+        if (S.hearts <= 0) { lose(); return; }
+        setSay(timedOut ? `Too slow! The ${SHOT} hit you. Lost a heart.` : `The ${SHOT} hit you! Lost a heart.`, "bad");
+        say(timedOut ? "Ouch! Pick faster next time!" : "Ouch! Try again!", 1, true);
+      }
+      later(() => { if (S.phase === "ask" && S.q === c && !S.done) { ATK.arm(windup(), 900 + (timedOut ? talkMs(c, false) : 0)); if (timedOut) speak(false); } }, 1200);
     }
 
     function finish(won, quit) {
@@ -1811,7 +2006,8 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       const beaten = won ? keys.filter(k => S.stats[k].wrong === 0 && S.stats[k].right > 0 && !S.stats[k].glow) : [];
       const shaky = keys.filter(k => !beaten.includes(k) && (S.stats[k].right > 0 || S.stats[k].wrong > 0));
       if (won) S.gems += 6;
-      S.result = { won, quit: !!quit, gems: S.gems, hits: S.hits, misses: S.misses, beaten, shaky, missed };
+      if (ATK) ATK.clear();
+      S.result = { won, quit: !!quit, gems: S.gems, hits: S.hits, misses: S.misses, blocks: S.blocks, beaten, shaky, missed };
       R.choices.querySelectorAll(".lm-choice").forEach(x => x.disabled = true);
     }
     const label = c => `${c.w.slice(0, c.s)}<b>${c.t.toUpperCase()}</b>${c.w.slice(c.e)}`;
@@ -1842,8 +2038,8 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       if (S.done) return;
       finish(false, true); teardown(); opts.onDone && opts.onDone(S.result);
     });
-    R.hear.addEventListener("click", () => speak(false));
-    R.slow.addEventListener("click", () => speak(true));
+    R.hear.addEventListener("click", () => { speak(false); if (ATK && S.q) ATK.hold(talkMs(S.q, false)); });
+    R.slow.addEventListener("click", () => { speak(true); if (ATK && S.q) ATK.hold(talkMs(S.q, true)); });
 
     function teardown() {
       cancelAnimationFrame(raf); timers.forEach(clearTimeout); ro.disconnect();
@@ -1945,7 +2141,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       const dt = Math.min(50, now - lastT); lastT = now; T += dt / 1000;
       if (!W || !H) { raf = requestAnimationFrame(frame); return; }
       // monster movement
-      if (S.phase === "ask" && D.rise) S.target += D.rise * dt / 1000;
+      if (S.phase === "ask" && D.rise && !ATK) S.target += D.rise * dt / 1000;
+      if (ATK && S.phase !== "intro") S.target += (0.3 - S.target) * Math.min(1, dt / 2500);   // knocked back, then wades in again
+      if (ATK && !S.done && ATK.update(dt) === "hit") { const late = !S.struck; S.struck = false; fireHit(S.q, late); }
       S.p += (S.target - S.p) * Math.min(1, dt / 300);
       if (S.phase === "intro" && S.p > 0.1) { S.phase = "ready"; ask(); }
       if (S.phase === "ask" && S.p >= 0.98) reachPlayer();
@@ -1960,8 +2158,13 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       drawLava();
       drawMonster(g);
       // danger tint
+      if (ATK && !S.done && ATK.progress() > 0.75) { ctx.fillStyle = `rgba(201,51,18,${(ATK.progress() - 0.75) * 0.9 * (0.6 + 0.4 * Math.sin(T * 10))})`; ctx.fillRect(0, 0, W, H); }
       if (!S.done && S.p > 0.7) { ctx.fillStyle = `rgba(201,51,18,${(S.p - 0.7) * 0.6 * (0.6 + 0.4 * Math.sin(T * 8))})`; ctx.fillRect(0, 0, W, H); }
       drawPlayer(g);
+      if (ATK) {
+        const top = g.lavaY - g.show * g.ps;
+        ATK.draw(ctx, { x: W / 2, y: Math.min(g.lavaY - g.ps, top + 11.5 * g.ps) }, { x: W / 2, y: g.py - g.block * 0.35 }, Math.max(26, g.block * 0.6), W * 0.24);
+      }
       drawBolt(g, dt);
       S.parts = S.parts.filter(p => p.life > 0);
       for (const p of S.parts) {
@@ -1978,7 +2181,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     hud();
     setSay(`${NAME} rises from the lava!`, "bad");
     sfx.roar();
-    say(`Lava monster! Pick the right tricky part to hit ${NAME}.`, 0.95, true);
+    say(ATK ? `Lava monster! Pick the right tricky part to block the ${SHOT} and hit ${NAME}.` : `Lava monster! Pick the right tricky part to hit ${NAME}.`, 0.95, true);
     S.target = 0.15;
     raf = requestAnimationFrame(frame);
 
@@ -1987,7 +2190,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       addHeart() { if (S.done || S.hearts >= maxHearts) return false; S.hearts++; hud(); setSay("Glug glug! +1 heart.", "good"); return true; },
       shield() { if (S.done || S.shield) return false; S.shield = true; hud(); setSay("Shield up! Your next mistake is free.", "good"); return true; },
       glow() { if (S.phase !== "ask") return false; S.stats[S.q.key].glow = true; glowRight(); setSay("The glowing block is the right one.", "good"); return true; },
-      state() { return { hp: S.hp, hpMax: S.hpMax, hearts: S.hearts, phase: S.phase, p: S.p, q: S.q && S.q.key }; },
+      state() { return { hp: S.hp, hpMax: S.hpMax, hearts: S.hearts, phase: S.phase, p: S.p, q: S.q && S.q.key, shot: ATK ? ATK.progress() : 0, blocks: S.blocks }; },
     };
     active = ctrl;
     return ctrl;
