@@ -1401,7 +1401,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         b.classList.add("used");
         const pi = idxOf(pos);
         planks[pi].textContent = want; planks[pi].classList.remove("gap", "next"); planks[pi].classList.add("fill");
-        sfx.good(); speak(want, 0.9, true);
+        sfx.good(); speak(want, 0.9, true, "tap");
         pos++; skipFilled(); stand = idxOf(pos) - 1; placeHero(); camera(); hop(); markNext();
         if (pos >= e) return win();
         renderChoices();
@@ -1412,7 +1412,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         b.classList.add("wrong"); sfx.bad();
         if (L.penalty){ setSay(`That's ${b.textContent.toUpperCase()}. The bridge shook!`, "bad"); nextFall = clock; }
         else setSay(`That's ${b.textContent.toUpperCase()}. Listen again!`, "bad");
-        speak(w, 0.8, true);
+        speak(w, 0.8, true, "prompt");
       }
     }
 
