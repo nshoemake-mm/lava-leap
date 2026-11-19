@@ -85,6 +85,18 @@ body{font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transpar
 .seg button:focus-visible{outline:2px solid var(--ink)}
 .linkbtn{all:unset;cursor:pointer;color:var(--muted);font-size:15px;text-decoration:underline;text-underline-offset:3px;align-self:center}
 .linkbtn:focus-visible{outline:2px solid var(--glow)}
+/* Settings: chunky volume sliders, easy for small thumbs */
+.vol{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:4px 10px}
+.vol-ico{font-size:26px;line-height:1;grid-row:span 2}
+.vol label{font-family:var(--display);font-weight:700;font-size:20px}
+.vol b{font-family:var(--display);font-size:20px;color:var(--glow);min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
+.vol input{grid-column:2 / 4;-webkit-appearance:none;appearance:none;width:100%;height:40px;margin:0;background:transparent;touch-action:pan-x;--p:50%}
+.vol input::-webkit-slider-runnable-track{height:14px;border:2px solid var(--deck-edge);background:linear-gradient(90deg,var(--glow) var(--p),#140d18 var(--p))}
+.vol input::-moz-range-track{height:14px;border:2px solid var(--deck-edge);background:linear-gradient(90deg,var(--glow) var(--p),#140d18 var(--p))}
+.vol input::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;margin-top:-11px;background:var(--ink);border:3px solid #a3300c;border-radius:0}
+.vol input::-moz-range-thumb{width:28px;height:28px;background:var(--ink);border:3px solid #a3300c;border-radius:0}
+.vol input:focus-visible{outline:2px solid var(--glow);outline-offset:2px}
+.vol.off .vol-ico{opacity:.4}
 textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line-height:1.45;background:#140d18;color:var(--ink);border:3px solid var(--deck-edge);padding:8px;box-sizing:border-box;border-radius:0}
 .practice{display:flex;flex-wrap:wrap;gap:6px}
 .practice > span{font-weight:700;font-size:17px;padding:3px 8px;background:#140d18;border:2px solid var(--bad);color:var(--ink)}
@@ -242,7 +254,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     </div>
     <div class="seg" data-seg aria-label="Difficulty"></div>
     <div class="start-foot">
-      <button class="linkbtn" data-music type="button">Music: on</button>
+      <button class="linkbtn" data-settings type="button">⚙️ Settings</button>
       <button class="linkbtn" id="editBtn" type="button">Grown-ups</button>
     </div>
   </div>
@@ -279,8 +291,31 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     <div class="seg" data-seg></div>
     <button class="btn go" id="resumeBtn" type="button">Keep playing</button>
     <button class="btn alt" id="restartBtn" type="button">Start over</button>
+    <button class="btn alt" data-settings type="button">⚙️ Settings</button>
     <button class="linkbtn" id="menuEditBtn" type="button">Grown-ups: change words</button>
-    <button class="linkbtn" data-music type="button">Music: on</button>
+  </div>
+</div>
+
+<div class="overlay" id="settingsCard" hidden>
+  <div class="card">
+    <h2>Settings</h2>
+    <div class="vol" data-vol="music">
+      <span class="vol-ico" aria-hidden="true">🎵</span>
+      <label for="volMusic">Music</label><b data-vol-num></b>
+      <input id="volMusic" type="range" min="0" max="10" step="1">
+    </div>
+    <div class="vol" data-vol="sfx">
+      <span class="vol-ico" aria-hidden="true">💥</span>
+      <label for="volSfx">Sounds</label><b data-vol-num></b>
+      <input id="volSfx" type="range" min="0" max="10" step="1">
+    </div>
+    <div class="vol" data-vol="voice">
+      <span class="vol-ico" aria-hidden="true">🗣️</span>
+      <label for="volVoice">Voice</label><b data-vol-num></b>
+      <input id="volVoice" type="range" min="2" max="10" step="1">
+    </div>
+    <p class="small">Still too quiet? Press the volume buttons on the side of the phone too.</p>
+    <button class="btn go" id="settingsDone" type="button">Done</button>
   </div>
 </div>
 
@@ -337,21 +372,42 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
    ============================================================ */
 (function(){
   const Native = window.AudioContext || window.webkitAudioContext;
-  const MUSIC_KEY = "lavaleap.music.v1";
+  const MUSIC_KEY = "lavaleap.music.v1";              // old on/off switch, still kept in step
+  const SET_KEY = "lavaleap.settings.v1";             // volumes 0..10 (Settings menu)
   let musicOn = true; try { musicOn = localStorage.getItem(MUSIC_KEY) !== "off"; } catch(e){}
-  if (!Native){ window.LLAudio = { sfx(){}, unlock(){}, setScene(){}, toggleMusic(){ return false; }, musicOn: () => false }; return; }
+  const VOL = { music: 7, sfx: 8, voice: 8 };
+  try { Object.assign(VOL, JSON.parse(localStorage.getItem(SET_KEY) || "null") || {}); } catch(e){}
+  for (const k in VOL) VOL[k] = Math.max(0, Math.min(10, Math.round(+VOL[k]) || 0));
+  if (VOL.voice < 2) VOL.voice = 2;                   // the voice reads the words, so it never goes silent
+  if (!musicOn) VOL.music = 0;                        // someone who switched music off keeps it off
+  let lastMusic = VOL.music || 7;
+  const saveVol = () => { try { localStorage.setItem(SET_KEY, JSON.stringify(VOL)); localStorage.setItem(MUSIC_KEY, VOL.music > 0 ? "on" : "off"); } catch(e){} };
+  if (!Native){ window.LLAudio = { sfx(){}, unlock(){}, setScene(){}, toggleMusic(){ return false; }, musicOn: () => false, vol: k => VOL[k], setVol(k, v){ VOL[k] = v; saveVol(); }, voiceGain: () => VOL.voice / 10 }; return; }
 
   // Every "new AudioContext()" gets the same context. iPhone allows only a few,
   // and only one that was resumed during a tap actually plays.
-  let ctx = null, out = null, musicBus = null, sfxBus = null;
+  // Three volume buses: music, sounds, voice. Modes that play into ctx.destination
+  // land on the sounds bus, so the Sounds slider covers every mode too.
+  let ctx = null, out = null, musicBus = null, sfxBus = null, voiceBus = null;
+  const G = { music: v => v * 0.1, sfx: v => v * 0.12, voice: v => v * 0.125 };   // 7 music = 1.75x the old level
   function get(){
     if (!ctx){
       try {
         ctx = new Native();
         ctx.close = () => Promise.resolve();          // modes must not kill the shared context
-        out = ctx.createGain(); out.gain.value = 1; out.connect(ctx.destination);
+        const speaker = ctx.destination;
+        // gentle limiter so louder music + voice never crackle on a phone speaker
+        let tail = speaker;
+        try {
+          const lim = ctx.createDynamicsCompressor();
+          lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.003; lim.release.value = 0.25;
+          lim.connect(speaker); tail = lim;
+        } catch(e){}
+        out = ctx.createGain(); out.gain.value = 1; out.connect(tail);
         musicBus = ctx.createGain(); musicBus.gain.value = 0; musicBus.connect(out);
-        sfxBus = ctx.createGain(); sfxBus.gain.value = 0.9; sfxBus.connect(out);
+        sfxBus = ctx.createGain(); sfxBus.gain.value = G.sfx(VOL.sfx); sfxBus.connect(out);
+        voiceBus = ctx.createGain(); voiceBus.gain.value = G.voice(VOL.voice); voiceBus.connect(out);
+        try { Object.defineProperty(ctx, "destination", { value: sfxBus, configurable: true }); } catch(e){}
       } catch(e){ ctx = null; }
     }
     return ctx;
@@ -431,11 +487,12 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   const ROOTS = [45, 41, 48, 43];
   const ARP = [[69, 72, 76, 72, 74, 72, 69, 67], [69, 72, 77, 72, 76, 74, 72, 69], [67, 72, 76, 79, 76, 72, 74, 76], [74, 71, 67, 71, 74, 79, 78, 74]];
   let musicTimer = null, nextT = 0, step = 0, scene = "main";
-  function sceneLevel(){ return !musicOn ? 0 : scene === "quiet" ? 0 : scene === "boss" ? 0.5 : 1; }
+  function sceneLevel(){ return !VOL.music ? 0 : scene === "quiet" ? 0 : scene === "boss" ? 0.5 : 1; }
   function applyLevel(){
     if (!ctx || !musicBus) return;
     const t = ctx.currentTime;
-    try { musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(0.4 * sceneLevel(), t, 0.25); } catch(e){}
+    try { musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(G.music(VOL.music) * sceneLevel(), t, 0.15); } catch(e){}
+    try { sfxBus.gain.setTargetAtTime(G.sfx(VOL.sfx), t, 0.05); voiceBus.gain.setTargetAtTime(G.voice(VOL.voice), t, 0.05); } catch(e){}
   }
   function startMusic(){
     if (!ctx) return;
@@ -447,7 +504,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         const bar = (step >> 3) % 4, s = step & 7, t = nextT;
         if (sceneLevel() > 0){
           tone(midi(ROOTS[bar] + (s % 2 ? 12 : 0)), STEP * 0.9, 0.16, "triangle", t, musicBus);
-          if (s % 2 === 0 || bar === 3) tone(midi(ARP[bar][s]), STEP * 0.8, 0.05, "square", t, musicBus);
+          if (s % 2 === 0 || bar === 3) tone(midi(ARP[bar][s]), STEP * 0.8, 0.08, "square", t, musicBus);   // tune carries on small speakers
           if (s === 0 || s === 4) tone(110, 0.09, 0.18, "sine", t, musicBus, 45);       // soft kick
           if (s === 2 || s === 6) tone(2400, 0.03, 0.025, "square", t, musicBus);       // hat
         }
@@ -460,8 +517,12 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     unlock,
     sfx(name){ try { SFX[name] && SFX[name](); } catch(e){} },
     setScene(s){ scene = s; applyLevel(); },
-    toggleMusic(){ musicOn = !musicOn; try { localStorage.setItem(MUSIC_KEY, musicOn ? "on" : "off"); } catch(e){} applyLevel(); return musicOn; },
-    musicOn: () => musicOn,
+    toggleMusic(){ if (VOL.music) { lastMusic = VOL.music; VOL.music = 0; } else VOL.music = lastMusic || 7; saveVol(); applyLevel(); return VOL.music > 0; },
+    musicOn: () => VOL.music > 0,
+    vol: k => VOL[k],
+    setVol(k, v){ VOL[k] = Math.max(k === "voice" ? 2 : 0, Math.min(10, Math.round(v))); if (k === "music" && VOL.music) lastMusic = VOL.music; saveVol(); applyLevel(); },
+    voiceOut: () => (get(), voiceBus),
+    voiceGain: () => Math.min(1, VOL.voice / 8),       // phone-voice fallback volume
     _ctx: () => ctx,
   };
 })();
@@ -2667,6 +2728,7 @@ function speechNext(){
       const u = new SpeechSynthesisUtterance(job.text);
       if (voice) u.voice = voice;
       u.lang = "en-US"; u.rate = job.rate;
+      try { u.volume = LLAudio.voiceGain ? LLAudio.voiceGain() : 1; } catch(e){}
       u.onend = u.onerror = done;
       const ms = 1500 + job.text.length * 120 / Math.max(0.4, job.rate);
       SPEECH.endAt = performance.now() + speechEst(job.text, job.rate);
@@ -2681,7 +2743,7 @@ function speechNext(){
     if (gen !== SPEECH.gen) return;
     let t = ctx.currentTime + 0.03;
     bufs.forEach((b, i) => {
-      const src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination);
+      const src = ctx.createBufferSource(); src.buffer = b; src.connect(LLAudio.voiceOut ? LLAudio.voiceOut() : ctx.destination);
       src.start(t); SPEECH.nodes.push(src);
       if (i === bufs.length - 1) src.onended = done;   // audio time, so a paused app doesn't skip ahead
       t += b.duration + (i < bufs.length - 1 ? parts[i + 1].gap : 0);
@@ -3298,9 +3360,28 @@ function renderSegs(){
   });
 }
 renderSegs();
-function renderMusic(){ document.querySelectorAll("[data-music]").forEach(b => b.textContent = "Music: " + (LLAudio.musicOn() ? "on" : "off")); }
-document.querySelectorAll("[data-music]").forEach(b => b.addEventListener("click", () => { LLAudio.toggleMusic(); renderMusic(); }));
-renderMusic();
+/* Settings: Music / Sounds / Voice volume (saved in lavaleap.settings.v1). */
+let volTry = 0;
+function renderVol(){
+  document.querySelectorAll("#settingsCard [data-vol]").forEach(row => {
+    const k = row.dataset.vol, v = LLAudio.vol(k), inp = row.querySelector("input");
+    inp.value = v; inp.style.setProperty("--p", ((v - inp.min) / (inp.max - inp.min) * 100) + "%");
+    row.querySelector("[data-vol-num]").textContent = v ? v : "Off";
+    row.classList.toggle("off", !v);
+  });
+}
+document.querySelectorAll("#settingsCard [data-vol]").forEach(row => {
+  const k = row.dataset.vol, inp = row.querySelector("input");
+  inp.addEventListener("input", () => {
+    LLAudio.setVol(k, +inp.value); renderVol();
+    // let him hear the new level (music plays on its own)
+    if (k === "sfx" && performance.now() - volTry > 150){ volTry = performance.now(); LLAudio.sfx("coin"); }
+  });
+  inp.addEventListener("change", () => { if (k === "voice") say("This is how loud I talk!", 0.95, true, "tap"); });
+});
+function openSettings(){ LLAudio.unlock(); renderVol(); $("settingsCard").hidden = false; }
+document.querySelectorAll("[data-settings]").forEach(b => b.addEventListener("click", openSettings));
+$("settingsDone").addEventListener("click", () => { $("settingsCard").hidden = true; LLAudio.sfx("land"); });
 
 function start(bossWords){
   cancelChunkModes(); LLAudio.unlock(); LLAudio.setScene("main");
