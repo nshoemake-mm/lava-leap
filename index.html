@@ -4555,7 +4555,7 @@ window.LavaEvents = (() => {
 
   function tipsFor(word, chunks, tricky) {
     const tips = [], has = i => tricky.includes(i);
-    const g = word.indexOf("gh");
+    const g = word.search(/e?igh/) >= 0 ? word.indexOf("gh", word.search(/e?igh/)) : -1;   // only igh/eigh: silent gh (not tough, laugh)
     if (g >= 0 && (has(g) || has(g + 1))) tips.push(`See the <em>g h</em>? It's silent. You see it, but you don't hear it!`);
     for (let i = 0; i < word.length - 1; i++) if (word[i] === word[i + 1] && (has(i) || has(i + 1)) && !(/(less|ness)$/.test(word) && i >= word.length - 2)) { tips.push(`Twin letters! It has <em>${word[i]}${word[i]}</em>.`); break; }
     const last = chunks[chunks.length - 1];
@@ -4779,7 +4779,7 @@ window.LavaEvents = (() => {
         `<div class="ww-row">${done ? `<button class="ww-btn go" id="wwNext">Hide it! ▶</button>` : ""}</div>`);
       root.querySelectorAll(".ww-chunk[data-i]").forEach(b => b.onclick = () => {
         const p = pool[+b.dataset.i];
-        if (p.ok === built) {
+        if (p.ok !== undefined && !p.used && p.c === W.chunks[built]) {
           p.used = true; say(W.sayParts[built], .75, true); sfx("ok"); built++;
           if (built === W.chunks.length) { talk(`You built <b>${W.word}</b>! ${pick(YAY)}`, "happy"); later(() => say(W.word, .8, true), 500); sfx("step"); build(); party($(".ww-card"), 40); return; }
           talk(pick(YAY) + " What comes next?", "happy"); build();
@@ -4830,7 +4830,7 @@ window.LavaEvents = (() => {
         `<div class="ww-row">${mode === "solo" && !done ? `<button class="ww-btn alt" id="wwPeek">👀 Peek (costs a ★)</button>` : ""}${done ? `<button class="ww-btn go" id="wwNext">${nextLabel}</button>` : ""}</div>`);
       if (look) {
         const lid = $("#wwLid"); lid.hidden = false; lid.className = "ww-lid show"; lid.textContent = W.word;
-        let n = 3; const tick = () => { if (n > 0) { talk(`Remember it... <b>${n}</b>`, "think"); spellBubble(); n--; later(tick, 1000); } else { lid.className = "ww-lid"; lid.textContent = "hidden!"; talk(`Now spell <b>${W.word}</b> all by yourself!`, "", `Now spell ${W.word}, all by yourself!`); spellBubble(); later(() => spell(), 700); } };
+        let n = 3; const tick = () => { if (n > 0) { talk(`Remember it... <b>${n}</b>`, "think"); spellBubble(); n--; later(tick, 1000); } else { lid.className = "ww-lid"; lid.textContent = "hidden!"; talk(`Now spell it all by yourself!`, "", `Now spell ${W.word}, all by yourself!`); spellBubble(); later(() => spell(), 700); } };
         later(tick, 900);
       }
       root.querySelectorAll(".ww-blk").forEach(b => b.onclick = () => tap(+b.dataset.i, b));
@@ -4950,7 +4950,8 @@ window.LavaEvents = (() => {
         setTimeout(() => { setSay(`BADGE! You beat ${it.w} for good! +10 diamonds`, "good"); say(`Badge! You beat ${it.w} for good!`, 0.95, true); try { celebrate(true); } catch(err){} }, 300);
         return;
       }
-      e.state = "watch"; e.miss = 2; e.skip = 0;
+      e.state = "watch"; e.miss = 2; e.skip = 0; e.sess = SAVE.session;   // this failed check is not counted again
+      save(); return;
     }
     if (G.helped && e.sess !== SAVE.session){
       e.sess = SAVE.session; e.miss++;
@@ -4993,7 +4994,7 @@ window.LavaEvents = (() => {
   // sneaky words that aren't on this week's list yet come along as bonus words
   function extraWords(list){
     return Object.entries(SAVE.focus)
-      .filter(([w, e]) => ["ready", "redo", "check"].includes(e.state) && !list.some(x => x.w === w))
+      .filter(([w, e]) => (["ready", "redo", "check"].includes(e.state) || (e.state === "watch" && e.ws)) && !list.some(x => x.w === w))
       .map(([w, e]) => ({ w, s: e.s || "" }));
   }
   function roundStart(){ caughtThisRound = []; }
