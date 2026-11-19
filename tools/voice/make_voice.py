@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Make the game's spoken clips with Kokoro (free, open-source TTS, runs offline).
 
-Reads index.html: the WORDS list (word + sentence) and every fixed phrase passed to
-say()/speak(). Writes audio/clips/<hash>.mp3 and audio/voice.json (text -> file).
+Reads index.html: the WORDS list (word + sentence), every fixed phrase passed to
+say()/speak()/spoken(), boss lines, world names and Word Workshop word parts.
+Also reads words/*.txt (weekly words sent from the in-game Grown-ups editor, same
+"word | sentence" lines). Writes audio/clips/<hash>.mp3 and audio/voice.json (text -> file).
 Only new phrases are generated; clips no longer used are deleted.
+The game has no robot (phone) voice: a line without a clip is silent, so every
+spoken line must be findable here.
 
 Usage: python3 tools/voice/make_voice.py --model DIR [--root .]
 DIR holds kokoro-v1.0.int8.onnx and voices-v1.0.bin
@@ -13,7 +17,7 @@ import argparse, hashlib, json, os, re, subprocess, sys, tempfile
 
 VOICE = "af_heart"          # Nick picked "Heart" (warm female), 2026-11-19
 SPEED = {"word": 0.85, "slow_word": 0.6, "sentence": 0.95, "slow_sentence": 0.75, "phrase": 1.0, "letter": 0.9}
-WORD_VARS = {"S.word", "it.w", "w", "c.w", "want"}   # template vars that hold the current word
+WORD_VARS = {"S.word", "it.w", "w", "c.w", "want", "W.word", "o.word"}   # template vars that hold the current word
 
 # Each world boss says his own taunts in his own voice (Nick picked per-boss voices, 2026-11-19).
 # (Kokoro voice, speed, pitch factor (<1 = deeper, speed kept), extra ffmpeg filters)
@@ -34,18 +38,55 @@ def norm(t):  # must match norm() in index.html
 def segments(t):  # must match segs() in index.html
     return re.findall(r"[^.!?]+[.!?]*", t)
 
-def read_words(src):
+# Spoken lines built at run time from text that isn't inside a say() call.
+EXTRA_PHRASES = ["New world spotted!", "World open!"]
+
+def read_words(src, root="."):
     m = re.search(r"const WORDS = \[(.*?)\];", src, re.S)
-    out = []
-    for line in re.findall(r'"([^"]*)"', m.group(1)):
+    lines = re.findall(r'"([^"]*)"', m.group(1))
+    wdir = os.path.join(root, "words")
+    if os.path.isdir(wdir):
+        for f in sorted(os.listdir(wdir)):
+            if f.endswith(".txt"):
+                lines += open(os.path.join(wdir, f), encoding="utf-8").read().splitlines()
+    out, seen = [], set()
+    for line in lines:
         w, _, s = line.partition("|")
-        if re.search(r"[a-z]", w.strip().lower()):
-            out.append((w.strip().lower(), s.strip()))
+        w = w.strip().lower()
+        if re.search(r"[a-z]", w) and (w, s.strip()) not in seen:
+            seen.add((w, s.strip())); out.append((w, s.strip()))
     return out
+
+def read_world_names(src):
+    """Every world name the map can show: theme name + roman numeral (Frost Cavern II)."""
+    names = re.findall(r'\{ name: "([^"]+)",\s+sky:', src)
+    roman = re.search(r"const ROMAN = \[(.*?)\];", src)
+    romans = re.findall(r'"([^"]*)"', roman.group(1)) if roman else [""]
+    say_num = {" II": " 2", " III": " 3", " IV": " 4", " V": " 5", " VI": " 6"}
+    return [(n + r, n + say_num.get(r, r) + ".") for r in romans for n in names]   # (shown name, what Heart says)
+
+def workshop_parts(src, words):
+    """Word Workshop's spoken word parts ("grate", "full"), from its own plan() via node."""
+    js = r"""
+const fs = require("fs"), vm = require("vm");
+const src = fs.readFileSync(0, "utf8");
+const b = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).find(x => x.includes("global.WordWorkshop"));
+const g = {}; vm.runInNewContext(b, { window: g, document: {}, matchMedia: () => ({ matches: false }) });
+const words = JSON.parse(process.argv[1]); const out = new Set();
+words.forEach(w => { try { g.WordWorkshop.plan(w).sayParts.forEach(p => out.add(p)); } catch (e) {} });
+console.log(JSON.stringify([...out]));
+"""
+    try:
+        r = subprocess.run(["node", "-e", js, json.dumps(sorted({w for w, _ in words}))], input=src,
+                           capture_output=True, text=True, check=True)
+        return json.loads(r.stdout)
+    except Exception as e:
+        print("WARNING: no Word Workshop parts (needs node):", e, file=sys.stderr)
+        return []
 
 def call_args(src):
     """Argument text of every say(...)/speak(...) call (balanced parens, strings skipped)."""
-    for m in re.finditer(r"\b(?:say|speak)\(", src):
+    for m in re.finditer(r"\b(?:say|speak|spoken)\(", src):
         i, depth, q = m.end(), 1, None
         while i < len(src) and depth:
             c = src[i]
@@ -118,7 +159,7 @@ def main():
     ap.add_argument("--root", default=".")
     a = ap.parse_args()
     src = open(os.path.join(a.root, "index.html"), encoding="utf-8").read()
-    words = read_words(src)
+    words = read_words(src, a.root)
 
     jobs = {}  # key -> (text to speak, speed, voice, pitch, filters)
     def add(key, text, kind, voice=None):
@@ -131,8 +172,13 @@ def main():
                 add(norm(seg), seg.strip(), "sentence"); add("slow:" + norm(seg), seg.strip(), "slow_sentence")
     for c in "abcdefghijklmnopqrstuvwxyz":
         add(c, c.upper() + ".", "letter")
-    for p in sorted(read_phrases(src, words)):
-        add(norm(p), p.strip(), "phrase")
+    for p in sorted(read_phrases(src, words)) + EXTRA_PHRASES:
+        for seg in segments(p):
+            add(norm(seg), seg.strip(), "phrase")
+    for name, spoken in read_world_names(src):
+        add(norm(name), spoken, "phrase")
+    for p in workshop_parts(src, words):
+        add(norm(p), p + ".", "phrase")
     for b in read_bosses(src):
         for seg in boss_narration(b):
             add(norm(seg), seg.strip(), "phrase")

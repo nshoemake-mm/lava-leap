@@ -1,12 +1,12 @@
 // Offline support. Bump VERSION on every release so phones pick up the update.
-const VERSION = 'v21';
+const VERSION = 'v22';
 const CACHE = 'lava-leap-' + VERSION;
 const CORE = ['./', './index.html', './manifest.webmanifest',
   './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
-  // Voice clips for offline play (best effort: a missing clip just uses the phone voice).
+  // Voice clips for offline play (best effort: a missing clip is just skipped).
   e.waitUntil(caches.open(CACHE).then(c => fetch('./audio/voice.json').then(r => r.ok ? r.clone().json().then(j => {
     c.put('./audio/voice.json', r);
     return Promise.all([...new Set(Object.values(j.clips || {}))].map(f => c.match('./audio/' + f).then(hit => hit || c.add('./audio/' + f).catch(() => {}))));

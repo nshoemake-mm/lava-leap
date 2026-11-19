@@ -614,7 +614,6 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     vol: k => VOL[k],
     setVol(k, v){ VOL[k] = Math.max(k === "voice" ? 2 : 0, Math.min(10, Math.round(v))); if (k === "music" && VOL.music) lastMusic = VOL.music; saveVol(); applyLevel(); },
     voiceOut: () => (get(), voiceBus),
-    voiceGain: () => Math.min(1, VOL.voice / 8),       // phone-voice fallback volume
     _ctx: () => ctx,
   };
 })();
@@ -807,16 +806,8 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   function stingMiss(){ if (!AC) return; const t = AC.currentTime; drum(t, 90, 30, 0.5, 0.9, master); tone(t, 110, 0.3, 0.08, "sawtooth"); }
   function stingSurge(){ if (!AC) return; const t = AC.currentTime; drum(t, 70, 25, 0.9, 1, master); snap(t + 0.02, 0.4, master); }
 
-  /* ---------- speech (host's if given) ---------- */
-  let ownVoice = null;
-  function ownSay(text, rate, cancel){
-    if (!("speechSynthesis" in window)) return;
-    try {
-      if (!ownVoice){ const vs = speechSynthesis.getVoices(); ownVoice = vs.find(v => /^en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null; }
-      if (cancel) speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text); if (ownVoice) u.voice = ownVoice; u.lang = "en-US"; u.rate = rate; speechSynthesis.speak(u);
-    } catch(e){}
-  }
+  /* ---------- speech: the host's say() (clips only, never the phone voice) ---------- */
+  const ownSay = (t, r, c, g) => (window.say || function(){})(t, r, c, g);
 
   /* ---------- CSS + DOM ---------- */
   const CSS = `
@@ -1005,14 +996,14 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       S.letterMisses = (S.letterMisses || 0) + 1;
       if (S.letterMisses >= 2) S.blocks.forEach(x => { if (x.ok) x.glow = true; });
       setSay(`Oops! That's ${spelled}. The lava jumps up!`, "bad");
-      S.say(`That's ${b.t}.`, 0.95, true); duck(1800); S.say(S.word, 0.8);
+      S.say(`Oops! ${b.t.split("").join(", ")}.`, 0.95, true); duck(1800); S.say(S.word, 0.8);
       return;
     }
     if (S.misses >= 2 || S.level >= 1){
       S.blocks.forEach(x => { if (x.ok) x.glow = true; });
       setSay(S.level >= 1 ? "Hot feet! The glowing block is the right one." : `That's ${spelled}. The glowing block is the right one.`, "bad");
     } else setSay(`Oops! That's ${spelled}. The lava's rising! Listen again.`, "bad");
-    S.say(`That's ${b.t.split("").join(", ")}. Listen.`, 0.95, true);
+    S.say(`Not quite. ${b.t.split("").join(", ")}. Listen.`, 0.95, true);
     duck(3600);
     S.say(S.word, 0.7);
   }
@@ -1066,7 +1057,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     const g = geo();
     S.player.jump = { fx: g.ledgeX, fy: g.ledgeY, tx: b.x, ty: b.y - b.h * 0.5, t: 0, dur: reduceMotion ? 200 : 360, b };
     S.blocks.forEach(x => { if (x !== b) x.sink = 0.001; });
-    S.say(b.t, 1, true, "tap");
+    S.say(b.t.split("").join(", "), 1, true, "tap");   // a chunk ("ful") is spelled: letters have clips
     later(() => {
       if (!S) return;
       let i = S.chunk.e; while (i < S.word.length && !/[a-z]/.test(S.word[i])) i++;
@@ -1436,10 +1427,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     options = options || {};
     const L = CB_LEVELS[options.difficulty] || CB_LEVELS.medium;
     const w = String(spot.w).toLowerCase(), s = spot.s, e = spot.e, chunk = w.slice(s, e);
-    const speak = options.say || ((text, rate, cancel) => {
-      try { if (!("speechSynthesis" in window)) return; if (cancel) speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = rate; speechSynthesis.speak(u); } catch(err){}
-    });
+    const speak = options.say || window.say || function(){};   // clips only, never the phone voice
     const sfx = makeAudio(options.sound !== false);
     const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
     const maxHearts = options.maxHearts || 3, hearts = Math.max(0, Math.min(maxHearts, options.hearts == null ? maxHearts : options.hearts));
@@ -1841,7 +1829,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
                       //   Main-game spot objects work as is (key defaults to w + "|" + s).
        difficulty,    // "easy" | "medium" | "hard"  (sets monster health, rise speed, choices)
        hearts,        // optional, default 3
-       say,           // optional speech fn say(text, rate, cancel); default: built-in speechSynthesis
+       say,           // optional speech fn say(text, rate, cancel); default: the page's say() (voice clips)
        palette,       // optional player sprite palette (main game: SKINS[SAVE.skin].pal)
        onChunk,       // optional (key, right:boolean) called on every answer
        attack,        // optional { look, windup } projectile per question (needs window.BossAttack);
@@ -2185,9 +2173,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     const reduce = global.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     /* speech + sfx */
-    const say = opts.say || function (text, rate, cancel) {   // opts.say(text, rate, cancel, tag, bossId)
-      try { if (!("speechSynthesis" in global)) return; if (cancel) speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = rate || 0.9; speechSynthesis.speak(u); } catch (e) {}
-    };
+    const say = opts.say || global.say || function () {};   // opts.say(text, rate, cancel, tag, bossId); clips only
     let ac = null;
     try { ac = new (global.AudioContext || global.webkitAudioContext)(); ac.resume && ac.resume(); } catch (e) { ac = null; }
     function tone(f1, f2, dur, type, vol, delay) {
@@ -2748,60 +2734,67 @@ let wordList = loadWords();
 let diff = LEVELS[store.get(DIFF_KEY)] ? store.get(DIFF_KEY) : "medium";
 
 /* ---------- speech ----------
-   Spoken lines use pre-made "Heart" voice clips (audio/voice.json, made by
-   tools/voice/make_voice.py whenever WORDS changes). Anything without a clip,
-   such as words typed in the in-game editor, falls back to the phone's voice. */
-let voice = null;
-const hasTTS = "speechSynthesis" in window;
-const canSpeak = hasTTS || !!(window.AudioContext || window.webkitAudioContext);
-function pickVoice(){
-  try{
-    const vs = speechSynthesis.getVoices();
-    voice = vs.find(v => /^en[-_]US/i.test(v.lang) && /Samantha|Google US|Aaron|Nicky|Ava|Allison/i.test(v.name))
-         || vs.find(v => /^en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null;
-  }catch(e){}
-}
-if (hasTTS){ pickVoice(); try{ speechSynthesis.onvoiceschanged = pickVoice; }catch(e){} }
+   Every spoken line is a pre-made clip: "Heart" (Kokoro) for the narrator, each
+   boss's own voice for his taunts (audio/voice.json, made by tools/voice/make_voice.py
+   from index.html and words/*.txt). There is NO phone/robot voice anywhere: a line
+   with no clip is skipped (the text is still on screen) and noted in
+   window.LLVoiceMissing so it can be found and given a clip. New weekly words get
+   clips by adding them to the repo (WORDS or words/*.txt). */
+const canSpeak = !!(window.AudioContext || window.webkitAudioContext);
+window.LLVoiceMissing = new Set();
+// Marks a fixed line that is spoken later (not inside say()), so the voice maker finds it.
+const spoken = t => t;
 
 const CLIPS = (() => {
   let map = null; const raw = {}, decoded = {};
   const norm = t => String(t).toLowerCase().replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
   const segs = t => String(t).match(/[^.!?]+[.!?]*/g) || [];
   const load = k => raw[k] || (raw[k] = fetch("audio/" + map[k]).then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); }));
-  fetch("audio/voice.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).then(j => {
-    if (!j || !j.clips) return;
-    map = j.clips;
-    // Warm the cache (and the offline copy) with this week's words, sentences and letters.
-    const want = [];
-    wordList.forEach(it => { want.push(norm(it.w), "slow:" + norm(it.w)); segs(it.s).forEach(s => want.push(norm(s), "slow:" + norm(s))); });
-    "abcdefghijklmnopqrstuvwxyz".split("").forEach(c => want.push(c));
-    Object.keys(map).forEach(k => want.push(k));
-    let i = 0; const next = () => { while (i < want.length && !map[want[i]]) i++; if (i < want.length) load(want[i++]).catch(() => {}).then(next); };
-    next(); next();
-  }).catch(() => {});
-  // Text -> list of clip keys (with pauses), or null if any part has no clip.
+  let first = true;
+  // (Re)load the clip list: at start and when the app comes back to the front,
+  // so clips the voice maker made for new words show up without a reinstall.
+  function refresh(){
+    return fetch("audio/voice.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).then(j => {
+      if (!j || !j.clips) return;
+      map = j.clips;
+      if (!first) return; first = false;
+      // Warm the cache (and the offline copy) with this week's words, sentences and letters.
+      const want = [];
+      wordList.forEach(it => { want.push(norm(it.w), "slow:" + norm(it.w)); segs(it.s).forEach(s => want.push(norm(s), "slow:" + norm(s))); });
+      "abcdefghijklmnopqrstuvwxyz".split("").forEach(c => want.push(c));
+      Object.keys(map).forEach(k => want.push(k));
+      let i = 0; const next = () => { while (i < want.length && !map[want[i]]) i++; if (i < want.length) load(want[i++]).catch(() => {}).then(next); };
+      next(); next();
+    }).catch(() => {});
+  }
+  refresh();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  const miss = k => { if (!window.LLVoiceMissing.has(k)) { window.LLVoiceMissing.add(k); try { console.info("[voice] no clip:", k); } catch(e){} } };
+  // Text -> list of clip keys (with pauses). Bits with no clip are left out; null = clip list not loaded yet.
   // who = boss id: use that boss's own voice clips ("boss:<id>:<text>").
   function plan(text, rate, who){
     if (!map) return null;
     const out = [];
     for (const s of segs(text)){
       const n = norm(s); if (!n) continue;
-      if (who){ const bk = "boss:" + who + ":" + n; if (!map[bk]) return null; out.push({ k: bk, gap: 0.15 }); continue; }
+      if (who){ const bk = "boss:" + who + ":" + n; if (map[bk]) { out.push({ k: bk, gap: 0.15 }); continue; } miss(bk); continue; }
       const slow = rate <= 0.75 && map["slow:" + n] ? "slow:" + n : null;
       if (slow || map[n]) { out.push({ k: slow || n, gap: 0.12 }); continue; }
       const letters = n.split(" ");
       if (letters.every(c => c.length === 1 && map[c])) { letters.forEach(c => out.push({ k: c, gap: rate <= 0.85 ? 0.22 : 0.12 })); continue; }
-      return null;
+      // no clip: skip this bit (never the robot voice), and note it for the next voice update
+      miss(n);
     }
-    return out.length ? out : null;
+    return out;
   }
+  const ready = () => !!map;
   function decode(ctx, k){
     return decoded[k] || (decoded[k] = load(k).then(ab => new Promise((ok, bad) => {
       const p = ctx.decodeAudioData(ab.slice(0), ok, bad); if (p && p.catch) p.catch(bad);
     }))).then(b => { decoded[k].ok = true; return b; }, e => { delete decoded[k]; delete raw[k]; throw e; });
   }
   function forget(keys){ keys.forEach(k => { if (!(decoded[k] && decoded[k].ok)) { delete decoded[k]; delete raw[k]; } }); }
-  return { plan, decode, forget };
+  return { plan, decode, forget, ready };
 })();
 
 /* One queue for every spoken line, in the main game and in every mode.
@@ -2822,7 +2815,6 @@ const speechEst = (text, rate) => (450 + String(text).length * 70) / Math.max(0.
 function speechStop(){
   SPEECH.gen++; SPEECH.busy = false; SPEECH.cur = null; SPEECH.endAt = 0; clearTimeout(SPEECH.timer);
   SPEECH.nodes.forEach(n => { try { n.onended = null; n.stop(); } catch(e){} }); SPEECH.nodes = [];
-  if (hasTTS) try { speechSynthesis.cancel(); } catch(e){}
 }
 function speechCancel(){ SPEECH.q = []; speechStop(); }
 function speechNext(){
@@ -2833,26 +2825,17 @@ function speechNext(){
   const gen = SPEECH.gen;
   const done = () => { if (gen !== SPEECH.gen) return; clearTimeout(SPEECH.timer); SPEECH.busy = false; SPEECH.cur = null; SPEECH.endAt = 0; SPEECH.nodes = []; speechNext(); };
   const ctx = window.LLAudio && LLAudio._ctx && LLAudio._ctx();
-  const parts = ctx && ctx.state === "running" ? CLIPS.plan(job.text, job.rate, job.who) : null;
-  const fallback = () => {
-    if (gen !== SPEECH.gen) return;
-    if (!hasTTS) return done();
-    try {
-      const u = new SpeechSynthesisUtterance(job.text);
-      if (voice) u.voice = voice;
-      u.lang = "en-US"; u.rate = job.rate;
-      try { u.volume = LLAudio.voiceGain ? LLAudio.voiceGain() : 1; } catch(e){}
-      if (job.who) u.pitch = 0.6;   // no clip yet: at least make the boss sound deep
-      u.onend = u.onerror = done;
-      const ms = 1500 + job.text.length * 120 / Math.max(0.4, job.rate);
-      SPEECH.endAt = performance.now() + speechEst(job.text, job.rate);
-      SPEECH.timer = setTimeout(done, ms);
-      speechSynthesis.speak(u);
-    } catch(e){ done(); }
-  };
-  if (!parts) return fallback();
-  // Don't let a slow download hold up the word: after 3 s use the phone voice instead.
-  const slow = new Promise((_, bad) => setTimeout(() => { CLIPS.forget(parts.map(p => p.k)); bad(); }, 3000));
+  if (!ctx) return done();
+  if (ctx.state !== "running" || !CLIPS.ready()){
+    // sound still locked (no tap yet) or the clip list still loading: wait up to ~3 s, else skip the line
+    if (ctx.state !== "running") try { ctx.resume && ctx.resume(); } catch(e){}
+    if ((job.tries = (job.tries || 0) + 1) <= 8){ SPEECH.busy = false; SPEECH.cur = null; SPEECH.q.unshift(job); SPEECH.timer = setTimeout(() => { if (gen === SPEECH.gen) speechNext(); }, 400); return; }
+    return done();
+  }
+  const parts = CLIPS.plan(job.text, job.rate, job.who);
+  if (!parts || !parts.length) return done();
+  // Don't let a slow download hold everything up: after 6 s skip this line.
+  const slow = new Promise((_, bad) => setTimeout(() => { CLIPS.forget(parts.map(p => p.k)); bad(); }, 6000));
   Promise.race([Promise.all(parts.map(p => CLIPS.decode(ctx, p.k))), slow]).then(bufs => {
     if (gen !== SPEECH.gen) return;
     let t = ctx.currentTime + 0.03;
@@ -2863,7 +2846,7 @@ function speechNext(){
       t += b.duration + (i < bufs.length - 1 ? parts[i + 1].gap : 0);
     });
     SPEECH.endAt = performance.now() + (t - ctx.currentTime) * 1000;
-  }, fallback);
+  }, () => { if (gen === SPEECH.gen) done(); });
 }
 function say(text, rate, cancel, tag, who){
   if (!canSpeak) return;
@@ -3111,7 +3094,7 @@ function tapLetter(b){
   if (b.ch === want){
     G.phase = "jumping";
     clearChoices(b);
-    say(b.ch, 0.9, true, "tap"); LLAudio.sfx("jump");
+    say(String(b.ch).split("").join(", "), 0.9, true, "tap"); LLAudio.sfx("jump");
     jumpTo(b, () => {
       LLAudio.sfx("land");
       G.pos++; G.letterMisses = 0;
@@ -3994,7 +3977,7 @@ const Nest = (() => {
     const nw = (SAVE.petNews || []).filter(id => P.BY[id] && SAVE.mythic[id]);
     if (nw.length){
       add(nw.map(id => `🎉 <b>${P.BY[id].name}</b> grew into <b>${P.BY[id].stages[SAVE.mythic[id].stage - 1].name}</b>!`).join("<br>"), "nest-news");
-      setTimeout(() => say(nw.map(id => `${P.BY[id].name} grew into ${P.BY[id].stages[SAVE.mythic[id].stage - 1].name}!`).join(" "), 1, true), 250);
+      setTimeout(() => say(nw.length > 1 ? "Your Mythic pets grew!" : "Your Mythic pet grew!", 1, true), 250);
       SAVE.petNews = []; save();
     }
     // eggs
@@ -4009,7 +3992,7 @@ const Nest = (() => {
         b.insertAdjacentHTML("beforeend", `<span class="tier" style="color:${T.mythic ? "#ff7ab6" : T.col[1]}">${T.name.toUpperCase()}</span>` +
           (rd ? `<span class="go">HATCH!</span>` : `<span class="nest-bar"><i style="width:${Math.round(100 * (e.done || 0) / (e.need || 1))}%"></i></span><span class="left">${left} more quiz${left > 1 ? "zes" : ""}</span>`));
         b.setAttribute("aria-label", `${T.name} egg. ${rd ? "Ready to hatch!" : left + " more quizzes"}`);
-        b.addEventListener("click", () => rd ? doHatch(e.uid, b) : say(`${T.name} egg. ${left} more quiz${left > 1 ? "zes" : ""} until it hatches.`, 1, true, "tap"));
+        b.addEventListener("click", () => rd ? doHatch(e.uid, b) : say("Not ready yet! Do daily quizzes to hatch it.", 1, true, "tap"));
         g.appendChild(b);
       });
     }
@@ -4039,14 +4022,14 @@ const Nest = (() => {
           b.appendChild(fit(s.grid, st > m.stage ? SHADOW_PAL : p.pal, 30));
           b.setAttribute("aria-label", st > m.stage ? "Not grown yet" : s.name);
           b.addEventListener("click", () => {
-            if (st > m.stage){ say(`Not yet! It grows after ${P.GROW[j] - q} more quizzes.`, 1, true, "tap"); return; }
-            m.look = st; save(); say(s.name, 1, true, "tap"); render();
+            if (st > m.stage){ say("Not yet! It grows with more daily quizzes.", 1, true, "tap"); return; }
+            m.look = st; save(); LLAudio.sfx("land"); render();
           });
           sg.appendChild(b);
         });
         const on = cur("pet") === p.id, eb = document.createElement("button"); eb.type = "button";
         eb.className = "btn" + (on ? " alt" : " go"); eb.textContent = on ? "✓ With you" : "Equip";
-        eb.addEventListener("click", () => { if (on) return; setEq("pet", p.id); LLAudio.sfx("land"); say(`${p.stages[lk - 1].name} is with you!`, 1, true); render(); });
+        eb.addEventListener("click", () => { if (on) return; setEq("pet", p.id); LLAudio.sfx("land"); say("Your pet is with you!", 1, true); render(); });
         r.appendChild(eb);
       }
       row.appendChild(r);
@@ -4083,7 +4066,7 @@ const Nest = (() => {
     if (equip) btn("Equip now", "go", () => { setEq("pet", equip); LLAudio.sfx("land"); });
     btn(equip ? "Later" : "Awesome!", equip ? "alt" : "go");
     $("nestCard").appendChild(box);
-    say(out.kind === "gems" ? `${out.n} diamonds!` : out.kind === "mythic" ? `Wow! A Mythic pet! ${P.BY[out.id].name}!` : title, 1, true);
+    say(out.kind === "gems" ? "Diamonds!" : out.kind === "mythic" ? "Wow! A Mythic pet!" : "A new friend!", 1, true);
   }
   // live preview: hero + equipped pet standing over the lava
   function start(){ stop(); t0 = last = performance.now(); raf = requestAnimationFrame(frame); }
@@ -4459,9 +4442,9 @@ window.LLStreak = (() => {
     el.hidden = false;
     if (r.prize){
       try { LLAudio.sfx("coin"); } catch(e){}
-      setTimeout(() => say(`${d} day streak! You won ${r.prize.gems} bonus diamonds!`, 0.95, false), 300);
+      setTimeout(() => say("Your streak keeps going! You won bonus diamonds!", 0.95, false), 300);
     } else if (r.grew && d > 1){
-      setTimeout(() => say(`${d} day streak!`, 0.95, false), 300);
+      setTimeout(() => say("Your streak keeps going!", 0.95, false), 300);
     }
   }
   function hideWin(){ const el = document.getElementById("winStreak"); if (el) el.hidden = true; }
@@ -4743,12 +4726,13 @@ window.LLStreak = (() => {
     return (passed(w) ? "Test was " : "Test: ") + niceDay(w.test, { weekday: "short", month: "short", day: "numeric" });
   }
   // kid-friendly: why is world i locked?
-  function lockHint(i, spoken){
+  function lockHint(i, talk){
     const p = M.worlds[i - 1]; if (!p) return "";
-    if (!unlocked(i - 1)) return `Open World ${i} first!`;
+    // the spoken hint has no names or dates (those are on screen), so it always has a voice clip
+    if (!unlocked(i - 1)) return talk ? spoken("Locked! Open the world before it first.") : `Open World ${i} first!`;
     const when = validIso(p.test) ? niceDay(addDays(p.test, 1)) : "";
-    return spoken
-      ? `Locked! Get 3 stars in ${wname(p)} to open it. Every word right on Medium or Hard${when ? ", or it opens by itself on " + when : ""}.`
+    return talk
+      ? spoken("Locked! Get 3 stars in the world before it. Every word right on Medium or Hard. Or it opens by itself after that test day.")
       : `Get <b>★★★</b> in <b>${wname(p)}</b> to open it!<br><span class="small">Every word right first try, on Medium or Hard.</span>${when ? `<br>Or it opens by itself on <b>${when}</b>.` : ""}`;
   }
   function renderMap(){
@@ -4790,7 +4774,7 @@ window.LLStreak = (() => {
       b.insertAdjacentHTML("beforeend", open
         ? `<b>${wname(w)}</b><small>${testLabel(w)}</small>${starsHtml(w.stars)}`
         : `<b>🔒 ${wname(w)}</b><span class="lk">★★★ in World ${i}!</span>`);
-      b.addEventListener("click", () => { sel = w.id; say(open ? wname(w) : lockHint(i, true), 0.95, true, open ? "tap" : undefined); renderMap(); });
+      b.addEventListener("click", () => { sel = w.id; if (open) LLAudio.sfx && LLAudio.sfx("land"); else say(lockHint(i, true), 0.95, true, "tap"); renderMap(); });
       track.appendChild(b);
       if (w.id === M.cur){
         const h = document.createElement("canvas"); h.className = "mhero"; h.width = 16; h.height = 22;
@@ -4874,9 +4858,9 @@ window.LLStreak = (() => {
       const tip = w.stars < 2 ? "Get 3 of 4 words perfect for ★★." : w.stars < 3 ? "All perfect on Medium or Hard for ★★★" + (nextLocked ? " and open the next world!" : ".") : "All 3 stars!";
       const opened = openCount() > openBefore ? M.worlds[openCount() - 1] : null;
       winInfo.innerHTML = `${starsHtml(stars)}<br>${firstClear ? `<b>${wname(w)} cleared!</b> Flag planted.` : wname(w)}${bonus ? ` +${bonus} bonus diamonds.` : ""}${opened ? `<br><b>🔓 ${wname(opened)} is open!</b>` : ""}<br><span class="small">${tip}</span>`;
-      if (opened){ M.open = openCount(); persist(); setTimeout(() => say(wname(opened) + " is open!", 0.95, false), firstClear ? 4200 : 2600); }
+      if (opened){ M.open = openCount(); persist(); setTimeout(() => say("World open! " + wname(opened) + ".", 0.95, false), firstClear ? 4200 : 2600); }
       winInfo.hidden = false;
-      if (firstClear) setTimeout(() => say(wname(w) + " cleared!", 0.95, false), 2600);
+      if (firstClear) setTimeout(() => say("World cleared! " + wname(w) + ".", 0.95, false), 2600);
     } catch(e){}
   };
 
@@ -5298,7 +5282,7 @@ window.LavaEvents = (() => {
    WordWorkshop.start({
        word, sentence,          // required word; sentence optional
        tricky: [idx...],        // optional: letter indexes he actually missed
-       say(text, rate, cancel), // optional: host speech (defaults to speechSynthesis)
+       say(text, rate, cancel), // optional: host speech (defaults to the page's say(), voice clips)
        sfx(name),               // optional: host sound ("ok","step","nope","win")
        reward(stars) -> n,      // optional: diamonds shown on the finish screen
      }, onDone({ stars, slips, peeks, quit }))
@@ -5512,10 +5496,8 @@ window.LavaEvents = (() => {
     nope() { tone(180, .16, "sine", .07); },
     win() { [523, 659, 784, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => tone(f, .22), i * 110)); },
   };
-  let voice = null;
-  function pickVoice() { try { const vs = speechSynthesis.getVoices(); voice = vs.find(v => /^en[-_]US/i.test(v.lang) && /Samantha|Google US|Ava|Allison|Nicky/i.test(v.name)) || vs.find(v => /^en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null; } catch (e) {} }
-  if ("speechSynthesis" in global) { pickVoice(); try { speechSynthesis.addEventListener("voiceschanged", pickVoice); } catch (e) {} }
-  function ownSay(text, rate, cancel) { try { if (cancel !== false) speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); if (voice) u.voice = voice; u.lang = "en-US"; u.rate = rate || .85; speechSynthesis.speak(u); } catch (e) {} }
+  const ownSay = (t, r, c, g) => (global.say || function () {})(t, r, c, g);   // clips only, never the phone voice
+  const spoken = t => t;   // marks a spoken line for the voice maker
 
   /* ---------- confetti (blocky) ---------- */
   function burst(root, x, y, n) {
@@ -5550,7 +5532,7 @@ window.LavaEvents = (() => {
     const hearWord = () => { say(W.word, .75, true, "prompt"); if (W.sentence) say(W.sentence, .9, false, "prompt"); };
     const chunkOfPos = p => { let s = 0; for (let i = 0; i < W.chunks.length; i++) { s += W.chunks[i].length; if (p < s) return i; } return W.chunks.length - 1; };
 
-    function close(res) { if (closed) return; closed = true; timers.forEach(clearTimeout); try { o.hush ? o.hush() : speechSynthesis.cancel(); } catch (e) {} root.remove(); onDone && onDone(res); }
+    function close(res) { if (closed) return; closed = true; timers.forEach(clearTimeout); try { (o.hush || global.speechCancel || function () {})(); } catch (e) {} root.remove(); onDone && onDone(res); }
     function shell(body, foot) {
       root.innerHTML = `<div class="ww-app">
         <div class="ww-top"><button class="ww-chip ww-x" id="wwX" aria-label="Leave the workshop">✕</button><div class="ww-ttl">Word Workshop</div><button class="ww-chip ww-x" id="wwHearTop" aria-label="Hear the word">🔊</button></div>
@@ -5587,7 +5569,7 @@ window.LavaEvents = (() => {
     function build0() {
       step = 1; built = 0;
       pool = [...W.chunks.map((c, i) => ({ c, ok: i })), ...W.decoys.map(d => ({ c: d.c, why: d.why }))].sort(() => Math.random() - .5);
-      talk(`Build the word! Tap the blocks in order. Watch out for <em>traps</em>!`, "", "Build the word. Watch out for traps!"); build();
+      talk(`Build the word! Tap the blocks in order. Watch out for <em>traps</em>!`, "", spoken("Build the word. Watch out for traps!")); build();
     }
     function build() {
       const done = built === W.chunks.length;
@@ -5614,13 +5596,13 @@ window.LavaEvents = (() => {
     /* 3. Hide it (2 passes)  +  4. Solo */
     function fade(p) {
       step = 2; mode = p === 0 ? "ghost" : "holes"; pos = 0; misses = 0; newOpts();
-      if (p === 0) talk(`Copy it! Tap the letters to fill the boxes.`, "", "Copy it! Tap the letters.");
-      else talk(`Uh oh, the sneaky letters are <em>hiding</em>! Can you find them?`, "think", "The sneaky letters are hiding. Can you find them?");
+      if (p === 0) talk(`Copy it! Tap the letters to fill the boxes.`, "", spoken("Copy it! Tap the letters."));
+      else talk(`Uh oh, the sneaky letters are <em>hiding</em>! Can you find them?`, "think", spoken("The sneaky letters are hiding. Can you find them?"));
       spell();
     }
     function solo() {
       step = 3; mode = "solo"; pos = 0; misses = 0; slips = 0; peeks = 0; newOpts();
-      talk(`Look at it really hard... I'm going to cover it up!`, "think", `Look at it really hard. I'm going to cover it up.`);
+      talk(`Look at it really hard... I'm going to cover it up!`, "think", spoken(`Look at it really hard. I'm going to cover it up.`));
       spell(true);
     }
     function newOpts() {
@@ -5649,7 +5631,7 @@ window.LavaEvents = (() => {
         `<div class="ww-row">${mode === "solo" && !done ? `<button class="ww-btn alt" id="wwPeek">👀 Peek (costs a ★)</button>` : ""}${done ? `<button class="ww-btn go" id="wwNext">${nextLabel}</button>` : ""}</div>`);
       if (look) {
         const lid = $("#wwLid"); lid.hidden = false; lid.className = "ww-lid show"; lid.textContent = W.word;
-        let n = 3; const tick = () => { if (n > 0) { talk(`Remember it... <b>${n}</b>`, "think"); spellBubble(); n--; later(tick, 1000); } else { lid.className = "ww-lid"; lid.textContent = "hidden!"; talk(`Now spell it all by yourself!`, "", `Now spell ${W.word}, all by yourself!`); spellBubble(); later(() => spell(), 700); } };
+        let n = 3; const tick = () => { if (n > 0) { talk(`Remember it... <b>${n}</b>`, "think"); spellBubble(); n--; later(tick, 1000); } else { lid.className = "ww-lid"; lid.textContent = "hidden!"; talk(`Now spell it all by yourself!`, "", spoken(`Now spell ${W.word}, all by yourself!`)); spellBubble(); later(() => spell(), 700); } };
         later(tick, 900);
       }
       root.querySelectorAll(".ww-blk").forEach(b => b.onclick = () => tap(+b.dataset.i, b));
@@ -5697,7 +5679,7 @@ window.LavaEvents = (() => {
       $("#wwDone").onclick = () => close({ stars, slips, peeks, quit: false });
     }
 
-    talk(`Tap each block to hear it. Start with the bouncing one!`, "", `Let's catch the word ${W.word}. Tap each block to hear it.`);
+    talk(`Tap each block to hear it. Start with the bouncing one!`, "", spoken(`Let's catch the word ${W.word}. Tap each block to hear it.`));
     if (W.sentence) later(() => say(W.sentence, .9, false), 60);
     hear();
     return { close: () => close({ quit: true, stars: 0, slips, peeks }) };
@@ -5961,7 +5943,9 @@ window.LavaEvents = (() => {
   }
   function sayNumber(i){
     say(["Number one.", "Number two.", "Number three.", "Number four.", "Number five.", "Number six.", "Number seven.", "Number eight.",
-         "Number nine.", "Number ten.", "Number eleven.", "Number twelve.", "Number thirteen.", "Number fourteen.", "Number fifteen."][i] || `Number ${i + 1}.`, 0.95, true, "prompt");
+         "Number nine.", "Number ten.", "Number eleven.", "Number twelve.", "Number thirteen.", "Number fourteen.", "Number fifteen.",
+         "Number sixteen.", "Number seventeen.", "Number eighteen.", "Number nineteen.", "Number twenty.", "Number twenty one.", "Number twenty two.",
+         "Number twenty three.", "Number twenty four.", "Number twenty five."][i] || "Next word.", 0.95, true, "prompt");
   }
   function sayWord(it){   // the teacher way: word, sentence, word
     say(it.w, 0.85, false, "prompt");
@@ -6325,7 +6309,7 @@ window.LavaEvents = (() => {
       <div class="td-pill">${esc(countLine(n))}</div>`;
     if (r){
       try { LLAudio.sfx("coin"); } catch(e){}
-      setTimeout(() => say(r.prize ? `${r.streak} day test streak! Bonus diamonds!` : `Plus ${r.gems} diamonds for finishing your test!`, 0.95, false), 2600);
+      setTimeout(() => say(r.prize ? "Test streak! Bonus diamonds!" : "You got diamonds for finishing your test!", 0.95, false), 2600);
       LLTest.emit("reward", { rec, gems: r.gems, streak: r.streak, prize: r.prize || null, slot });
     }
   });
@@ -6479,12 +6463,12 @@ window.LavaEvents = (() => {
   }
   function rewardText(ch){
     const r = ch.r, T = TIERS[TI(ch.tier)];
-    if (r.kind === "gems") return { name: r.n + " Diamonds", desc: r.n >= 100 ? "A huge pile of diamonds!" : "Added to your diamonds.", say: r.n + " diamonds!" };
-    if (r.kind === "potion"){ const p = POTIONS[r.pot]; return { name: r.n + " × " + p.name, desc: p.desc, say: r.n + " " + p.name + (r.n > 1 && !/s$/.test(p.name) ? "s" : "") + "!" }; }
-    if (r.kind === "cos"){ const it = COS[r.cat].items[r.id]; return { name: it.name, desc: "Chest-only " + ({ skin:"skin", hat:"hat", blocks:"blocks", lava:"lava", trail:"trail", pet:"pet" }[r.cat]) + "! You can't buy this in the shop.", say: it.name + "!" }; }
+    if (r.kind === "gems") return { name: r.n + " Diamonds", desc: r.n >= 100 ? "A huge pile of diamonds!" : "Added to your diamonds.", say: spoken("Diamonds!") };
+    if (r.kind === "potion"){ const p = POTIONS[r.pot]; return { name: r.n + " × " + p.name, desc: p.desc, say: r.n > 1 ? spoken("Potions!") : spoken("A potion!") }; }
+    if (r.kind === "cos"){ const it = COS[r.cat].items[r.id]; return { name: it.name, desc: "Chest-only " + ({ skin:"skin", hat:"hat", blocks:"blocks", lava:"lava", trail:"trail", pet:"pet" }[r.cat]) + "! You can't buy this in the shop.", say: r.cat === "pet" ? spoken("A new friend!") : spoken("Something special!") }; }
     const need = r.need || EGG_NEED[r.tier] || 1;
-    if (r.tier === "mythic") return { name: "Mythic Egg", desc: `Only from daily quizzes! A Mythic pet hatches after ${need} more daily quizzes.`, say: "A Mythic Egg!" };
-    return { name: T.name + " Pet Egg", desc: `Hatches after ${need} more daily quiz${need > 1 ? "zes" : ""}.`, say: T.name + " pet egg!" };
+    if (r.tier === "mythic") return { name: "Mythic Egg", desc: `Only from daily quizzes! A Mythic pet hatches after ${need} more daily quizzes.`, say: spoken("A Mythic Egg!") };
+    return { name: T.name + " Pet Egg", desc: `Hatches after ${need} more daily quiz${need > 1 ? "zes" : ""}.`, say: spoken("A pet egg!") };
   }
 
   /* ---------- pixel sprites ---------- */
