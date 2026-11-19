@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Pixelify+Sans:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Patrick+Hand&family=Pixelify+Sans:wght@500;700&display=swap">
 <style>
 /* Layout: one-screen game. Top-down lava lake fills the screen; player stands on a stone block, letter blocks sit around it across the lava. Slim deck below shows the word being built. Single dark look on purpose. */
 :root{
@@ -252,6 +252,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       <button class="btn alt" id="mapBtn" type="button">World map</button>
       <button class="btn alt" id="startShopBtn" type="button">Shop · <span data-gems>0</span></button>
     </div>
+    <button class="btn alt td-entry" id="testBtn" type="button">📝 Test Day</button>
     <div class="seg" data-seg aria-label="Difficulty"></div>
     <div class="start-foot">
       <button class="linkbtn" data-settings type="button">⚙️ Settings</button>
@@ -5254,7 +5255,358 @@ window.LavaEvents = (() => {
       .map(([w, e]) => ({ w, s: e.s || "" }));
   }
   function roundStart(){ caughtThisRound = []; }
-  window.LLFocus = { wordDone, afterRound, extraWords, roundStart, _today: today };
+  // Test Day: a word missed on the test goes straight to the workshop list
+  // (skips the "3 misses on 2 days" wait). Mastered words come back too.
+  function fromTest(missed){
+    const t = today();
+    missed.forEach(it => {
+      const e = entry(it.w, it.s);
+      if (!e.days.includes(t)) e.days.push(t);
+      if (e.days.length > 10) e.days = e.days.slice(-10);
+      e.miss = Math.max(e.miss + 1, 3); e.skip = 0; e.test = t;
+      if (e.state !== "redo") e.state = "ready";
+    });
+    save();
+  }
+  const canWorkshop = () => !!candidate();
+  window.LLFocus = { wordDone, afterRound, extraWords, roundStart, fromTest, canWorkshop, _today: today };
+})();
+</script>
+
+<style>
+/* ===== Test Day: calm "classroom" spelling test on lined paper ===== */
+.td-entry{font-size:18px}
+.td-entry.done{background:#2e3a30;color:#bfe8c4;border:2px dashed #62d26f}
+.td{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:#dfe6ee;color:#1f2d45;font-family:"Patrick Hand","Andika",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;touch-action:manipulation;
+  padding:max(8px, env(safe-area-inset-top,0px)) max(10px, env(safe-area-inset-right,0px)) max(8px, env(safe-area-inset-bottom,0px)) max(10px, env(safe-area-inset-left,0px));box-sizing:border-box}
+.td *{box-sizing:border-box}
+.td-top{flex:none;display:flex;align-items:center;gap:8px;padding:2px 2px 8px}
+.td-ttl{flex:1;font-size:24px;line-height:1;color:#1f2d45}
+.td-ttl small{display:block;font-size:16px;color:#5a6a82}
+.td-x{appearance:none;border:2px solid #b5c1d0;background:#fff;color:#1f2d45;font:inherit;font-size:17px;padding:6px 12px;border-radius:10px;cursor:pointer}
+.td-paper{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;border-radius:4px;box-shadow:0 2px 0 #c4ccd6,0 8px 22px rgba(31,45,69,.18)}
+.td-sheet{position:relative;min-height:100%;padding:8px 14px 22px 58px;
+  background:linear-gradient(90deg,transparent 46px,#f0a3a3 46px,#f0a3a3 48px,transparent 48px),
+    repeating-linear-gradient(180deg,transparent 0 43px,#b9d0ec 43px 44px) 0 8px / 100% 44px,#fffdf6}
+.td-head{height:44px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;padding-bottom:5px;font-size:22px;color:#1f2d45}
+.td-head small{font-size:17px;color:#5a6a82}
+.td-line{position:relative;height:44px;display:flex;align-items:flex-end;padding-bottom:3px;font-size:31px;line-height:1;color:#22366b;letter-spacing:.02em;white-space:nowrap}
+.td-line i{position:absolute;left:-52px;width:40px;text-align:right;font-style:normal;font-size:21px;color:#8a97ab;bottom:7px}
+.td-line.now{background:rgba(255,236,150,.45)}
+.td-line.now i{color:#c0392b}
+.td-line .car{display:inline-block;width:3px;height:30px;margin-left:2px;background:#22366b;animation:tdblink 1s steps(1) infinite;vertical-align:bottom}
+@keyframes tdblink{50%{opacity:0}}
+.td-line .ph{color:#9aa6b8;font-size:22px}
+.td-line .ok{color:#1e8a3a;font-size:26px;margin-left:10px}
+.td-line .no{color:#c62828;font-size:26px;margin-left:10px}
+.td-line s{color:#7b8496;text-decoration-color:#c62828;text-decoration-thickness:2px}
+.td-line b{font-weight:400;color:#c62828;margin-left:10px;font-size:28px}
+.td-ctrl{flex:none;padding-top:8px;display:flex;flex-direction:column;gap:7px}
+.td-row{display:flex;gap:8px}
+.td-btn{appearance:none;border:0;border-radius:12px;font:inherit;font-size:22px;line-height:1;padding:12px 14px;cursor:pointer;background:#fff;color:#1f2d45;box-shadow:0 3px 0 #b5c1d0;flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
+.td-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #b5c1d0}
+.td-btn.go{background:#2f7d4a;color:#fff;box-shadow:0 3px 0 #1d5531}
+.td-btn.go:active{box-shadow:0 1px 0 #1d5531}
+.td-btn[disabled]{opacity:.45;pointer-events:none}
+.td-btn:focus-visible,.td-x:focus-visible,.td-k:focus-visible{outline:3px solid #f4b400;outline-offset:2px}
+.td-kb{display:flex;flex-direction:column;gap:6px;padding:6px 3px 2px;background:#c9d2dd;border-radius:10px}
+.td-kr{display:flex;justify-content:center;gap:5px}
+.td-k{appearance:none;border:0;border-radius:7px;background:#fff;color:#1f2d45;box-shadow:0 2px 0 #8d99a8;font-family:"Andika",system-ui,sans-serif;font-size:23px;height:46px;flex:0 1 calc((100% - 45px)/10);min-width:0;padding:0;cursor:pointer;touch-action:manipulation}
+.td-k:active,.td-k.hit{background:#e7edf5;transform:translateY(1px);box-shadow:0 1px 0 #8d99a8}
+.td-k.wide{flex-basis:calc((100% - 45px)/10*1.6);font-size:20px;background:#aab6c5}
+.td-k.sp{flex-basis:calc((100% - 45px)/10*3);font-size:15px}
+.td-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:12px 8px 8px 0;min-height:calc(100% - 52px)}
+.td-big{font-size:38px;line-height:1.05;margin:0;color:#1f2d45}
+.td-p{font-size:22px;line-height:1.3;margin:0;color:#33445f;max-width:300px}
+.td-list{font-size:21px;line-height:1.35;text-align:left;margin:0;padding-left:24px;color:#33445f}
+.td-stk{position:relative;width:132px;height:132px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;transform:rotate(-8deg);
+  box-shadow:0 0 0 5px #fff,0 0 0 7px rgba(0,0,0,.08),0 8px 18px rgba(0,0,0,.25);animation:tdstamp .5s cubic-bezier(.2,1.6,.4,1) both}
+.td-stk span{font-size:44px;line-height:1}
+.td-stk b{font-weight:400;font-size:19px;line-height:1.05;margin-top:2px;max-width:110px}
+@keyframes tdstamp{0%{transform:scale(2.4) rotate(-30deg);opacity:0}100%{transform:scale(1) rotate(-8deg);opacity:1}}
+.td-score{font-size:46px;line-height:1;color:#c62828;transform:rotate(-3deg)}
+.td-score small{font-size:24px}
+.td-res{display:flex;align-items:center;gap:16px;justify-content:center;height:176px}
+.td-ask{position:absolute;inset:0;z-index:2;background:rgba(31,45,69,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.td-ask > div{background:#fffdf6;border-radius:14px;padding:20px;max-width:340px;width:100%;display:flex;flex-direction:column;gap:12px;text-align:center}
+@media (prefers-reduced-motion: reduce){.td-stk{animation:none}.td-line .car{animation:none}}
+@media (max-height:640px){.td-k{height:40px}.td-btn{padding:9px 12px;font-size:20px}}
+</style>
+<script>
+/* ==========================================================================
+   TEST DAY (phase 1). Nick's rules, 2026-11-19:
+   - Like a real school test: all of this week's words in a shuffled order.
+     Each word is said, used in its sentence, then said again.
+   - Plain on-screen keyboard (no letter blocks, hints, lava, timers, potions),
+     calm lined-paper look. Own keyboard on purpose: the phone keyboard's
+     autocorrect / suggestions would give the spelling away.
+   - One try per word. Nothing is marked until the end: score out of N,
+     a grade sticker, and missed words go straight to Word Workshop.
+   - Once a day (local date). Starting the test uses up today's test; if the
+     app closes mid-test it picks up where he left off.
+   Save: NEW key lavaleap.test.v1 = { last, cur, hist[] } (no old keys touched).
+     hist entry: { d, n, score, miss:[word], ans:{word: typed}, early }
+   Later phases plug in via LLTest.on("finish", fn) / LLTest.history():
+     countdown to Wednesday, parent trend, rewards + streak.
+   ========================================================================== */
+(function(){
+  const KEY = "lavaleap.test.v1";
+  let T = null; try { T = JSON.parse(store.get(KEY) || "null"); } catch(e){}
+  T = Object.assign({ last: "", cur: null, hist: [] }, T || {});
+  const put = () => store.set(KEY, JSON.stringify(T));
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const hooks = { finish: [], open: [], close: [] };
+  const fire = (n, x) => hooks[n].forEach(f => { try { f(x); } catch(e){} });
+  const sfx = n => { try { LLAudio.sfx(n); } catch(e){} };
+  const niceDate = d => { try { const [y, m, dd] = d.split("-").map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }); } catch(e){ return d; } };
+
+  const GRADES = [
+    { at: 1,    em: "🌟", t: "Perfect!",         bg: "#e2a400" },
+    { at: 0.83, em: "🚀", t: "Super Speller!",   bg: "#2f7d4a" },
+    { at: 0.66, em: "👍", t: "Great Job!",       bg: "#2a6fb0" },
+    { at: 0.5,  em: "😊", t: "Good Work!",       bg: "#7a4fb5" },
+    { at: 0,    em: "💪", t: "Keep Practicing!", bg: "#c2571a" },
+  ];
+  const grade = (score, n) => GRADES.find(g => score / Math.max(1, n) >= g.at - 1e-9);
+  function sayGrade(g){
+    say({ "Perfect!": "Perfect score! You spelled every word!", "Super Speller!": "Super speller! Amazing job!",
+          "Great Job!": "Great job! You worked hard on that test.", "Good Work!": "Good work! Practice makes you stronger.",
+          "Keep Practicing!": "Nice try! Every test makes you a better speller." }[g.t], 0.95, true, "now");
+  }
+  function sayNumber(i){
+    say(["Number one.", "Number two.", "Number three.", "Number four.", "Number five.", "Number six.", "Number seven.", "Number eight.",
+         "Number nine.", "Number ten.", "Number eleven.", "Number twelve.", "Number thirteen.", "Number fourteen.", "Number fifteen."][i] || `Number ${i + 1}.`, 0.95, true, "prompt");
+  }
+  function sayWord(it){   // the teacher way: word, sentence, word
+    say(it.w, 0.85, false, "prompt");
+    if (it.s) say(it.s, 0.95, false, "prompt");
+    say(it.w, 0.85, false, "prompt");
+  }
+
+  // grade a test (finished, or stopped early) and keep it in history
+  function finish(cur, early){
+    const miss = [], ans = {};
+    let score = 0;
+    cur.order.forEach((it, i) => {
+      const a = (cur.ans[i] || "").trim().toLowerCase(); ans[it.w] = a;
+      if (a === it.w) score++; else miss.push(it);
+    });
+    const rec = { d: cur.d, n: cur.order.length, score, miss: miss.map(x => x.w), ans, early: !!early, mode: cur.mode || "type" };
+    T.hist.push(rec); if (T.hist.length > 120) T.hist = T.hist.slice(-120);
+    T.cur = null; put();
+    // only words he actually tried go to the workshop (blank lines from stopping early don't)
+    const tried = miss.filter(it => (cur.ans[cur.order.indexOf(it)] || "").trim());
+    if (tried.length && window.LLFocus && LLFocus.fromTest) LLFocus.fromTest(tried);
+    fire("finish", rec);
+    return rec;
+  }
+  // a test left unfinished on an earlier day gets graded with what he answered
+  if (T.cur && T.cur.d !== today()) finish(T.cur, true);
+
+  const takenToday = () => T.last === today();
+  const lastRec = () => T.hist[T.hist.length - 1];
+
+  /* ---------- screen ---------- */
+  let root = null, back = null, state = null, keyH = null, hop = 0;   // hop: cancels a pending word change
+  const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+
+  function open(opts){
+    opts = opts || {};
+    back = opts.back || null;
+    speechCancel(); LLAudio.unlock(); LLAudio.setScene("quiet");
+    root = document.createElement("div"); root.className = "td"; root.setAttribute("role", "dialog"); root.setAttribute("aria-label", "Test Day");
+    document.body.appendChild(root);
+    fire("open", opts);
+    if (T.cur && T.cur.d === today()) return run();
+    if (takenToday()) return results(lastRec(), false);
+    intro(opts.mode || "type");
+  }
+  function close(){
+    speechCancel(); LLAudio.setScene("main");
+    if (keyH) document.removeEventListener("keydown", keyH), keyH = null;
+    if (root) root.remove(); root = null; state = null;
+    refresh(); fire("close");
+    if (back) back();
+  }
+  function head(sub){
+    return `<div class="td-head"><span>Spelling Test</span><small>${esc(sub || niceDate(today()))}</small></div>`;
+  }
+  function top(title, sub, x){
+    return `<div class="td-top"><div class="td-ttl">📝 ${title}${sub ? `<small>${sub}</small>` : ""}</div>${x ? `<button class="td-x" id="tdX" type="button">${x}</button>` : ""}</div>`;
+  }
+
+  function intro(mode){
+    const n = wordList.length;
+    root.innerHTML = top("Test Day", "", "Back") + `<div class="td-paper"><div class="td-sheet">${head()}
+      <div class="td-mid">
+        <p class="td-big">Test time!</p>
+        <ol class="td-list">
+          <li>Listen to the word.</li>
+          <li>Hear it in a sentence.</li>
+          <li>Type it on your paper.</li>
+        </ol>
+        <p class="td-p">One try for each word. You'll see how you did at the end. You can take <b>one test a day</b>.</p>
+      </div></div></div>
+      <div class="td-ctrl"><button class="td-btn go" id="tdGo" type="button">I'm ready! (${n} words)</button></div>`;
+    root.querySelector("#tdX").onclick = close;
+    const go = root.querySelector("#tdGo");
+    if (!n){ go.disabled = true; go.textContent = "No words yet"; return; }
+    go.onclick = () => {
+      T.cur = { d: today(), prev: T.last, mode, order: shuffle(wordList.map(x => ({ w: x.w, s: x.s || "" }))), ans: [] };
+      T.last = T.cur.d; put(); refresh();
+      say("Test time! Listen carefully.", 0.95, true, "now");
+      run();
+    };
+    say("It's test day! Listen to each word, then type it on your paper.", 0.95, true);
+  }
+
+  function run(){
+    const cur = T.cur, i = cur.ans.length;
+    if (i >= cur.order.length) return done(false);
+    state = { typed: "", i, lock: false };
+    const extra = [...new Set(cur.order.map(x => x.w).join("").replace(/[a-z]/g, ""))];
+    const keys = (r, last) => r.split("").map(c => `<button class="td-k" type="button" data-k="${esc(c)}">${c === " " ? "space" : esc(c)}</button>`).join("")
+      + (last ? `<button class="td-k wide" type="button" data-k="del" aria-label="Delete">⌫</button>` : "");
+    root.innerHTML = top("Test Day", `Word ${i + 1} of ${cur.order.length}`, "Stop") + `<div class="td-paper"><div class="td-sheet">${head()}<div id="tdLines"></div></div></div>
+      <div class="td-ctrl">
+        <div class="td-row"><button class="td-btn" id="tdHear" type="button">🔊 Hear again</button><button class="td-btn go" id="tdNext" type="button" disabled>${i + 1 < cur.order.length ? "Next ▶" : "Finish ✓"}</button></div>
+        <div class="td-kb" role="group" aria-label="Keyboard">
+          <div class="td-kr">${keys(ROWS[0])}</div><div class="td-kr">${keys(ROWS[1])}</div>
+          <div class="td-kr">${keys(ROWS[2] + extra.filter(c => c !== " ").join(""), true)}</div>
+          ${extra.includes(" ") ? `<div class="td-kr"><button class="td-k sp" type="button" data-k=" ">space</button></div>` : ""}
+        </div>
+      </div>`;
+    lines();
+    root.querySelector("#tdX").onclick = askStop;
+    root.querySelector("#tdHear").onclick = () => { speechCancel(); sayWord(cur.order[i]); };
+    root.querySelector("#tdNext").onclick = next;
+    root.querySelectorAll(".td-k").forEach(b => b.addEventListener("click", () => press(b.dataset.k)));
+    if (!keyH){
+      keyH = e => {
+        if (!state || state.lock || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (e.key === "Backspace") { e.preventDefault(); press("del"); }
+        else if (e.key === "Enter") { e.preventDefault(); next(); }
+        else if (e.key.length === 1 && /[a-z' \-]/i.test(e.key)) { e.preventDefault(); press(e.key.toLowerCase()); }
+      };
+      document.addEventListener("keydown", keyH);
+    }
+    sayNumber(i); sayWord(cur.order[i]);
+  }
+  function lines(){
+    const cur = T.cur, box = root.querySelector("#tdLines");
+    box.innerHTML = cur.order.map((it, j) => {
+      const txt = j < state.i ? esc(cur.ans[j] || "") : j === state.i ? (state.typed ? esc(state.typed) : "") + `<span class="car"></span>` : "";
+      return `<div class="td-line${j === state.i ? " now" : ""}"><i>${j + 1}.</i>${txt}</div>`;
+    }).join("");
+    const now = box.querySelector(".now"), paper = root.querySelector(".td-paper");
+    if (now && paper){ const want = now.offsetTop - paper.clientHeight / 2 + 22; paper.scrollTop = Math.max(0, want); }
+    root.querySelector("#tdNext").disabled = !state.typed.trim();
+  }
+  function press(k){
+    if (!state || state.lock) return;
+    if (k === "del") state.typed = state.typed.slice(0, -1);
+    else if (state.typed.length < 24) state.typed += k;
+    const b = root.querySelector(`.td-k[data-k="${CSS && CSS.escape ? CSS.escape(k) : k}"]`);
+    if (b){ b.classList.add("hit"); setTimeout(() => b.classList.remove("hit"), 90); }
+    lines();
+  }
+  function next(){
+    if (!state || state.lock || !state.typed.trim()) return;
+    state.lock = true;
+    T.cur.ans.push(state.typed.trim()); put();
+    sfx("land"); speechCancel();
+    const g = ++hop;
+    setTimeout(() => { if (root && T.cur && g === hop) run(); }, 250);
+  }
+  function askStop(){
+    const box = document.createElement("div"); box.className = "td-ask";
+    box.innerHTML = `<div><p class="td-big" style="font-size:30px">Stop the test?</p>
+      <p class="td-p">${T.cur && T.cur.ans.length ? "You get one test a day, so if you stop now, today's test is over." : "You can come back and take it later today."}</p>
+      <button class="td-btn go" type="button" data-a="keep">Keep going</button>
+      <button class="td-btn" type="button" data-a="stop">Stop test</button></div>`;
+    root.appendChild(box); if (state) state.lock = true;
+    hop++;   // Stop tapped mid word change: wait for his choice
+    box.querySelector('[data-a="keep"]').onclick = () => {
+      box.remove();
+      if (T.cur && state && T.cur.ans.length > state.i) return run();   // that word was already handed in
+      if (state) state.lock = false;
+    };
+    box.querySelector('[data-a="stop"]').onclick = () => {
+      box.remove();
+      // stopped before writing a single word: it doesn't use up today's test
+      if (!T.cur.ans.length){ T.last = T.cur.prev || ""; T.cur = null; put(); return close(); }
+      done(true);
+    };
+  }
+
+  function done(early){
+    hop++;
+    if (keyH) document.removeEventListener("keydown", keyH), keyH = null;
+    state = null;
+    const rec = finish(T.cur, early);
+    speechCancel();
+    if (!early) say("Pencils down! Let's see how you did.", 0.95, true, "now");
+    results(rec, true);
+  }
+
+  function results(rec, fresh){
+    if (!rec){ close(); return; }
+    const g = grade(rec.score, rec.n);
+    const words = Object.keys(rec.ans);
+    const row = (w, j) => {
+      const a = rec.ans[w] || "";
+      const ok = a === w;
+      return `<div class="td-line"><i>${j + 1}.</i>${ok ? esc(a) + `<span class="ok">✓</span>` :
+        (a ? `<s>${esc(a)}</s>` : `<span class="ph">(blank)</span>`) + `<b>${esc(w)}</b><span class="no">✗</span>`}</div>`;
+    };
+    const missed = rec.miss.length;
+    const ww = window.LLFocus && LLFocus.canWorkshop && LLFocus.canWorkshop();
+    root.innerHTML = top("Test Day", fresh ? "All done!" : "Today's test is done", "") + `<div class="td-paper"><div class="td-sheet">${head(niceDate(rec.d))}
+      <div class="td-res">
+        <div class="td-stk" style="background:${g.bg}"><span>${g.em}</span><b>${g.t}</b></div>
+        <div class="td-score">${rec.score}<small> / ${rec.n}</small></div>
+      </div>
+      ${words.map(row).join("")}
+      <p class="td-p" style="margin-top:14px;max-width:none">${missed ? (rec.miss.length === 1 ? "Your missed word goes" : "Your missed words go") + " to <b>Word Workshop</b> so you can catch them." : "You spelled every word. Wow!"}
+      ${fresh ? "" : "<br>Come back tomorrow for a new test!"}</p>
+    </div></div>
+      <div class="td-ctrl"><div class="td-row">
+        ${ww ? `<button class="td-btn go" id="tdWW" type="button">🛠 Word Workshop</button>` : ""}
+        <button class="td-btn${ww ? "" : " go"}" id="tdDone" type="button">Done</button>
+      </div></div>`;
+    root.querySelector("#tdDone").onclick = close;
+    const wb = root.querySelector("#tdWW");
+    if (wb) wb.onclick = () => {
+      // hand over to the workshop (it sits on top), come back to the results after
+      const shown = LLFocus.afterRound(() => { if (root) { LLAudio.setScene("quiet"); results(rec, false); } });
+      if (!shown) wb.remove();
+    };
+    if (fresh){ sfx("win"); setTimeout(() => { if (root) sayGrade(g); }, 1600); }
+  }
+
+  /* ---------- start-menu button ---------- */
+  const btn = $("testBtn");
+  function refresh(){
+    if (!btn) return;
+    const t = takenToday() && !(T.cur && T.cur.d === today());
+    btn.classList.toggle("done", t);
+    btn.textContent = t ? "📝 Test done today ✓" : T.cur && T.cur.d === today() ? "📝 Finish today's test" : "📝 Test Day";
+  }
+  if (btn) btn.addEventListener("click", () => {
+    $("startCard").hidden = true;
+    open({ back: () => { $("startCard").hidden = false; } });
+  });
+  refresh();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  setInterval(refresh, 60000);
+
+  window.LLTest = {
+    open, refresh, takenToday, today,
+    history: () => T.hist.slice(),
+    on: (n, f) => { if (hooks[n]) hooks[n].push(f); },
+    _grade: grade,
+  };
 })();
 </script>
 
