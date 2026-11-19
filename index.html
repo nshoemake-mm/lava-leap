@@ -266,10 +266,19 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     <p class="small">One word per line. You can add a sentence after a bar, like:<br><b>friend | My friend likes to build forts.</b><br>Saved on this device only.</p>
     <textarea id="wordBox" aria-label="Spelling words, one per line"></textarea>
     <button class="btn go" id="saveWords" type="button">Save words</button>
+    <button class="btn alt" id="ttBtn" type="button">📈 Test Day scores</button>
     <div class="row">
       <button class="btn alt" id="resetWords" type="button" style="flex:1">Use sample words</button>
       <button class="btn alt" id="cancelEdit" type="button" style="flex:1">Cancel</button>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="ttCard" hidden>
+  <div class="card">
+    <h2>Test Day scores</h2>
+    <div id="ttBody" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button class="btn alt" id="ttBack" type="button">Back</button>
   </div>
 </div>
 
@@ -3936,7 +3945,7 @@ window.LLStreak = (() => {
   render();
   // Re-check when the app comes back after midnight etc.
   document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
-  return { roundDone, render, hideWin, state: () => ({ ...S, live: live() }), _set(o){ Object.assign(S, o); persist(); render(); } };
+  return { roundDone, render, hideWin, flame: flameSVG, state: () => ({ ...S, live: live() }), _set(o){ Object.assign(S, o); persist(); render(); } };
 })();
 </script>
 
@@ -5175,8 +5184,31 @@ window.LavaEvents = (() => {
 
 <style>
 /* ===== Test Day: calm "classroom" spelling test on lined paper ===== */
-.td-entry{font-size:18px}
+.td-entry{font-size:18px;flex-direction:column;gap:0}
 .td-entry.done{background:#2e3a30;color:#bfe8c4;border:2px dashed #62d26f}
+.td-entry small.td-cd{display:block;font-size:14px;font-weight:600;opacity:.9;margin-top:2px}
+.td-slot:empty{display:none}
+.td-sx{display:flex;flex-direction:column;gap:8px}
+.td-slot{margin:10px auto 0;max-width:420px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.td-pill{align-self:center;background:#fff6d8;border:2px solid #e2a400;color:#6a4a00;border-radius:999px;padding:4px 14px;font-size:19px;text-align:center}
+.td-strk{display:flex;gap:10px;align-items:center;background:#fff;border:2px solid #d8e0ea;border-radius:12px;padding:8px 10px;font-size:18px;line-height:1.2;text-align:left}
+.td-strk small{color:#5a6a82;font-size:15px}
+.td-strk.grow{border-color:#ff9a3c;animation:tdGrow .6s ease-out}
+.td-fl{flex:none;display:grid;place-items:center;min-width:32px}
+@keyframes tdGrow{0%{transform:scale(.85)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+#ttCard .tt-weeks{display:flex;flex-direction:column;gap:8px}
+#ttCard .tt-w{display:grid;grid-template-columns:1fr 64px;grid-template-rows:auto auto;gap:3px 8px;align-items:center}
+#ttCard .tt-wl{grid-column:1 / 3;display:flex;justify-content:space-between;gap:8px;font-size:15px}
+#ttCard .tt-wl span{color:var(--muted);text-align:right}
+#ttCard .tt-bar{height:14px;background:#140d18;border:2px solid var(--deck-edge)}
+#ttCard .tt-bar i{display:block;height:100%;background:var(--ok)}
+#ttCard .tt-pct{font-weight:700;font-size:15px;text-align:right;white-space:nowrap}
+#ttCard .tt-pct .up{color:var(--ok);font-size:12px;margin-left:3px}
+#ttCard .tt-pct .dn{color:var(--bad);font-size:12px;margin-left:3px}
+#ttCard .tt-days{display:flex;flex-wrap:wrap;gap:6px}
+#ttCard .tt-days > div{background:#140d18;border:2px solid var(--deck-edge);padding:4px 8px;display:flex;flex-direction:column;align-items:center;min-width:52px;font-size:14px}
+#ttCard .tt-days b{font-size:17px}
+#ttCard .tt-days small{color:var(--muted);font-size:11px}
 .td{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:#dfe6ee;color:#1f2d45;font-family:"Patrick Hand","Andika",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;touch-action:manipulation;
   padding:max(8px, env(safe-area-inset-top,0px)) max(10px, env(safe-area-inset-right,0px)) max(8px, env(safe-area-inset-bottom,0px)) max(10px, env(safe-area-inset-left,0px));box-sizing:border-box}
 .td *{box-sizing:border-box}
@@ -5256,7 +5288,7 @@ window.LavaEvents = (() => {
   const put = () => store.set(KEY, JSON.stringify(T));
   const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const hooks = { finish: [], open: [], close: [] };
+  const hooks = { finish: [], open: [], close: [], intro: [], results: [], reward: [], button: [] };
   const fire = (n, x) => hooks[n].forEach(f => { try { f(x); } catch(e){} });
   const sfx = n => { try { LLAudio.sfx(n); } catch(e){} };
   const niceDate = d => { try { const [y, m, dd] = d.split("-").map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }); } catch(e){ return d; } };
@@ -5305,6 +5337,8 @@ window.LavaEvents = (() => {
   if (T.cur && T.cur.d !== today()) finish(T.cur, true);
 
   const takenToday = () => T.last === today();
+  // the list for his NEXT real test (world map knows it once two lists are live), else the current list
+  const testList = () => { try { const l = window.LavaMap && LavaMap.testWords && LavaMap.testWords(); if (l && l.length) return l; } catch(e){} return wordList; };
   const lastRec = () => T.hist[T.hist.length - 1];
 
   /* ---------- screen ---------- */
@@ -5337,10 +5371,11 @@ window.LavaEvents = (() => {
   }
 
   function intro(mode){
-    const n = wordList.length;
+    const list = testList(), n = list.length;
     root.innerHTML = top("Test Day", "", "Back") + `<div class="td-paper"><div class="td-sheet">${head()}
       <div class="td-mid">
         <p class="td-big">Test time!</p>
+        <div class="td-slot" id="tdIntroSlot"></div>
         <ol class="td-list">
           <li>Listen to the word.</li>
           <li>Hear it in a sentence.</li>
@@ -5350,10 +5385,11 @@ window.LavaEvents = (() => {
       </div></div></div>
       <div class="td-ctrl"><button class="td-btn go" id="tdGo" type="button">I'm ready! (${n} words)</button></div>`;
     root.querySelector("#tdX").onclick = close;
+    fire("intro", { slot: root.querySelector("#tdIntroSlot"), mode });
     const go = root.querySelector("#tdGo");
     if (!n){ go.disabled = true; go.textContent = "No words yet"; return; }
     go.onclick = () => {
-      T.cur = { d: today(), prev: T.last, mode, order: shuffle(wordList.map(x => ({ w: x.w, s: x.s || "" }))), ans: [] };
+      T.cur = { d: today(), prev: T.last, mode, order: shuffle(list.map(x => ({ w: x.w, s: x.s || "" }))), ans: [] };
       T.last = T.cur.d; put(); refresh();
       say("Test time! Listen carefully.", 0.95, true, "now");
       run();
@@ -5470,6 +5506,7 @@ window.LavaEvents = (() => {
       ${words.map(row).join("")}
       <p class="td-p" style="margin-top:14px;max-width:none">${missed ? (rec.miss.length === 1 ? "Your missed word goes" : "Your missed words go") + " to <b>Word Workshop</b> so you can catch them." : "You spelled every word. Wow!"}
       ${fresh ? "" : "<br>Come back tomorrow for a new test!"}</p>
+      <div class="td-slot" id="tdResSlot"></div>
     </div></div>
       <div class="td-ctrl"><div class="td-row">
         ${ww ? `<button class="td-btn go" id="tdWW" type="button">🛠 Word Workshop</button>` : ""}
@@ -5483,6 +5520,7 @@ window.LavaEvents = (() => {
       if (!shown) wb.remove();
     };
     if (fresh){ sfx("win"); setTimeout(() => { if (root) sayGrade(g); }, 1600); }
+    fire("results", { rec, fresh, slot: root.querySelector("#tdResSlot") });
   }
 
   /* ---------- start-menu button ---------- */
@@ -5492,6 +5530,7 @@ window.LavaEvents = (() => {
     const t = takenToday() && !(T.cur && T.cur.d === today());
     btn.classList.toggle("done", t);
     btn.textContent = t ? "📝 Test done today ✓" : T.cur && T.cur.d === today() ? "📝 Finish today's test" : "📝 Test Day";
+    fire("button", btn);
   }
   if (btn) btn.addEventListener("click", () => {
     $("startCard").hidden = true;
@@ -5505,11 +5544,186 @@ window.LavaEvents = (() => {
     open, refresh, takenToday, today,
     history: () => T.hist.slice(),
     on: (n, f) => { if (hooks[n]) hooks[n].push(f); },
+    emit: fire,   // phase 2 fires "reward" through this
     _grade: grade,
   };
 })();
 </script>
 
+
+<script>
+/* ==========================================================================
+   TEST DAY (phase 2). Nick, 2026-11-19:
+   - Countdown to the real spelling test ("Real test in 3 days!"). The day
+     before is framed as the last practice day. Date comes from the world
+     map (window.LLTestDate(), "YYYY-MM-DD") when it has one, else the next
+     Wednesday.
+   - Test Day streak + diamonds for FINISHING a test (score doesn't matter).
+     A stopped-early test doesn't count. Weekends don't break the streak and
+     one missed school day is forgiven.
+   - Grown-ups area (behind the math gate): weekly score trend + trouble words.
+   Save: NEW key lavaleap.teststreak.v1 = { days, last, best, total, claimed[], paid{date:gems} }
+   Hook for chests/pets: LLTest.on("reward", ({ rec, gems, streak, prize, slot }) => ...)
+     fires once right after a finished test is paid, slot = empty div at the
+     bottom of the results paper.
+   ========================================================================== */
+(function(){
+  if (!window.LLTest) return;
+  const KEY = "lavaleap.teststreak.v1";
+  const FINISH_GEMS = 10;
+  const PRIZES = [{ d: 3, gems: 10 }, { d: 5, gems: 20 }, { d: 10, gems: 50 }];
+  let S = null; try { S = JSON.parse(store.get(KEY) || "null"); } catch(e){}
+  S = Object.assign({ days: 0, last: "", best: 0, total: 0, claimed: [], paid: {} }, S || {});
+  const persist = () => store.set(KEY, JSON.stringify(S));
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const key = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const today = () => key(new Date());
+  const dayNum = k => { const [y, m, d] = k.split("-").map(Number); return Date.UTC(y, m - 1, d) / 864e5; };
+  const fromNum = n => { const d = new Date(n * 864e5); return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0") + "-" + String(d.getUTCDate()).padStart(2, "0"); };
+  const dow = k => new Date(dayNum(k) * 864e5).getUTCDay();
+  const nice = (k, o) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, o || { weekday: "short", month: "short", day: "numeric" }); };
+
+  /* ---------- countdown ---------- */
+  function nextWed(k){ const n = dayNum(k); return fromNum(n + (3 - dow(k) + 7) % 7); }
+  function testDate(){
+    const t = today();
+    try {
+      const v = typeof window.LLTestDate === "function" ? window.LLTestDate() : null;
+      if (v && /^\d{4}-\d\d-\d\d$/.test(v) && dayNum(v) >= dayNum(t)) return v;
+    } catch(e){}
+    return nextWed(t);
+  }
+  const daysLeft = () => dayNum(testDate()) - dayNum(today());
+  function countLine(n){
+    if (n <= 0) return "🏁 Real test TODAY! You've got this!";
+    if (n === 1) return "⏰ Real test tomorrow! Last practice day!";
+    return `📅 Real test in ${n} days!`;
+  }
+
+  /* ---------- streak (school days only) ---------- */
+  // school days strictly between two dates (Sat/Sun don't count as missed)
+  function missed(from, to){
+    let c = 0; for (let n = dayNum(from) + 1; n < dayNum(to); n++){ const w = new Date(n * 864e5).getUTCDay(); if (w && w !== 6) c++; }
+    return c;
+  }
+  const alive = () => S.last && (S.last === today() || missed(S.last, today()) <= 1);
+  const live = () => alive() ? S.days : 0;
+
+  function pay(rec){
+    if (rec.early || S.paid[rec.d] != null) return null;
+    const t = rec.d;
+    if (S.last !== t){
+      if (alive()) S.days++; else { S.days = 1; S.claimed = []; }
+      S.last = t; S.best = Math.max(S.best, S.days);
+    }
+    S.total++;
+    let gems = FINISH_GEMS;
+    const prize = PRIZES.find(p => p.d === S.days && !S.claimed.includes(p.d));
+    if (prize){ S.claimed.push(prize.d); gems += prize.gems; }
+    S.paid[t] = gems;
+    const ks = Object.keys(S.paid).sort(); if (ks.length > 60) ks.slice(0, ks.length - 60).forEach(k => delete S.paid[k]);
+    persist();
+    try { SAVE.gems += gems; save(); updateHud(); } catch(e){}
+    return { gems, prize, streak: S.days };
+  }
+
+  const flame = (d, px) => { try { return LLStreak.flame(d, px); } catch(e){ return "🔥"; } };
+  const nextPrize = d => PRIZES.find(p => d < p.d && !S.claimed.includes(p.d));
+  function prizeLine(d){
+    const p = nextPrize(d); if (!p) return `Best test streak: ${Math.max(S.best, d)} days.`;
+    const n = p.d - d; return `${n} more test${n === 1 ? "" : "s"} to the ${p.d}-day prize (+${p.gems} diamonds).`;
+  }
+
+  /* ---------- hooks into the Test Day screens ---------- */
+  let fresh = null;   // payout from the test just finished, shown on the results screen
+  LLTest.on("finish", rec => { fresh = pay(rec); });
+
+  LLTest.on("button", btn => {
+    const sm = document.createElement("small"); sm.className = "td-cd"; sm.textContent = countLine(daysLeft());
+    btn.appendChild(sm);
+  });
+
+  LLTest.on("intro", ({ slot }) => {
+    if (!slot) return;
+    const n = daysLeft(), d = live();
+    slot.innerHTML = `<div class="td-pill">${esc(countLine(n))}</div>
+      <div class="td-strk"><span class="td-fl">${flame(d, 3)}</span><span>${d ? `<b>${d}-day test streak.</b> Finish today's test to keep it going!` : "Finish the test to light your <b>test streak</b> flame!"}<br><small>Finish = +${FINISH_GEMS} diamonds, any score.</small></span></div>`;
+    if (n === 1) say("Tomorrow is the real test. Today is your last practice day!", 0.95, false);
+    else if (n === 0) say("The real test is today. This is your warm up!", 0.95, false);
+  });
+
+  LLTest.on("results", ({ rec, fresh: isNew, slot }) => {
+    if (!slot) return;
+    const r = isNew ? fresh : null; fresh = null;
+    const d = live(), n = daysLeft();
+    let head, sub;
+    if (r){
+      head = r.streak > 1 ? `${r.streak}-day test streak!` : "Test streak flame lit!";
+      sub = `+${r.gems} diamonds for finishing!` + (r.prize ? ` (${r.prize.d}-day prize included)` : "");
+    } else if (rec.early){
+      head = d ? `${d}-day test streak` : "No test streak yet";
+      sub = "Finish every word next time to earn diamonds and grow your flame.";
+    } else {
+      head = d ? `${d}-day test streak` : "Test streak";
+      sub = S.paid[rec.d] ? `You earned +${S.paid[rec.d]} diamonds today.` : "";
+    }
+    const box = document.createElement("div"); box.className = "td-sx"; slot.prepend(box);
+    box.innerHTML = `<div class="td-strk${r ? " grow" : ""}"><span class="td-fl">${flame(r ? r.streak : d, 4)}</span><span><b>${esc(head)}</b>${sub ? `<br>${esc(sub)}` : ""}<br><small>${esc(prizeLine(r ? r.streak : d))}</small></span></div>
+      <div class="td-pill">${esc(countLine(n))}</div>`;
+    if (r){
+      try { LLAudio.sfx("coin"); } catch(e){}
+      setTimeout(() => say(r.prize ? `${r.streak} day test streak! Bonus diamonds!` : `Plus ${r.gems} diamonds for finishing your test!`, 0.95, false), 2600);
+      LLTest.emit("reward", { rec, gems: r.gems, streak: r.streak, prize: r.prize || null, slot });
+    }
+  });
+
+  /* ---------- grown-ups: weekly trend ---------- */
+  // tests are grouped by the Wednesday test they lead up to (Thu..Wed)
+  const weekOf = k => nextWed(k);
+  function trendHTML(){
+    const H = LLTest.history();
+    const td = testDate(), n = daysLeft();
+    let h = `<p class="small">Next real test: <b>${esc(nice(td))}</b> (${n <= 0 ? "today" : n === 1 ? "tomorrow" : `in ${n} days`}).<br>
+      Test streak: <b>${live()}</b> day${live() === 1 ? "" : "s"} · best ${S.best} · ${S.total} finished test${S.total === 1 ? "" : "s"}.</p>`;
+    if (!H.length) return h + `<p class="small">No Test Day tests yet. They show up here after he takes one.</p>`;
+    const weeks = {};
+    H.forEach(r => { const w = weekOf(r.d); (weeks[w] = weeks[w] || []).push(r); });
+    const wk = Object.keys(weeks).sort().reverse().slice(0, 8);
+    const stat = rs => { const f = rs.filter(r => !r.early), use = f.length ? f : rs;
+      const pct = Math.round(100 * use.reduce((a, r) => a + r.score / Math.max(1, r.n), 0) / use.length);
+      const best = use.reduce((b, r) => (r.score / r.n > b.score / b.n ? r : b), use[0]);
+      return { pct, best, done: f.length, all: rs.length }; };
+    const st = wk.map(w => stat(weeks[w]));
+    h += `<div class="label">Average score by test week</div><div class="tt-weeks">` + wk.map((w, i) => {
+      const s = st[i], prev = st[i + 1];
+      const diff = prev ? s.pct - prev.pct : null;
+      const arrow = diff == null ? "" : diff > 0 ? `<span class="up">▲${diff}</span>` : diff < 0 ? `<span class="dn">▼${-diff}</span>` : `<span>=</span>`;
+      return `<div class="tt-w"><div class="tt-wl"><b>${esc(nice(w, { month: "short", day: "numeric" }))} test</b><span>${s.done} test${s.done === 1 ? "" : "s"}${s.all > s.done ? ` (+${s.all - s.done} stopped)` : ""} · best ${s.best.score}/${s.best.n}</span></div>
+        <div class="tt-bar"><i style="width:${s.pct}%"></i></div><div class="tt-pct">${s.pct}%${arrow}</div></div>`;
+    }).join("") + `</div>`;
+    const cur = weeks[weekOf(today())] || weeks[wk[0]];
+    const curW = weeks[weekOf(today())] ? weekOf(today()) : wk[0];
+    h += `<div class="label">${esc(nice(curW, { month: "short", day: "numeric" }))} test week, day by day</div><div class="tt-days">` +
+      cur.map(r => `<div><span>${esc(nice(r.d, { weekday: "short" }))}</span><b>${r.score}/${r.n}</b>${r.early ? `<small>stopped</small>` : ""}</div>`).join("") + `</div>`;
+    const miss = {};
+    cur.forEach(r => r.miss.forEach(w => { miss[w] = (miss[w] || 0) + 1; }));
+    const mw = Object.keys(miss).sort((a, b) => miss[b] - miss[a] || a.localeCompare(b));
+    h += `<div class="label">Trouble words this week</div>` + (mw.length
+      ? `<div class="practice">${mw.map(w => `<span>${esc(w)}${miss[w] > 1 ? ` ×${miss[w]}` : ""}</span>`).join("")}</div>`
+      : `<p class="small">None missed. 🎉</p>`);
+    return h;
+  }
+  const card = document.getElementById("ttCard"), body = document.getElementById("ttBody");
+  const open = document.getElementById("ttBtn"), back = document.getElementById("ttBack");
+  if (card && open){
+    open.addEventListener("click", () => { body.innerHTML = trendHTML(); $("editCard").hidden = true; card.hidden = false; });
+    back.addEventListener("click", () => { card.hidden = true; $("editCard").hidden = false; });
+  }
+
+  LLTest.refresh();
+  window.LLTestDay = { testDate, daysLeft, streak: () => ({ ...S, live: live() }), trendHTML };
+})();
+</script>
 <script>
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
 </script>
