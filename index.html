@@ -2019,7 +2019,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     const reduce = global.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     /* speech + sfx */
-    const say = opts.say || function (text, rate, cancel) {
+    const say = opts.say || function (text, rate, cancel) {   // opts.say(text, rate, cancel, tag, bossId)
       try { if (!("speechSynthesis" in global)) return; if (cancel) speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = rate || 0.9; speechSynthesis.speak(u); } catch (e) {}
     };
     let ac = null;
@@ -2222,7 +2222,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         sfx.angry(); S.shake = reduce ? 0 : 900; S.flash = 0.6; hud();
         const t = TT[n] || `${BN} gets stronger!`;
         banner(`${BN}: ${ph.label || "Phase " + n}!<small>${t}</small>`);
-        setSay(t, "bad"); say(t, 1, true, "now");
+        setSay(t, "bad"); say(t, 1, true, "now", BC.id || "sizzle");
         opts.onPhase && opts.onPhase(n);
         later(ask, 2400);
       }, reduce ? 700 : 1700);
@@ -2609,11 +2609,13 @@ const CLIPS = (() => {
     next(); next();
   }).catch(() => {});
   // Text -> list of clip keys (with pauses), or null if any part has no clip.
-  function plan(text, rate){
+  // who = boss id: use that boss's own voice clips ("boss:<id>:<text>").
+  function plan(text, rate, who){
     if (!map) return null;
     const out = [];
     for (const s of segs(text)){
       const n = norm(s); if (!n) continue;
+      if (who){ const bk = "boss:" + who + ":" + n; if (!map[bk]) return null; out.push({ k: bk, gap: 0.15 }); continue; }
       const slow = rate <= 0.75 && map["slow:" + n] ? "slow:" + n : null;
       if (slow || map[n]) { out.push({ k: slow || n, gap: 0.12 }); continue; }
       const letters = n.split(" ");
@@ -2632,7 +2634,8 @@ const CLIPS = (() => {
 })();
 
 /* One queue for every spoken line, in the main game and in every mode.
-   say(text, rate, cancel, tag)
+   say(text, rate, cancel, tag, who)
+     who:          boss id (e.g. "sizzle") for a line the boss says himself, in his own voice.
      cancel false: wait in line.
      cancel true:  drop anything still waiting. The line playing now finishes
                    its sentence, unless it is a word prompt or a tap echo
@@ -2659,7 +2662,7 @@ function speechNext(){
   const gen = SPEECH.gen;
   const done = () => { if (gen !== SPEECH.gen) return; clearTimeout(SPEECH.timer); SPEECH.busy = false; SPEECH.cur = null; SPEECH.endAt = 0; SPEECH.nodes = []; speechNext(); };
   const ctx = window.LLAudio && LLAudio._ctx && LLAudio._ctx();
-  const parts = ctx && ctx.state === "running" ? CLIPS.plan(job.text, job.rate) : null;
+  const parts = ctx && ctx.state === "running" ? CLIPS.plan(job.text, job.rate, job.who) : null;
   const fallback = () => {
     if (gen !== SPEECH.gen) return;
     if (!hasTTS) return done();
@@ -2667,6 +2670,7 @@ function speechNext(){
       const u = new SpeechSynthesisUtterance(job.text);
       if (voice) u.voice = voice;
       u.lang = "en-US"; u.rate = job.rate;
+      if (job.who) u.pitch = 0.6;   // no clip yet: at least make the boss sound deep
       u.onend = u.onerror = done;
       const ms = 1500 + job.text.length * 120 / Math.max(0.4, job.rate);
       SPEECH.endAt = performance.now() + speechEst(job.text, job.rate);
@@ -2689,13 +2693,13 @@ function speechNext(){
     SPEECH.endAt = performance.now() + (t - ctx.currentTime) * 1000;
   }, fallback);
 }
-function say(text, rate, cancel, tag){
+function say(text, rate, cancel, tag, who){
   if (!canSpeak) return;
   if (cancel){
     SPEECH.q = [];
     if (SPEECH.busy && SPEECH.cur && (SPEECH.cur.cut || tag === "now")) speechStop();
   }
-  SPEECH.q.push({ text: String(text), rate: rate || 0.9, cut: tag === "prompt" || tag === "tap" });
+  SPEECH.q.push({ text: String(text), rate: rate || 0.9, cut: tag === "prompt" || tag === "tap", who: who || "" });
   speechNext();
 }
 say.left = () => SPEECH.busy && SPEECH.cur && !SPEECH.cur.cut ? Math.max(0, SPEECH.endAt - performance.now()) : 0;
