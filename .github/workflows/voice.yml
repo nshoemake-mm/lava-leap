@@ -3,7 +3,7 @@ name: Make voice clips
 on:
   push:
     branches: [main]
-    paths: [index.html, tools/voice/**]
+    paths: [index.html, words/**, tools/voice/**]
   workflow_dispatch:
 permissions:
   contents: write
