@@ -3027,6 +3027,7 @@ function frame(now){
     hop = Math.sin(Math.PI * k) * m.G * 0.9;
     if (k >= 1){ player.gx = j.tx; player.gy = j.ty; player.jump = null; pgx = j.tx; pgy = j.ty; j.done && j.done(); }
   }
+  if (window.LavaEvents) hop += LavaEvents.lift(m);   // random events: geyser launch
   cam.x += (pgx - cam.x) * Math.min(1, dt / 220);
   cam.y += (pgy - cam.y) * Math.min(1, dt / 220);
 
@@ -3045,6 +3046,7 @@ function frame(now){
   const vg = ctx.createLinearGradient(0, 0, 0, 70);
   vg.addColorStop(0, "rgba(26,18,32,.65)"); vg.addColorStop(1, "rgba(26,18,32,0)");
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, 70);
+  if (window.LavaEvents) LavaEvents.under(ctx, m, dt);   // random events: freeze tint, timing
 
   // blocks
   blocks.forEach(b => {
@@ -3069,6 +3071,7 @@ function frame(now){
 
   // particles (stored in world px)
   parts = stepParts(ctx, parts, dt, cam.x * m.G, cam.y * m.G, T);
+  if (window.LavaEvents) LavaEvents.mid(ctx, m);   // random events: meteors, geyser
 
   // player
   ctx.fillStyle = "rgba(40,6,0,.35)";
@@ -3536,6 +3539,223 @@ window.LLStreak = (() => {
 
   sync(); renderStartLine();
   window.LavaMap = { open: openMap, worlds: () => M.worlds };
+})();
+</script>
+
+<script>
+/* ============================================================
+   RANDOM LAVA EVENTS (normal play only)
+   Every so often, a surprise happens a couple of seconds into a word:
+     - Meteor shower: meteors splash into the lava and drop bonus diamonds.
+     - Geyser: a geyser blasts him up into the air, with a diamond spray.
+     - Big freeze: the lava freezes for the rest of the word and he gets a
+       free shield (or diamonds if a shield is already up).
+   Never gives letters away, never costs a heart, never blocks tapping.
+   Never fires in Boss Chunk rounds, Lava Surge, Crumbling Bridge or the
+   Lava Monster (those run in their own phases / overlays).
+   Self-contained: the main frame() calls under(), lift() and mid().
+   ============================================================ */
+window.LavaEvents = (() => {
+  const CHANCE = 0.22, FORCE_AFTER = 7, GAP = 3, MAX_PER_ROUND = 2, DELAY = 2300;
+  const ACTIVE = ["play", "jumping"];
+  let seenWord = -1, seenSession = -1, roundCount = 0, lastWord = -99, lastKind = "", pendingAt = 0, pendingWord = -1;
+  let ev = null;          // running event
+  let banner = null;
+
+  function css(){
+    const s = document.createElement("style");
+    s.textContent = `.lev-banner{position:absolute;left:50%;bottom:10px;transform:translate(-50%,14px) scale(.9);opacity:0;z-index:5;pointer-events:none;
+      font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.04em;text-align:center;white-space:nowrap;max-width:calc(100% - 24px);
+      padding:5px 14px;background:rgba(20,12,24,.88);border:3px solid var(--glow);color:var(--glow);box-shadow:0 0 0 3px #120b15;
+      transition:opacity .25s ease, transform .25s ease}
+    .lev-banner.on{opacity:1;transform:translate(-50%,0) scale(1)}
+    .lev-banner.ice{border-color:#a8e6ff;color:#d8f3ff}
+    .lev-banner.geo{border-color:#ff7a1f;color:#ffd166}
+`;
+    document.head.appendChild(s);
+    banner = document.createElement("div"); banner.className = "lev-banner"; banner.setAttribute("aria-live", "polite");
+    document.getElementById("stage").appendChild(banner);
+  }
+  let bannerTimer = 0;
+  // banner sits at the bottom edge of the lava (clear of the letter blocks); details go in the say line
+  function show(title, sub, cls, ms){
+    if (!banner) css();
+    banner.className = "lev-banner " + (cls || "");
+    banner.textContent = title;
+    if (sub) setSay(sub, "good");
+    void banner.offsetWidth; banner.classList.add("on");
+    clearTimeout(bannerTimer); bannerTimer = setTimeout(hide, ms || 2600);
+  }
+  function hide(){ if (banner) banner.classList.remove("on"); }
+
+  function give(n){
+    SAVE.gems += n; G.roundGems += n; save(); updateHud();
+    LLAudio.sfx("coin");
+  }
+  function worldPt(gx, gy, m){ const p = toScreen(gx, gy, m); return { x: p.x + cam.x * m.G, y: p.y + cam.y * m.G }; }
+  function gemBurst(wx, wy, n, big){
+    const cols = ["#5ee0d0", "#b8fff6", "#ffd166"];
+    for (let k = 0; k < n; k++) parts.push({ x: wx, y: wy, vx: (Math.random() - .5) * (big ? 7 : 4), vy: -3 - Math.random() * (big ? 7 : 4), life: 1.4, s: 5 + Math.random() * 4, c: cols[k % 3], grav: true, gem: true });
+  }
+  function lavaSplash(wx, wy, n){
+    for (let k = 0; k < n; k++) parts.push({ x: wx, y: wy, vx: (Math.random() - .5) * 5, vy: -2 - Math.random() * 5, life: 1, s: 3 + Math.random() * 5, c: splashCol(), grav: true });
+  }
+
+  /* ---------- decide when ---------- */
+  function check(now){
+    if (G.boss || !G.order.length) return;
+    if (SAVE.session !== seenSession){ seenSession = SAVE.session; roundCount = 0; lastWord = -99; seenWord = -1; }
+    if (G.wordNo !== seenWord){
+      seenWord = G.wordNo; pendingAt = 0;
+      if (G.phase !== "play" || G.wordNo < 2 || roundCount >= MAX_PER_ROUND || G.wordNo - lastWord < GAP) return;
+      const chance = (roundCount === 0 && G.wordNo >= FORCE_AFTER) ? 0.7 : CHANCE;
+      if (Math.random() < chance){ pendingAt = now + DELAY; pendingWord = G.wordNo; }
+    }
+    if (pendingAt && now >= pendingAt){
+      pendingAt = 0;
+      if (pendingWord !== G.wordNo || !ACTIVE.includes(G.phase) || ev) return;
+      fire();
+    }
+  }
+  function fire(force){
+    let kinds = ["meteor", "geyser", "freeze"].filter(k => k !== lastKind);
+    if (force) kinds = [force];
+    const kind = kinds[Math.random() * kinds.length | 0];
+    lastKind = kind; lastWord = G.wordNo; roundCount++;
+    ev = { kind, t: 0, word: G.wordNo };
+    START[kind](ev);
+  }
+
+  /* ---------- events ---------- */
+  const START = {
+    meteor(e){
+      show("Meteor shower!", "Diamonds from the sky! +5", "", 2800);
+      say("Meteor shower!", 1, false);
+      e.dur = 3600; e.rocks = [];
+      const used = new Set();
+      for (let i = 0; i < 5; i++){
+        let gx, gy, tries = 0;
+        do { gx = player.gx + Math.round((Math.random() - .5) * 6) / 2; gy = player.gy + Math.round((Math.random() - .5) * 5) / 2; tries++; }
+        while ((used.has(gx + "," + gy) || (Math.abs(gx - player.gx) < 1 && Math.abs(gy - player.gy) < 1)) && tries < 20);
+        used.add(gx + "," + gy);
+        e.rocks.push({ gx, gy, at: 300 + i * 520 + Math.random() * 200, fall: 650, hit: false, side: Math.random() < .5 ? -1 : 1 });
+      }
+    },
+    geyser(e){
+      show("Geyser!", "Whoosh! Up you go! +3", "geo", 2400);
+      e.dur = 2600; e.gx = player.gx; e.gy = player.gy; e.paid = false;
+      player.shake = reduceMotion ? 0 : 700;
+    },
+    freeze(e){
+      const hadShield = G.shield;
+      if (!hadShield){ G.shield = true; updateHud(); }
+      show("The lava froze!", hadShield ? "Brrr! +3 diamonds" : "Free shield! Next mistake is free.", "ice", 3200);
+      say("The lava froze!", 1, false);
+      LLAudio.sfx("potion");
+      if (hadShield) setTimeout(() => give(3), 600);
+      e.dur = 14000; e.cracks = Array.from({ length: 18 }, () => ({ x: Math.random(), y: Math.random(), a: Math.random() * Math.PI, l: 20 + Math.random() * 50 }));
+    },
+  };
+
+  function alive(){
+    if (!ev) return false;
+    // stop when the word changes or a special mode / menu takes over
+    if (ev.word !== G.wordNo || !(ACTIVE.includes(G.phase) || G.phase === "between")){ end(); return false; }
+    return true;
+  }
+  function end(){ if (ev && ev.kind === "freeze") hide(); ev = null; }
+
+  /* drawn after the lava, before blocks */
+  function under(c2, m, dt){
+    check(performance.now());
+    if (!alive()) return;
+    ev.t += dt;
+    if (ev.t > ev.dur){ end(); return; }
+    if (ev.kind === "freeze"){
+      const fadeIn = Math.min(1, ev.t / 600), fadeOut = Math.min(1, (ev.dur - ev.t) / 900);
+      const a = Math.min(fadeIn, fadeOut);
+      c2.globalAlpha = a; c2.globalCompositeOperation = "hue"; c2.fillStyle = "#2f8fe0"; c2.fillRect(0, 0, W, H);
+      c2.globalCompositeOperation = "source-over";
+      c2.globalAlpha = 0.38 * a; c2.fillStyle = "#e8f8ff"; c2.fillRect(0, 0, W, H);
+      c2.globalAlpha = 0.5 * a; c2.strokeStyle = "#ffffff"; c2.lineWidth = 2;
+      for (const k of ev.cracks){
+        const x = k.x * W, y = 70 + k.y * (H - 70);
+        c2.beginPath(); c2.moveTo(x, y); c2.lineTo(x + Math.cos(k.a) * k.l, y + Math.sin(k.a) * k.l);
+        c2.lineTo(x + Math.cos(k.a) * k.l + Math.cos(k.a + 1) * k.l * .5, y + Math.sin(k.a) * k.l + Math.sin(k.a + 1) * k.l * .5); c2.stroke();
+      }
+      // twinkles
+      c2.fillStyle = "#ffffff";
+      for (let i = 0; i < 10; i++){ const tw = Math.sin(T * 5 + i * 1.7); if (tw > .6){ c2.globalAlpha = a * (tw - .6) * 2.5; c2.fillRect((hash(i, 3) * W) | 0, (70 + hash(i, 8) * (H - 70)) | 0, 4, 4); } }
+      c2.globalAlpha = 1;
+    }
+    if (ev.kind === "geyser" && ev.t < 900){
+      // rumble: bubbles under him
+      const p = toScreen(ev.gx, ev.gy, m);
+      c2.fillStyle = "#ffd166";
+      for (let i = 0; i < 6; i++){ const r = (ev.t / 900) * m.S * 0.7; const an = i + T * 3; c2.globalAlpha = .7; c2.fillRect((p.x + Math.cos(an) * r) | 0, (p.y + m.S * .35 + Math.sin(an) * r * .4) | 0, 5, 5); }
+      c2.globalAlpha = 1;
+    }
+  }
+
+  /* extra height for the hero (px), read inside frame() */
+  function lift(m){
+    if (!ev || ev.kind !== "geyser") return 0;
+    const k = (ev.t - 900) / 1300;
+    if (k <= 0 || k >= 1) return 0;
+    return Math.sin(Math.PI * k) * m.G * (reduceMotion ? 0.8 : 2.4);
+  }
+
+  /* drawn after particles, before the hero */
+  function mid(c2, m){
+    if (!ev) return;
+    if (ev.kind === "geyser" && ev.t >= 900 && ev.t < 2300){
+      const p = toScreen(ev.gx, ev.gy, m);
+      if (!ev.paid){
+        ev.paid = true; LLAudio.sfx("splash"); LLAudio.sfx("jump");
+        const w = worldPt(ev.gx, ev.gy, m); lavaSplash(w.x, w.y, 24);
+        setTimeout(() => { const w2 = worldPt(ev ? ev.gx : player.gx, ev ? ev.gy : player.gy, m); gemBurst(w2.x, w2.y - m.G * 2, 14, true); give(3); }, 600);
+      }
+      const k = (ev.t - 900) / 1400, h = Math.sin(Math.PI * Math.min(1, k * 1.4)) * m.G * 2.8 + m.S * .2;
+      const fade = Math.min(1, (2300 - ev.t) / 400);
+      const R = (COS.lava.items[cur("lava")] || COS.lava.items.classic).ramp;
+      for (let y = 0; y < h; y += 6){
+        const wob = Math.sin(T * 18 + y * .15) * 4, wdt = m.S * (.42 - .12 * (y / h));
+        c2.globalAlpha = fade; c2.fillStyle = R[(y / 6 | 0) % 3];
+        c2.fillRect((p.x - wdt / 2 + wob) | 0, (p.y + m.S * .2 - y) | 0, wdt | 0, 7);
+      }
+      c2.globalAlpha = 1;
+    }
+    if (ev.kind === "meteor"){
+      for (const r of ev.rocks){
+        const k = (ev.t - r.at) / r.fall;
+        if (k < 0) continue;
+        const p = toScreen(r.gx, r.gy, m);
+        if (k < 1){
+          const dx = r.side * (1 - k) * W * .5, dy = -(1 - k) * H * .9;
+          const x = p.x + dx, y = p.y + dy, s = Math.max(8, m.S * .28);
+          // tail
+          for (let i = 1; i <= 6; i++){
+            c2.globalAlpha = .55 - i * .08; c2.fillStyle = i < 3 ? "#ffd166" : "#ff7a1f";
+            const tx = x + r.side * i * s * .5, ty = y - i * s * .9;
+            c2.fillRect((tx - s / 2 * (1 - i / 9)) | 0, (ty - s / 2 * (1 - i / 9)) | 0, (s * (1 - i / 9)) | 0, (s * (1 - i / 9)) | 0);
+          }
+          c2.globalAlpha = 1;
+          c2.fillStyle = "#1f1424"; c2.fillRect((x - s / 2 - 2) | 0, (y - s / 2 - 2) | 0, (s + 4) | 0, (s + 4) | 0);
+          c2.fillStyle = "#6b4a3a"; c2.fillRect((x - s / 2) | 0, (y - s / 2) | 0, s | 0, s | 0);
+          c2.fillStyle = "#5ee0d0"; c2.fillRect((x - s / 6) | 0, (y - s / 6) | 0, (s / 3) | 0, (s / 3) | 0);
+        } else if (!r.hit){
+          r.hit = true;
+          const w = worldPt(r.gx, r.gy, m);
+          lavaSplash(w.x, w.y, 14); gemBurst(w.x, w.y, 6, false);
+          LLAudio.sfx("splash"); give(1);
+          if (!reduceMotion) player.shake = 250;
+        }
+      }
+    }
+  }
+
+  function reset(){ ev = null; pendingAt = 0; hide(); }
+  return { under, lift, mid, reset, fire };   // fire("meteor"|"geyser"|"freeze") for testing
 })();
 </script>
 
