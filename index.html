@@ -1740,6 +1740,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   const CSS = `
 #lmRoot{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;background:#1a1220;color:#fff3e4;font-family:var(--body,"Andika","Trebuchet MS",system-ui,sans-serif);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 #lmRoot [hidden]{display:none!important}
+#lmRoot.lm-ended #lmDeck{display:none}
 #lmStage{position:relative;flex:1 1 auto;min-height:220px;overflow:hidden}
 #lmCanvas{display:block;width:100%;height:100%}
 .lm-hud{position:absolute;top:max(8px,env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;gap:8px;align-items:center}
@@ -1909,11 +1910,12 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     wind: "Windy! The blocks are swaying.", spore: "Spores! Tap a cloud to blow it away.", crystal: "Crystal copy! One extra trick block." };
   function makeTwist(kind, env) {
     const easy = env.diff === "easy", hard = env.diff === "hard";
-    let iv = 0, sub = null;
+    let iv = 0, sub = null, outs = [];
+    const once = (fn, ms) => outs.push(setTimeout(fn, ms));
     const live = () => Array.from(env.box.querySelectorAll(".lm-choice")).filter(b => !b.classList.contains("sunk") && !b.disabled);
     const every = (ms, fn) => { clearInterval(iv); iv = setInterval(() => { if (env.asking()) fn(); }, ms); };
     const tw = { extra: 0, hint: "", pre() {}, ask() {}, tap() { return false; },
-      stop() { clearInterval(iv); env.box.classList.remove("lm-sand", "lm-wind", "lm-gust", "lm-shuf"); if (sub) sub.stop(); } };
+      stop() { clearInterval(iv); outs.forEach(clearTimeout); outs = []; env.box.classList.remove("lm-sand", "lm-wind", "lm-gust", "lm-shuf"); if (sub) sub.stop(); } };
     const thaw = b => { if (b.classList.contains("lm-ice") || b.classList.contains("lm-spore")) { b.classList.remove("lm-ice", "lm-spore"); env.sfx(); return true; } return false; };
     if (kind === "freeze") {
       tw.ask = () => shuffle(live()).slice(0, easy ? 1 : 2).forEach(b => b.classList.add("lm-ice"));
@@ -1929,7 +1931,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       tw.ask = () => every(easy ? 4200 : hard ? 2600 : 3300, () => {
         const bs = Array.from(env.box.children); if (bs.length < 2) return;
         env.box.classList.add("lm-shuf");
-        setTimeout(() => {
+        once(() => {
           let nb = shuffle(bs), g = 0; while (nb.every((b, i) => b === bs[i]) && g++ < 9) nb = shuffle(bs);
           nb.forEach(b => env.box.appendChild(b)); env.box.classList.remove("lm-shuf");
         }, 200);
@@ -1937,7 +1939,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     } else if (kind === "sand") {
       tw.ask = () => every(easy ? 4600 : hard ? 3000 : 3700, () => {
         env.box.classList.add("lm-sand");
-        setTimeout(() => env.box.classList.remove("lm-sand"), easy ? 1100 : hard ? 1900 : 1500);
+        once(() => env.box.classList.remove("lm-sand"), easy ? 1100 : hard ? 1900 : 1500);
       });
     } else if (kind === "wind") {
       tw.ask = () => { env.box.classList.add("lm-wind"); if (hard) env.box.classList.add("lm-gust"); };
@@ -2035,7 +2037,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         <div class="lm-say" data-r="say" aria-live="polite"></div>
         <div class="lm-choices" data-r="choices"></div>
         <button class="lm-super" type="button" data-r="super" hidden></button>
-        <div class="lm-row"><button class="lm-btn" type="button" data-r="hear">Hear it</button><button class="lm-btn alt" type="button" data-r="slow">Slow</button></div>
+        <div class="lm-row" data-r="row"><button class="lm-btn" type="button" data-r="hear">Hear it</button><button class="lm-btn alt" type="button" data-r="slow">Slow</button></div>
       </div>`;
     document.body.appendChild(root);
     const R = {}; root.querySelectorAll("[data-r]").forEach(el => R[el.dataset.r] = el);
@@ -2198,12 +2200,15 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       banner(`SUPERCHARGED!`, true);
       sfx.superReady();
       say(`Your power is supercharged! Tap ${SP.super}!`, 1, true);
-      S.superTimer = later(fireSuper, 9000);
+      R.row.hidden = true;
+      // tap only: no auto-fire. Just a reminder now and then if he waits.
+      const nudge = () => { if (S.phase !== "super" || S.done) return; say(`Tap ${SP.super}!`, 1, true); S.superTimer = later(nudge, 10000); };
+      S.superTimer = later(nudge, 10000);
     }
     function fireSuper() {
       if (S.phase !== "super") return;
       clearTimeout(S.superTimer);
-      S.phase = "blast"; R.super.hidden = true; R.choices.hidden = false;
+      S.phase = "blast"; R.super.hidden = true;
       const bonus = 4 + (S.misses === 0 ? 4 : 0); S.gems += bonus;
       banner(`${SP.super}!<small>+${bonus} diamonds${S.misses === 0 ? " (perfect!)" : ""}</small>`, true);
       say(`${SP.super}!`, 0.95, true);
@@ -2287,6 +2292,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       if (ATK) ATK.clear();
       S.result = { won, quit: !!quit, gems: S.gems, hits: S.hits, misses: S.misses, blocks: S.blocks, beaten, shaky, missed };
       R.choices.querySelectorAll(".lm-choice").forEach(x => x.disabled = true);
+      R.choices.hidden = true; R.super.hidden = true; R.row.hidden = true;   // only the result line stays below the boss
     }
     const label = c => `${c.w.slice(0, c.s)}<b>${c.t.toUpperCase()}</b>${c.w.slice(c.e)}`;
     function showCard(title, text, good, bad) {
@@ -2295,6 +2301,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         (bad.length ? `<p class="small">Keep practicing:</p><div class="lm-list bad">${bad.map(c => `<span>${label(c)}</span>`).join("")}</div>` : "") +
         `<button class="lm-btn go" type="button" data-close>Continue</button>`;
       R.card.querySelector("[data-close]").addEventListener("click", close);
+      root.classList.add("lm-ended");                // play panel goes away, card gets the whole screen
       R.over.hidden = false;
     }
     function win() {
@@ -2711,9 +2718,13 @@ const G = { order: [], idx: 0, pos: 0, hearts: HEARTS, misses: 0, letterMisses: 
             boss: false, dirty: false, missChunks: new Set(), glowChunks: new Set(), shield: false, used: {}, beaten: [] };
 function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function current(){ return G.order[G.idx]; }
+/* Round-scoped timer: does nothing if the round ended (new game, main menu) before it fires. */
+G.run = 0;
+function roundLater(fn, ms){ const run = G.run; return setTimeout(() => { if (run === G.run) fn(); }, ms); }
 const isLetter = ch => /[a-z]/.test(ch);
 
 function newGame(bossWords){
+  G.run++;
   G.boss = !!bossWords;
   G.order = shuffle(bossWords || wordList.concat(window.LLFocus ? LLFocus.extraWords(wordList) : [])); G.idx = 0; if (window.LLFocus) LLFocus.roundStart(); G.perfect = 0; G.roundGems = 0; G.beaten = []; G.wordNo = 0;
   G.used = { health: 0, shield: 0, glow: 0 }; G.shield = false;
@@ -2733,7 +2744,7 @@ function startWord(first, retry){
   else if (G.boss) setSay("Boss Chunk! Watch the orange letters.");
   else setSay("Tap the block with the first letter.");
   if (!retry && surgeWord()){ updateHud(); startSurgeWord(it); return; }
-  tricky(); spawnChoices(); setTimeout(() => speakWord(false), first ? 150 : 350);
+  tricky(); spawnChoices(); roundLater(() => speakWord(false), first ? 150 : 350);
 }
 function skipNonLetters(){ const w = current().w; while (G.pos < w.length && !isLetter(w[G.pos])) G.pos++; }
 function weakHere(){ const it = current(); const c = chunkAt(it.w, G.pos); return c && isWeak(it.w, c) ? c : null; }
@@ -2795,12 +2806,12 @@ function bridgeWord(it, missedKeys, then){
       if (r.ok){
         const earn = r.misses === 0 ? 2 : 1; SAVE.gems += earn; G.roundGems += earn; save(); updateHud();
         setSay(`Bridge crossed! +${earn}`, "good"); celebrate(r.misses === 0);
-        setTimeout(then, 1200);
+        roundLater(then, 1200);
       } else {
         G.hearts = Math.max(0, G.hearts - 1); LLAudio.sfx("hurt"); updateHud();
         if (G.hearts <= 0){ lavaGotYou(); return; }
         setSay("The bridge fell! This word will come back.", "bad");
-        setTimeout(then, 1500);
+        roundLater(then, 1500);
       }
     });
   }, 1200);
@@ -2941,7 +2952,7 @@ function wordDone(){
     startWord(false);
   };
   const missedKeys = chunkWord(it.w).map(c => spotKey(it.w, c)).filter(k => G.missChunks.has(k));
-  setTimeout(() => { if (current() === it && !bridgeWord(it, missedKeys, next)) next(); }, wait);
+  roundLater(() => { if (current() === it && !bridgeWord(it, missedKeys, next)) next(); }, wait);
 }
 
 function lavaGotYou(){
@@ -2953,7 +2964,7 @@ function lavaGotYou(){
   setSay("Out of hearts! Look at the word, then try again.", "bad"); LLAudio.sfx("lose");
   renderTiles(true);
   say(it.w, 0.6, true);
-  setTimeout(() => { sinkTrail(); startWord(false, true); }, 3200);
+  roundLater(() => { if (current() === it){ sinkTrail(); startWord(false, true); } }, 3200);
 }
 
 function win(){
@@ -2978,7 +2989,7 @@ function win(){
   updateHud();
   say(G.perfect === n ? "Perfect! You crossed the lava!" : (G.boss ? "Boss Chunk done!" : "You crossed the lava!"), 0.95, true);
   if (window.LLStreak) LLStreak.roundDone();
-  setTimeout(() => { const show = () => { $("winCard").hidden = false; }; if (!(window.LLFocus && LLFocus.afterRound(show))) show(); }, 1400);
+  roundLater(() => { if (G.phase !== "win") return; const show = () => { $("winCard").hidden = false; }; if (!(window.LLFocus && LLFocus.afterRound(show))) show(); }, 1400);
 }
 
 /* ---------- potions ---------- */
@@ -3235,7 +3246,7 @@ $("startBtn").addEventListener("click", () => start());
 $("againBtn").addEventListener("click", () => start());
 $("restartBtn").addEventListener("click", () => start());
 function toMainMenu(){
-  cancelChunkModes(); LLAudio.setScene("main");
+  G.run++; cancelChunkModes(); LLAudio.setScene("main");
   $("winCard").hidden = true; $("menuCard").hidden = true;
   G.phase = "start"; G.order = []; G.idx = 0;
   resetWorld(); renderTiles(); setSay("Tap the block with the first letter."); updateHud();
