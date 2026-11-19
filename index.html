@@ -3325,6 +3325,7 @@ function renderShop(){
     b.addEventListener("click", () => { shopSel[shopTab] = id; say(shown, 1, true, "tap"); renderShop(); });
     grid.appendChild(b);
   }
+  if (!grid.querySelector(".it")) console.error("[shop] tab rendered empty:", shopTab);
   const note = document.createElement("p"); note.className = "note";
   note.textContent = shopTab === "potion"
     ? `Use potions with the buttons next to Hear it. ${limitText()}`
@@ -4085,6 +4086,7 @@ function locked(cat, id){
 }
 // a boss pet from a world theme he hasn't opened yet: shown as a "???" silhouette
 function mystery(cat, id){
+  if (!COS[cat]) return false;   // potions aren't cosmetics (COS.potion doesn't exist)
   const it = COS[cat].items[id];
   return !!(it && it.bossWorld > 0 && !owns(cat, id) && !SAVE.bossBeat[it.boss] && !(window.LavaMap && LavaMap.opened && LavaMap.opened(it.bossWorld)));
 }
