@@ -708,7 +708,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     options = options || {};
     const dkey = DIFF[options.difficulty] ? options.difficulty : "medium";
     const D = DIFF[dkey];
-    const say = (t, r, c) => (options.say || ownSay)(t, r, c);
+    const say = (t, r, c, g) => (options.say || ownSay)(t, r, c, g);
     const wm = !!options.wholeWord;
     if (wm){ let i = 0; while (i < word.length && !/[a-z]/.test(word[i])) i++; chunk = { s: i, e: i + 1, t: word[i] }; }
     const right = word.slice(chunk.s, chunk.e);
@@ -772,9 +772,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     if (!S) return;
     const r = slow ? 0.5 : 0.85;
     duck(slow ? 4200 : 2800);
-    S.say(S.word, r, !queue);
-    if (S.options.sentence) S.say(S.options.sentence, slow ? 0.7 : 0.95);
-    S.say(S.word, r);
+    S.say(S.word, r, !queue, "prompt");
+    if (S.options.sentence) S.say(S.options.sentence, slow ? 0.7 : 0.95, false, "prompt");
+    S.say(S.word, r, false, "prompt");
   }
   function setSay(t, cls){ if (!S) return; const e = S.el.querySelector(".ls-say"); e.textContent = t; e.className = "ls-say" + (cls ? " " + cls : ""); }
   function renderTiles(got){
@@ -913,7 +913,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     const g = geo();
     S.player.jump = { fx: g.ledgeX, fy: g.ledgeY, tx: b.x, ty: b.y - b.h * 0.5, t: 0, dur: reduceMotion ? 200 : 360, b };
     S.blocks.forEach(x => { if (x !== b) x.sink = 0.001; });
-    S.say(b.t, 1, true);
+    S.say(b.t, 1, true, "tap");
     later(() => {
       if (!S) return;
       let i = S.chunk.e; while (i < S.word.length && !/[a-z]/.test(S.word[i])) i++;
@@ -1388,9 +1388,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     const hearWord = slow => {
       sfx.resume();
       const r = slow ? 0.5 : 0.85;
-      speak(w, r, true);
-      if (options.sentence) speak(options.sentence, slow ? 0.7 : 0.95);
-      speak(w, r);
+      speak(w, r, true, "prompt");
+      if (options.sentence) speak(options.sentence, slow ? 0.7 : 0.95, false, "prompt");
+      speak(w, r, false, "prompt");
     };
     $("[data-hear]").addEventListener("click", () => hearWord(false));
     $("[data-slow]").addEventListener("click", () => hearWord(true));
@@ -1437,7 +1437,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         b.classList.add("used");
         const pi = idxOf(pos);
         planks[pi].textContent = want; planks[pi].classList.remove("gap", "next"); planks[pi].classList.add("fill");
-        sfx.good(); speak(want, 0.9, true);
+        sfx.good(); speak(want, 0.9, true, "tap");
         pos++; skipFilled(); stand = idxOf(pos) - 1; placeHero(); camera(); hop(); markNext();
         if (pos >= e) return win();
         renderChoices();
@@ -1448,7 +1448,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         b.classList.add("wrong"); sfx.bad();
         if (L.penalty){ setSay(`That's ${b.textContent.toUpperCase()}. The bridge shook!`, "bad"); nextFall = clock; }
         else setSay(`That's ${b.textContent.toUpperCase()}. Listen again!`, "bad");
-        speak(w, 0.8, true);
+        speak(w, 0.8, true, "prompt");
       }
     }
 
@@ -2118,9 +2118,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     function speak(slow) {
       const c = S.q; if (!c) return;
       const r = slow ? 0.5 : 0.85;
-      say(c.w, r, true);
-      if (c.sentence) say(c.sentence, slow ? 0.7 : 0.95);
-      say(c.w, r);
+      say(c.w, r, true, "prompt");
+      if (c.sentence) say(c.sentence, slow ? 0.7 : 0.95, false, "prompt");
+      say(c.w, r, false, "prompt");
     }
 
     function nextChunk() {
@@ -2168,7 +2168,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         charge(c.t.length, clean);
         opts.onChunk && opts.onChunk(c.key, true);
         tiles(true);
-        say(c.t.split("").join(", ") + "!", 0.9, true);
+        say(c.t.split("").join(", ") + "!", 0.9, true, "now");
         setSay(`${c.t.toUpperCase()}! Take that!  +${earn}`, "good");
         sfx.throw();
         S.bolt = { t: 0, dur: reduce ? 250 : 520 };
@@ -2211,7 +2211,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       const bonus = 2 + Math.round(S.pow * 2); S.gems += bonus;
       banner(`${name}!<small>+${bonus} diamonds</small>`, true);
       setSay(`Power move: ${name}!`, "good");
-      say(`${name}!`, 1, true);
+      say(`${name}!`, 1, true, "now");
       sfx.special();
       S.fx = { kind: "mini", t: 0, dur: reduce ? 500 : 1500 };
       later(() => {
@@ -2220,7 +2220,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         sfx.angry(); S.shake = reduce ? 0 : 900; S.flash = 0.6; hud();
         const t = TT[n] || `${BN} gets stronger!`;
         banner(`${BN}: ${ph.label || "Phase " + n}!<small>${t}</small>`);
-        setSay(t, "bad"); say(t, 1, true);
+        setSay(t, "bad"); say(t, 1, true, "now");
         opts.onPhase && opts.onPhase(n);
         later(ask, 2400);
       }, reduce ? 700 : 1700);
@@ -2233,7 +2233,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       setSay(`Your power is supercharged! Tap it!`, "good");
       banner(`SUPERCHARGED!`, true);
       sfx.superReady();
-      say(`Your power is supercharged! Tap ${SP.super}!`, 1, true);
+      say(`Your power is supercharged! Tap ${SP.super}!`, 1, true, "now");
       S.superTimer = later(fireSuper, 9000);
     }
     function fireSuper() {
@@ -2242,7 +2242,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       S.phase = "blast"; R.super.hidden = true; R.choices.hidden = false;
       const bonus = 4 + (S.misses === 0 ? 4 : 0); S.gems += bonus;
       banner(`${SP.super}!<small>+${bonus} diamonds${S.misses === 0 ? " (perfect!)" : ""}</small>`, true);
-      say(`${SP.super}!`, 0.95, true);
+      say(`${SP.super}!`, 0.95, true, "now");
       sfx.blast(); S.shake = reduce ? 0 : 1600;
       S.fx = { kind: "super", t: 0, dur: reduce ? 700 : 2200 };
     }
@@ -2284,14 +2284,15 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       S.phase = "hurt"; S.hearts--; S.hurt = 1; sfx.roar(); hud();
       if (S.hearts <= 0) { lose(); return; }
       setSay(`${NAME} splashed you! Lost a heart.`, "bad");
-      say("Splash! Keep going!", 1, true);
+      say("Splash! Keep going!", 1, true, "now");
       S.target = 0.45;
       later(() => { S.phase = "ask"; setSay(ASK); }, 1300);
     }
 
     /* ---------- boss projectile ---------- */
     // Rough time the word (and sentence) take to say, so the clock starts after he has heard it.
-    function talkMs(c, slow) { const k = slow ? 1.7 : 1; return k * (2 * (500 + c.w.length * 60) + (c.sentence ? c.sentence.length * 70 : 0)); }
+    // Plus whatever line is still finishing first (the host's queue lets sentences end).
+    function talkMs(c, slow) { const k = slow ? 1.7 : 1; return (say.left ? say.left() : 0) + k * (2 * (500 + c.w.length * 60) + (c.sentence ? c.sentence.length * 70 : 0)); }
     function windup() { return (atkOpt.windup || D.windup) / (S.attackSpeed || 1); }   // S.attackSpeed: hook for boss phases
     function fireHit(c, timedOut) {
       if (S.done) return;
@@ -2308,7 +2309,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         opts.onHurt && opts.onHurt(c.key);
         if (S.hearts <= 0) { lose(); return; }
         setSay(timedOut ? `Too slow! The ${SHOT} hit you. Lost a heart.` : `The ${SHOT} hit you! Lost a heart.`, "bad");
-        say(timedOut ? "Ouch! Pick faster next time!" : "Ouch! Try again!", 1, true);
+        say(timedOut ? "Ouch! Pick faster next time!" : "Ouch! Try again!", 1, true, "now");
       }
       later(() => { if (S.phase === "ask" && S.q === c && !S.done) { ATK.arm(windup(), 900 + (timedOut ? talkMs(c, false) : 0)); if (timedOut) speak(false); } }, 1200);
     }
@@ -2335,13 +2336,13 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     }
     function win() {
       finish(true); S.dead = 0.001; sfx.win(); burst(false, true);
-      setSay(`You beat ${NAME}!`, "good"); say(`You beat ${NAME}! Amazing spelling!`, 0.95, true);
+      setSay(`You beat ${NAME}!`, "good"); say(`You beat ${NAME}! Amazing spelling!`, 0.95, true, "now");
       const byKey = k => chunks.find(c => c.key === k);
       later(() => showCard(`${NAME} is defeated!`, `+${S.result.gems} diamonds!`, S.result.beaten.map(byKey), S.result.shaky.map(byKey)), 2000);
     }
     function lose() {
       finish(false); sfx.roar();
-      setSay(`${NAME} got away!`, "bad"); say(`${NAME} got away. Practice and come back!`, 0.95, true);
+      setSay(`${NAME} got away!`, "bad"); say(`${NAME} got away. Practice and come back!`, 0.95, true, "now");
       later(() => showCard(`${NAME} got away!`, `You hit it ${S.hits} times. +${S.result.gems} diamonds. Practice these and come back!`, [], chunks.filter(c => S.stats[c.key].wrong > 0)), 1600);
     }
     function close() {
@@ -2623,18 +2624,33 @@ const CLIPS = (() => {
   return { plan, decode, forget };
 })();
 
-const SPEECH = { q: [], busy: false, gen: 0, nodes: [], timer: 0 };
-function speechCancel(){
-  SPEECH.gen++; SPEECH.q = []; SPEECH.busy = false; clearTimeout(SPEECH.timer);
-  SPEECH.nodes.forEach(n => { try { n.stop(); } catch(e){} }); SPEECH.nodes = [];
+/* One queue for every spoken line, in the main game and in every mode.
+   say(text, rate, cancel, tag)
+     cancel false: wait in line.
+     cancel true:  drop anything still waiting. The line playing now finishes
+                   its sentence, unless it is a word prompt or a tap echo
+                   (tag "prompt" / "tap"); those are cut, since something newer matters more.
+     tag "prompt": the word being asked (word, sentence, word). "tap": echo of a button tap.
+     tag "now":    a line tied to something on screen right now (boss hit, phase
+                   banner, super blast, win/lose). It cuts whatever is playing, so
+                   the voice never trails behind the animation.
+   speechCancel() hard-stops everything (leaving a screen).
+   say.left() = ms until the current must-finish line ends, so timers can wait for it. */
+const SPEECH = { q: [], busy: false, gen: 0, nodes: [], timer: 0, cur: null, endAt: 0 };
+const speechEst = (text, rate) => (450 + String(text).length * 70) / Math.max(0.4, rate || 0.9);
+function speechStop(){
+  SPEECH.gen++; SPEECH.busy = false; SPEECH.cur = null; SPEECH.endAt = 0; clearTimeout(SPEECH.timer);
+  SPEECH.nodes.forEach(n => { try { n.onended = null; n.stop(); } catch(e){} }); SPEECH.nodes = [];
   if (hasTTS) try { speechSynthesis.cancel(); } catch(e){}
 }
+function speechCancel(){ SPEECH.q = []; speechStop(); }
 function speechNext(){
   if (SPEECH.busy) return;
   const job = SPEECH.q.shift(); if (!job) return;
-  SPEECH.busy = true;
+  SPEECH.busy = true; SPEECH.cur = job;
+  SPEECH.endAt = performance.now() + speechEst(job.text, job.rate) + 300;
   const gen = SPEECH.gen;
-  const done = () => { if (gen !== SPEECH.gen) return; clearTimeout(SPEECH.timer); SPEECH.busy = false; SPEECH.nodes = []; speechNext(); };
+  const done = () => { if (gen !== SPEECH.gen) return; clearTimeout(SPEECH.timer); SPEECH.busy = false; SPEECH.cur = null; SPEECH.endAt = 0; SPEECH.nodes = []; speechNext(); };
   const ctx = window.LLAudio && LLAudio._ctx && LLAudio._ctx();
   const parts = ctx && ctx.state === "running" ? CLIPS.plan(job.text, job.rate) : null;
   const fallback = () => {
@@ -2645,7 +2661,9 @@ function speechNext(){
       if (voice) u.voice = voice;
       u.lang = "en-US"; u.rate = job.rate;
       u.onend = u.onerror = done;
-      SPEECH.timer = setTimeout(done, 1500 + job.text.length * 120 / Math.max(0.4, job.rate));
+      const ms = 1500 + job.text.length * 120 / Math.max(0.4, job.rate);
+      SPEECH.endAt = performance.now() + speechEst(job.text, job.rate);
+      SPEECH.timer = setTimeout(done, ms);
       speechSynthesis.speak(u);
     } catch(e){ done(); }
   };
@@ -2661,21 +2679,26 @@ function speechNext(){
       if (i === bufs.length - 1) src.onended = done;   // audio time, so a paused app doesn't skip ahead
       t += b.duration + (i < bufs.length - 1 ? parts[i + 1].gap : 0);
     });
+    SPEECH.endAt = performance.now() + (t - ctx.currentTime) * 1000;
   }, fallback);
 }
-function say(text, rate, cancel){
+function say(text, rate, cancel, tag){
   if (!canSpeak) return;
-  if (cancel) speechCancel();
-  SPEECH.q.push({ text: String(text), rate: rate || 0.9 });
+  if (cancel){
+    SPEECH.q = [];
+    if (SPEECH.busy && SPEECH.cur && (SPEECH.cur.cut || tag === "now")) speechStop();
+  }
+  SPEECH.q.push({ text: String(text), rate: rate || 0.9, cut: tag === "prompt" || tag === "tap" });
   speechNext();
 }
+say.left = () => SPEECH.busy && SPEECH.cur && !SPEECH.cur.cut ? Math.max(0, SPEECH.endAt - performance.now()) : 0;
 function speakWord(slow){
   if (!canSpeak){ setSay("Sound isn't working here. Ask a grown-up to read the word.", "bad"); return; }
   const it = current(); if (!it) return;
   const r = slow ? 0.5 : 0.85;
-  say(it.w, r, true);
-  if (it.s) say(it.s, slow ? 0.7 : 0.95);
-  say(it.w, r);
+  say(it.w, r, true, "prompt");
+  if (it.s) say(it.s, slow ? 0.7 : 0.95, false, "prompt");
+  say(it.w, r, false, "prompt");
 }
 
 /* ---------- saved progress: diamonds, potions, skins, tricky parts ---------- */
@@ -2896,7 +2919,7 @@ function tapLetter(b){
   if (b.ch === want){
     G.phase = "jumping";
     clearChoices(b);
-    say(b.ch, 0.9, true); LLAudio.sfx("jump");
+    say(b.ch, 0.9, true, "tap"); LLAudio.sfx("jump");
     jumpTo(b, () => {
       LLAudio.sfx("land");
       G.pos++; G.letterMisses = 0;
@@ -3109,7 +3132,7 @@ function renderShop(){
     b.setAttribute("aria-selected", String(k === shopTab));
     b.appendChild(k === "potion" ? thumb("potion", "health") : thumb(k, TAB_ICON[k]));
     b.appendChild(document.createTextNode(label));
-    b.addEventListener("click", () => { shopTab = k; say(label, 1, true); renderShop(); $("shopGrid").scrollTop = 0; });
+    b.addEventListener("click", () => { shopTab = k; say(label, 1, true, "tap"); renderShop(); $("shopGrid").scrollTop = 0; });
     tabs.appendChild(b);
   }
   // items
@@ -3133,7 +3156,7 @@ function renderShop(){
     if (shopSel[shopTab] === id) b.classList.add("sel");
     const shown = mystery(shopTab, id) ? "Mystery pet" : it.name;
     b.setAttribute("aria-label", `${shown}. ${st.textContent}`);
-    b.addEventListener("click", () => { shopSel[shopTab] = id; say(shown, 1, true); renderShop(); });
+    b.addEventListener("click", () => { shopSel[shopTab] = id; say(shown, 1, true, "tap"); renderShop(); });
     grid.appendChild(b);
   }
   const note = document.createElement("p"); note.className = "note";
@@ -3277,7 +3300,7 @@ $("startBtn").addEventListener("click", () => start());
 $("againBtn").addEventListener("click", () => start());
 $("restartBtn").addEventListener("click", () => start());
 function toMainMenu(){
-  cancelChunkModes(); LLAudio.setScene("main");
+  cancelChunkModes(); speechCancel(); LLAudio.setScene("main");
   $("winCard").hidden = true; $("menuCard").hidden = true;
   G.phase = "start"; G.order = []; G.idx = 0;
   resetWorld(); renderTiles(); setSay("Tap the block with the first letter."); updateHud();
@@ -4139,7 +4162,7 @@ window.LLStreak = (() => {
       b.setAttribute("aria-label", `World ${i + 1}, ${wname(w)}, ${w.stars} stars`);
       b.appendChild(islandCanvas(t, { flag: w.cleared }));
       b.insertAdjacentHTML("beforeend", `<b>${wname(w)}</b><small>${weekLabel(w.added)}</small>${starsHtml(w.stars)}`);
-      b.addEventListener("click", () => { sel = w.id; say(wname(w), 0.95, true); renderMap(); });
+      b.addEventListener("click", () => { sel = w.id; say(wname(w), 0.95, true, "tap"); renderMap(); });
       track.appendChild(b);
       if (w.id === M.cur){
         const h = document.createElement("canvas"); h.className = "mhero"; h.width = 16; h.height = 22;
@@ -4850,10 +4873,10 @@ window.LavaEvents = (() => {
     const $ = s => root.querySelector(s);
     const starts = (() => { const s = new Set(); let i = 0; W.chunks.forEach(c => { s.add(i); i += c.length; }); return s; })();
     const chunkHTML = (c, ci) => { const s = W.chunks.slice(0, ci).join("").length; return [...c].map((ch, k) => W.tricky.includes(s + k) ? `<span class="t">${ch}</span>` : ch).join(""); };
-    const hearWord = () => { say(W.word, .75, true); if (W.sentence) later(() => say(W.sentence, .9, false), 50); };
+    const hearWord = () => { say(W.word, .75, true, "prompt"); if (W.sentence) say(W.sentence, .9, false, "prompt"); };
     const chunkOfPos = p => { let s = 0; for (let i = 0; i < W.chunks.length; i++) { s += W.chunks[i].length; if (p < s) return i; } return W.chunks.length - 1; };
 
-    function close(res) { if (closed) return; closed = true; timers.forEach(clearTimeout); try { speechSynthesis.cancel(); } catch (e) {} root.remove(); onDone && onDone(res); }
+    function close(res) { if (closed) return; closed = true; timers.forEach(clearTimeout); try { o.hush ? o.hush() : speechSynthesis.cancel(); } catch (e) {} root.remove(); onDone && onDone(res); }
     function shell(body, foot) {
       root.innerHTML = `<div class="ww-app">
         <div class="ww-top"><button class="ww-chip ww-x" id="wwX" aria-label="Leave the workshop">✕</button><div class="ww-ttl">Word Workshop</div><button class="ww-chip ww-x" id="wwHearTop" aria-label="Hear the word">🔊</button></div>
@@ -4877,12 +4900,12 @@ window.LavaEvents = (() => {
           <button class="ww-hear" id="wwHear">🔊 Hear the word</button></div>`,
         `<div class="ww-row"><button class="ww-btn alt" id="wwSpell">Spell it to me</button>${all ? `<button class="ww-btn go" id="wwNext">Build it! ▶</button>` : ""}</div>`);
       root.querySelectorAll(".ww-chunk").forEach(b => b.onclick = () => {
-        const i = +b.dataset.i, first = !heard.has(i); heard.add(i); say(W.sayParts[i], .7, true); sfx("ok");
+        const i = +b.dataset.i, first = !heard.has(i); heard.add(i); say(W.sayParts[i], .7, true, "tap"); sfx("ok");
         if (heard.size === W.chunks.length && first) { talk(`Now YOU say it out loud: <b>${W.word}</b>!<br>${W.tips[0]}`, "happy"); later(() => say("Now you say it! " + W.word, .85, true), 700); }
         else if (first) talk(`<b>${W.chunks[i]}</b>! ${heard.size < W.chunks.length ? "Tap the next block." : ""}`, "happy");
         hear();
       });
-      $("#wwSpell").onclick = () => say([...W.word].join(", "), .7, true);
+      $("#wwSpell").onclick = () => say([...W.word].join(", "), .7, true, "prompt");
       const n = $("#wwNext"); if (n) n.onclick = () => { sfx("step"); party(n, 30); later(build0, 250); };
     }
 
@@ -4902,7 +4925,7 @@ window.LavaEvents = (() => {
       root.querySelectorAll(".ww-chunk[data-i]").forEach(b => b.onclick = () => {
         const p = pool[+b.dataset.i];
         if (p.ok !== undefined && !p.used && p.c === W.chunks[built]) {
-          p.used = true; say(W.sayParts[built], .75, true); sfx("ok"); built++;
+          p.used = true; say(W.sayParts[built], .75, true, "tap"); sfx("ok"); built++;
           if (built === W.chunks.length) { talk(`You built <b>${W.word}</b>! ${pick(YAY)}`, "happy"); later(() => say(W.word, .8, true), 500); sfx("step"); build(); party($(".ww-card"), 40); return; }
           talk(pick(YAY) + " What comes next?", "happy"); build();
         } else {
@@ -5098,7 +5121,7 @@ window.LavaEvents = (() => {
       if (!go){ e.skip = 1; save(); show(); return; }
       LLAudio.setScene("quiet");
       WordWorkshop.start({
-        word: w, sentence: e.s, tricky: trickyIdx(w), say,
+        word: w, sentence: e.s, tricky: trickyIdx(w), say, hush: speechCancel,
         sfx: n => LLAudio.sfx({ ok: "land", step: "coin", nope: "hurt", win: "win" }[n] || "coin"),
         reward: s => 5 + (s === 3 ? 5 : 0),
       }, r => {
