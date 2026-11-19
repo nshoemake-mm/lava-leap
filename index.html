@@ -63,7 +63,12 @@ body{font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transpar
 .tile.now{border-color:var(--glow)}
 .tile.show{border-color:var(--glow);color:var(--glow)}
 
-.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(14,8,16,.74);padding-block:max(16px, env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-bottom,0px));padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));overflow:auto;-webkit-user-select:text;user-select:text}
+.overlay{position:fixed;inset:0;z-index:20;display:grid;background:rgba(14,8,16,.74);padding-block:max(16px, env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-bottom,0px));padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));overflow:auto;-webkit-user-select:text;user-select:text}
+/* menus never spill off small screens: card is safely centered (auto margins fall back to top-aligned when tall),
+   capped to the screen, and scrolls inside itself */
+.overlay{overflow:hidden;overscroll-behavior:none;touch-action:none}
+.overlay > .card,.lm-over > .lm-card{margin:auto;max-height:100%;box-sizing:border-box;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+.overlay > .card > *,.lm-over > .lm-card > *{flex-shrink:0}
 .card{width:100%;max-width:400px;background:var(--deck);border:4px solid var(--deck-edge);box-shadow:0 0 0 4px #120b15, 0 18px 40px rgba(0,0,0,.5);padding:20px;display:flex;flex-direction:column;gap:14px}
 .card h1,.card h2{margin:0;font-family:var(--display);font-weight:700;line-height:1;text-wrap:balance}
 .card h1{font-size:44px;color:var(--glow);text-shadow:3px 3px 0 #a3300c}
@@ -169,6 +174,31 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .start-row .btn{flex:1;width:auto;min-width:0;padding-inline:8px}
 .start-foot{display:flex;justify-content:space-between;align-items:center;padding:0 4px}
 .start-foot .linkbtn{align-self:auto}
+/* compact end-of-round card: buttons stay on screen, info scrolls (iPhone mini Safari) */
+#winCard .card{padding:14px;gap:10px;min-height:0;overflow:hidden}
+#winCard .card > .win-body{flex-shrink:1}
+.win-body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:flex;flex-direction:column;gap:8px}
+.win-body h2{font-size:24px;text-align:center}
+#winCard .win-body p{font-size:16px;line-height:1.3}
+#winCard .win-body p.small{font-size:14px;margin-bottom:4px}
+#winCard #mapWin{font-size:15px;line-height:1.3}
+#winCard #mapWin .mstars{font-size:20px}
+#winCard .sf-win{min-height:0;padding:6px 10px;gap:10px}
+#winCard .sf-win .sf-pic{width:44px;min-height:40px}
+#winCard .sf-txt b{font-size:17px}
+#winCard .sf-txt span{font-size:14px}
+#winCard .practice{gap:4px}
+#winCard .practice > span{font-size:15px;padding:2px 6px}
+.win-actions{flex:none;display:flex;flex-direction:column;gap:8px}
+#winCard .btn{min-height:44px;padding-block:8px}
+#winCard #bossBtn{font-size:15px;line-height:1.15}
+#winCard .seg button{padding:5px 4px;font-size:15px}
+#winCard .seg button small{display:none}
+.win-body.more{-webkit-mask-image:linear-gradient(#000 calc(100% - 36px),transparent);mask-image:linear-gradient(#000 calc(100% - 36px),transparent)}
+.win-body > *{flex:none}
+.win-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.win-row .btn{width:auto;min-width:0;padding-inline:6px;font-size:16px;white-space:nowrap}
+.win-row .gem{width:12px;height:12px;flex:none;background:#5ee0d0;box-shadow:inset -3px -3px 0 #2a9d8f, inset 3px 3px 0 #b8fff6;transform:rotate(45deg)}
 #gateCard input{width:100%;box-sizing:border-box;font:700 24px var(--body);text-align:center;background:#140d18;color:var(--ink);border:3px solid var(--deck-edge);padding:8px;border-radius:0}
 #gateCard input.bad{border-color:var(--bad)}
 </style>
@@ -256,23 +286,29 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 
 <div class="overlay" id="winCard" hidden>
   <div class="card">
-    <h2 id="winTitle">You crossed the lava!</h2>
-    <p id="winScore"></p>
-    <div class="sf-win" id="winStreak" hidden></div>
-    <div id="winBeat" hidden>
-      <p class="small" style="margin-bottom:6px">Tricky parts defeated:</p>
-      <div class="practice" id="beatList"></div>
+    <div class="win-body">
+      <h2 id="winTitle">You crossed the lava!</h2>
+      <p id="winScore"></p>
+      <div class="sf-win" id="winStreak" hidden></div>
+      <div id="winBeat" hidden>
+        <p class="small">Tricky parts defeated:</p>
+        <div class="practice" id="beatList"></div>
+      </div>
+      <div id="winPractice" hidden>
+        <p class="small">Tricky parts to beat (3 clean rounds each):</p>
+        <div class="practice" id="practiceList"></div>
+      </div>
     </div>
-    <div id="winPractice" hidden>
-      <p class="small" style="margin-bottom:6px">Tricky parts to beat (3 clean rounds each):</p>
-      <div class="practice" id="practiceList"></div>
+    <div class="win-actions">
+      <button class="btn go" id="bossBtn" type="button" hidden>Fight the Lava Monster: double diamonds</button>
+      <div class="label">Difficulty for next round</div>
+      <div class="seg" data-seg></div>
+      <div class="win-row">
+        <button class="btn alt" id="againBtn" type="button">Play again</button>
+        <button class="btn alt" id="winShopBtn" type="button">Shop <span class="gem" aria-hidden="true"></span><span data-gems>0</span></button>
+        <button class="btn alt" id="mainMenuBtn" type="button">Main menu</button>
+      </div>
     </div>
-    <button class="btn go" id="bossBtn" type="button" hidden>Fight the Lava Monster: double diamonds</button>
-    <div class="label">Difficulty for next round</div>
-    <div class="seg" data-seg></div>
-    <button class="btn alt" id="againBtn" type="button">Play again</button>
-    <button class="btn alt" id="winShopBtn" type="button">Shop · <span data-gems>0</span> diamonds</button>
-    <button class="btn alt" id="mainMenuBtn" type="button">Main menu</button>
   </div>
 </div>
 
@@ -672,7 +708,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     options = options || {};
     const dkey = DIFF[options.difficulty] ? options.difficulty : "medium";
     const D = DIFF[dkey];
-    const say = (t, r, c) => (options.say || ownSay)(t, r, c);
+    const say = (t, r, c, g) => (options.say || ownSay)(t, r, c, g);
     const wm = !!options.wholeWord;
     if (wm){ let i = 0; while (i < word.length && !/[a-z]/.test(word[i])) i++; chunk = { s: i, e: i + 1, t: word[i] }; }
     const right = word.slice(chunk.s, chunk.e);
@@ -736,9 +772,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     if (!S) return;
     const r = slow ? 0.5 : 0.85;
     duck(slow ? 4200 : 2800);
-    S.say(S.word, r, !queue);
-    if (S.options.sentence) S.say(S.options.sentence, slow ? 0.7 : 0.95);
-    S.say(S.word, r);
+    S.say(S.word, r, !queue, "prompt");
+    if (S.options.sentence) S.say(S.options.sentence, slow ? 0.7 : 0.95, false, "prompt");
+    S.say(S.word, r, false, "prompt");
   }
   function setSay(t, cls){ if (!S) return; const e = S.el.querySelector(".ls-say"); e.textContent = t; e.className = "ls-say" + (cls ? " " + cls : ""); }
   function renderTiles(got){
@@ -877,7 +913,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     const g = geo();
     S.player.jump = { fx: g.ledgeX, fy: g.ledgeY, tx: b.x, ty: b.y - b.h * 0.5, t: 0, dur: reduceMotion ? 200 : 360, b };
     S.blocks.forEach(x => { if (x !== b) x.sink = 0.001; });
-    S.say(b.t, 1, true);
+    S.say(b.t, 1, true, "tap");
     later(() => {
       if (!S) return;
       let i = S.chunk.e; while (i < S.word.length && !/[a-z]/.test(S.word[i])) i++;
@@ -1352,9 +1388,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     const hearWord = slow => {
       sfx.resume();
       const r = slow ? 0.5 : 0.85;
-      speak(w, r, true);
-      if (options.sentence) speak(options.sentence, slow ? 0.7 : 0.95);
-      speak(w, r);
+      speak(w, r, true, "prompt");
+      if (options.sentence) speak(options.sentence, slow ? 0.7 : 0.95, false, "prompt");
+      speak(w, r, false, "prompt");
     };
     $("[data-hear]").addEventListener("click", () => hearWord(false));
     $("[data-slow]").addEventListener("click", () => hearWord(true));
@@ -1401,7 +1437,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         b.classList.add("used");
         const pi = idxOf(pos);
         planks[pi].textContent = want; planks[pi].classList.remove("gap", "next"); planks[pi].classList.add("fill");
-        sfx.good(); speak(want, 0.9, true);
+        sfx.good(); speak(want, 0.9, true, "tap");
         pos++; skipFilled(); stand = idxOf(pos) - 1; placeHero(); camera(); hop(); markNext();
         if (pos >= e) return win();
         renderChoices();
@@ -1412,7 +1448,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         b.classList.add("wrong"); sfx.bad();
         if (L.penalty){ setSay(`That's ${b.textContent.toUpperCase()}. The bridge shook!`, "bad"); nextFall = clock; }
         else setSay(`That's ${b.textContent.toUpperCase()}. Listen again!`, "bad");
-        speak(w, 0.8, true);
+        speak(w, 0.8, true, "prompt");
       }
     }
 
@@ -1813,7 +1849,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .lm-btn{appearance:none;border:0;cursor:pointer;flex:1;min-height:48px;font-family:var(--display,"Pixelify Sans",monospace);font-weight:700;font-size:17px;color:#2a1405;background:#ffb627;box-shadow:inset -4px -4px 0 rgba(0,0,0,.25),inset 4px 4px 0 rgba(255,255,255,.35);touch-action:manipulation}
 .lm-btn.alt{background:#4b3a57;color:#fff3e4;flex:0 0 auto;padding:0 16px}
 .lm-btn.go{background:#62d26f;color:#0e2a12}
-.lm-over{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:rgba(14,8,16,.74);padding:16px;overflow:auto;-webkit-user-select:text;user-select:text}
+.lm-over{position:fixed;inset:0;z-index:2;display:grid;background:rgba(14,8,16,.74);padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:text;user-select:text}
 .lm-card{width:100%;max-width:400px;box-sizing:border-box;background:#251b2c;border:4px solid #3b2c45;box-shadow:0 0 0 4px #120b15,0 18px 40px rgba(0,0,0,.5);padding:20px;display:flex;flex-direction:column;gap:12px}
 .lm-card h2{margin:0;font-family:var(--display,"Pixelify Sans",monospace);font-size:30px;line-height:1.05;color:#ffb627}
 .lm-card p{margin:0;font-size:18px;line-height:1.4}
@@ -2084,9 +2120,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     function speak(slow) {
       const c = S.q; if (!c) return;
       const r = slow ? 0.5 : 0.85;
-      say(c.w, r, true);
-      if (c.sentence) say(c.sentence, slow ? 0.7 : 0.95);
-      say(c.w, r);
+      say(c.w, r, true, "prompt");
+      if (c.sentence) say(c.sentence, slow ? 0.7 : 0.95, false, "prompt");
+      say(c.w, r, false, "prompt");
     }
 
     function nextChunk() {
@@ -2134,7 +2170,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         charge(c.t.length, clean);
         opts.onChunk && opts.onChunk(c.key, true);
         tiles(true);
-        say(c.t.split("").join(", ") + "!", 0.9, true);
+        say(c.t.split("").join(", ") + "!", 0.9, true, "now");
         setSay(`${c.t.toUpperCase()}! Take that!  +${earn}`, "good");
         sfx.throw();
         S.bolt = { t: 0, dur: reduce ? 250 : 520 };
@@ -2177,7 +2213,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       const bonus = 2 + Math.round(S.pow * 2); S.gems += bonus;
       banner(`${name}!<small>+${bonus} diamonds</small>`, true);
       setSay(`Power move: ${name}!`, "good");
-      say(`${name}!`, 1, true);
+      say(`${name}!`, 1, true, "now");
       sfx.special();
       S.fx = { kind: "mini", t: 0, dur: reduce ? 500 : 1500 };
       later(() => {
@@ -2186,7 +2222,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         sfx.angry(); S.shake = reduce ? 0 : 900; S.flash = 0.6; hud();
         const t = TT[n] || `${BN} gets stronger!`;
         banner(`${BN}: ${ph.label || "Phase " + n}!<small>${t}</small>`);
-        setSay(t, "bad"); say(t, 1, true);
+        setSay(t, "bad"); say(t, 1, true, "now");
         opts.onPhase && opts.onPhase(n);
         later(ask, 2400);
       }, reduce ? 700 : 1700);
@@ -2199,10 +2235,10 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       setSay(`Your power is supercharged! Tap it!`, "good");
       banner(`SUPERCHARGED!`, true);
       sfx.superReady();
-      say(`Your power is supercharged! Tap ${SP.super}!`, 1, true);
+      say(`Your power is supercharged! Tap ${SP.super}!`, 1, true, "now");
       R.row.hidden = true;
       // tap only: no auto-fire. Just a reminder now and then if he waits.
-      const nudge = () => { if (S.phase !== "super" || S.done) return; say(`Tap ${SP.super}!`, 1, true); S.superTimer = later(nudge, 10000); };
+      const nudge = () => { if (S.phase !== "super" || S.done) return; say(`Tap ${SP.super}!`, 1, true, "now"); S.superTimer = later(nudge, 10000); };
       S.superTimer = later(nudge, 10000);
     }
     function fireSuper() {
@@ -2211,7 +2247,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       S.phase = "blast"; R.super.hidden = true;
       const bonus = 4 + (S.misses === 0 ? 4 : 0); S.gems += bonus;
       banner(`${SP.super}!<small>+${bonus} diamonds${S.misses === 0 ? " (perfect!)" : ""}</small>`, true);
-      say(`${SP.super}!`, 0.95, true);
+      say(`${SP.super}!`, 0.95, true, "now");
       sfx.blast(); S.shake = reduce ? 0 : 1600;
       S.fx = { kind: "super", t: 0, dur: reduce ? 700 : 2200 };
     }
@@ -2253,14 +2289,15 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       S.phase = "hurt"; S.hearts--; S.hurt = 1; sfx.roar(); hud();
       if (S.hearts <= 0) { lose(); return; }
       setSay(`${NAME} splashed you! Lost a heart.`, "bad");
-      say("Splash! Keep going!", 1, true);
+      say("Splash! Keep going!", 1, true, "now");
       S.target = 0.45;
       later(() => { S.phase = "ask"; setSay(ASK); }, 1300);
     }
 
     /* ---------- boss projectile ---------- */
     // Rough time the word (and sentence) take to say, so the clock starts after he has heard it.
-    function talkMs(c, slow) { const k = slow ? 1.7 : 1; return k * (2 * (500 + c.w.length * 60) + (c.sentence ? c.sentence.length * 70 : 0)); }
+    // Plus whatever line is still finishing first (the host's queue lets sentences end).
+    function talkMs(c, slow) { const k = slow ? 1.7 : 1; return (say.left ? say.left() : 0) + k * (2 * (500 + c.w.length * 60) + (c.sentence ? c.sentence.length * 70 : 0)); }
     function windup() { return (atkOpt.windup || D.windup) / (S.attackSpeed || 1); }   // S.attackSpeed: hook for boss phases
     function fireHit(c, timedOut) {
       if (S.done) return;
@@ -2277,7 +2314,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         opts.onHurt && opts.onHurt(c.key);
         if (S.hearts <= 0) { lose(); return; }
         setSay(timedOut ? `Too slow! The ${SHOT} hit you. Lost a heart.` : `The ${SHOT} hit you! Lost a heart.`, "bad");
-        say(timedOut ? "Ouch! Pick faster next time!" : "Ouch! Try again!", 1, true);
+        say(timedOut ? "Ouch! Pick faster next time!" : "Ouch! Try again!", 1, true, "now");
       }
       later(() => { if (S.phase === "ask" && S.q === c && !S.done) { ATK.arm(windup(), 900 + (timedOut ? talkMs(c, false) : 0)); if (timedOut) speak(false); } }, 1200);
     }
@@ -2306,13 +2343,13 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     }
     function win() {
       finish(true); S.dead = 0.001; sfx.win(); burst(false, true);
-      setSay(`You beat ${NAME}!`, "good"); say(`You beat ${NAME}! Amazing spelling!`, 0.95, true);
+      setSay(`You beat ${NAME}!`, "good"); say(`You beat ${NAME}! Amazing spelling!`, 0.95, true, "now");
       const byKey = k => chunks.find(c => c.key === k);
       later(() => showCard(`${NAME} is defeated!`, `+${S.result.gems} diamonds!`, S.result.beaten.map(byKey), S.result.shaky.map(byKey)), 2000);
     }
     function lose() {
       finish(false); sfx.roar();
-      setSay(`${NAME} got away!`, "bad"); say(`${NAME} got away. Practice and come back!`, 0.95, true);
+      setSay(`${NAME} got away!`, "bad"); say(`${NAME} got away. Practice and come back!`, 0.95, true, "now");
       later(() => showCard(`${NAME} got away!`, `You hit it ${S.hits} times. +${S.result.gems} diamonds. Practice these and come back!`, [], chunks.filter(c => S.stats[c.key].wrong > 0)), 1600);
     }
     function close() {
@@ -2594,18 +2631,33 @@ const CLIPS = (() => {
   return { plan, decode, forget };
 })();
 
-const SPEECH = { q: [], busy: false, gen: 0, nodes: [], timer: 0 };
-function speechCancel(){
-  SPEECH.gen++; SPEECH.q = []; SPEECH.busy = false; clearTimeout(SPEECH.timer);
-  SPEECH.nodes.forEach(n => { try { n.stop(); } catch(e){} }); SPEECH.nodes = [];
+/* One queue for every spoken line, in the main game and in every mode.
+   say(text, rate, cancel, tag)
+     cancel false: wait in line.
+     cancel true:  drop anything still waiting. The line playing now finishes
+                   its sentence, unless it is a word prompt or a tap echo
+                   (tag "prompt" / "tap"); those are cut, since something newer matters more.
+     tag "prompt": the word being asked (word, sentence, word). "tap": echo of a button tap.
+     tag "now":    a line tied to something on screen right now (boss hit, phase
+                   banner, super blast, win/lose). It cuts whatever is playing, so
+                   the voice never trails behind the animation.
+   speechCancel() hard-stops everything (leaving a screen).
+   say.left() = ms until the current must-finish line ends, so timers can wait for it. */
+const SPEECH = { q: [], busy: false, gen: 0, nodes: [], timer: 0, cur: null, endAt: 0 };
+const speechEst = (text, rate) => (450 + String(text).length * 70) / Math.max(0.4, rate || 0.9);
+function speechStop(){
+  SPEECH.gen++; SPEECH.busy = false; SPEECH.cur = null; SPEECH.endAt = 0; clearTimeout(SPEECH.timer);
+  SPEECH.nodes.forEach(n => { try { n.onended = null; n.stop(); } catch(e){} }); SPEECH.nodes = [];
   if (hasTTS) try { speechSynthesis.cancel(); } catch(e){}
 }
+function speechCancel(){ SPEECH.q = []; speechStop(); }
 function speechNext(){
   if (SPEECH.busy) return;
   const job = SPEECH.q.shift(); if (!job) return;
-  SPEECH.busy = true;
+  SPEECH.busy = true; SPEECH.cur = job;
+  SPEECH.endAt = performance.now() + speechEst(job.text, job.rate) + 300;
   const gen = SPEECH.gen;
-  const done = () => { if (gen !== SPEECH.gen) return; clearTimeout(SPEECH.timer); SPEECH.busy = false; SPEECH.nodes = []; speechNext(); };
+  const done = () => { if (gen !== SPEECH.gen) return; clearTimeout(SPEECH.timer); SPEECH.busy = false; SPEECH.cur = null; SPEECH.endAt = 0; SPEECH.nodes = []; speechNext(); };
   const ctx = window.LLAudio && LLAudio._ctx && LLAudio._ctx();
   const parts = ctx && ctx.state === "running" ? CLIPS.plan(job.text, job.rate) : null;
   const fallback = () => {
@@ -2616,7 +2668,9 @@ function speechNext(){
       if (voice) u.voice = voice;
       u.lang = "en-US"; u.rate = job.rate;
       u.onend = u.onerror = done;
-      SPEECH.timer = setTimeout(done, 1500 + job.text.length * 120 / Math.max(0.4, job.rate));
+      const ms = 1500 + job.text.length * 120 / Math.max(0.4, job.rate);
+      SPEECH.endAt = performance.now() + speechEst(job.text, job.rate);
+      SPEECH.timer = setTimeout(done, ms);
       speechSynthesis.speak(u);
     } catch(e){ done(); }
   };
@@ -2632,21 +2686,26 @@ function speechNext(){
       if (i === bufs.length - 1) src.onended = done;   // audio time, so a paused app doesn't skip ahead
       t += b.duration + (i < bufs.length - 1 ? parts[i + 1].gap : 0);
     });
+    SPEECH.endAt = performance.now() + (t - ctx.currentTime) * 1000;
   }, fallback);
 }
-function say(text, rate, cancel){
+function say(text, rate, cancel, tag){
   if (!canSpeak) return;
-  if (cancel) speechCancel();
-  SPEECH.q.push({ text: String(text), rate: rate || 0.9 });
+  if (cancel){
+    SPEECH.q = [];
+    if (SPEECH.busy && SPEECH.cur && (SPEECH.cur.cut || tag === "now")) speechStop();
+  }
+  SPEECH.q.push({ text: String(text), rate: rate || 0.9, cut: tag === "prompt" || tag === "tap" });
   speechNext();
 }
+say.left = () => SPEECH.busy && SPEECH.cur && !SPEECH.cur.cut ? Math.max(0, SPEECH.endAt - performance.now()) : 0;
 function speakWord(slow){
   if (!canSpeak){ setSay("Sound isn't working here. Ask a grown-up to read the word.", "bad"); return; }
   const it = current(); if (!it) return;
   const r = slow ? 0.5 : 0.85;
-  say(it.w, r, true);
-  if (it.s) say(it.s, slow ? 0.7 : 0.95);
-  say(it.w, r);
+  say(it.w, r, true, "prompt");
+  if (it.s) say(it.s, slow ? 0.7 : 0.95, false, "prompt");
+  say(it.w, r, false, "prompt");
 }
 
 /* ---------- saved progress: diamonds, potions, skins, tricky parts ---------- */
@@ -2871,7 +2930,7 @@ function tapLetter(b){
   if (b.ch === want){
     G.phase = "jumping";
     clearChoices(b);
-    say(b.ch, 0.9, true); LLAudio.sfx("jump");
+    say(b.ch, 0.9, true, "tap"); LLAudio.sfx("jump");
     jumpTo(b, () => {
       LLAudio.sfx("land");
       G.pos++; G.letterMisses = 0;
@@ -3084,7 +3143,7 @@ function renderShop(){
     b.setAttribute("aria-selected", String(k === shopTab));
     b.appendChild(k === "potion" ? thumb("potion", "health") : thumb(k, TAB_ICON[k]));
     b.appendChild(document.createTextNode(label));
-    b.addEventListener("click", () => { shopTab = k; say(label, 1, true); renderShop(); $("shopGrid").scrollTop = 0; });
+    b.addEventListener("click", () => { shopTab = k; say(label, 1, true, "tap"); renderShop(); $("shopGrid").scrollTop = 0; });
     tabs.appendChild(b);
   }
   // items
@@ -3108,7 +3167,7 @@ function renderShop(){
     if (shopSel[shopTab] === id) b.classList.add("sel");
     const shown = mystery(shopTab, id) ? "Mystery pet" : it.name;
     b.setAttribute("aria-label", `${shown}. ${st.textContent}`);
-    b.addEventListener("click", () => { shopSel[shopTab] = id; say(shown, 1, true); renderShop(); });
+    b.addEventListener("click", () => { shopSel[shopTab] = id; say(shown, 1, true, "tap"); renderShop(); });
     grid.appendChild(b);
   }
   const note = document.createElement("p"); note.className = "note";
@@ -3157,6 +3216,12 @@ function closeShop(){ $("shopCard").hidden = true; pvStop(); $(shopReturn).hidde
 $("shopDone").addEventListener("click", closeShop);
 $("startShopBtn").addEventListener("click", () => openShop("startCard"));
 $("winShopBtn").addEventListener("click", () => openShop("winCard"));
+(() => { // fade the bottom of the round summary while there is more to scroll to
+  const body = document.querySelector("#winCard .win-body"); if (!body) return;
+  const upd = () => body.classList.toggle("more", body.scrollHeight - body.clientHeight - body.scrollTop > 4);
+  body.addEventListener("scroll", upd, { passive: true });
+  if (window.ResizeObserver){ const ro = new ResizeObserver(upd); ro.observe(body); [...body.children].forEach(c => ro.observe(c)); }
+})();
 
 /* live preview: the hero hops between two blocks over the lava, wearing what's selected */
 let pv = null;
@@ -3246,7 +3311,7 @@ $("startBtn").addEventListener("click", () => start());
 $("againBtn").addEventListener("click", () => start());
 $("restartBtn").addEventListener("click", () => start());
 function toMainMenu(){
-  G.run++; cancelChunkModes(); LLAudio.setScene("main");
+  G.run++; cancelChunkModes(); speechCancel(); LLAudio.setScene("main");
   $("winCard").hidden = true; $("menuCard").hidden = true;
   G.phase = "start"; G.order = []; G.idx = 0;
   resetWorld(); renderTiles(); setSay("Tap the block with the first letter."); updateHud();
@@ -4108,7 +4173,7 @@ window.LLStreak = (() => {
       b.setAttribute("aria-label", `World ${i + 1}, ${wname(w)}, ${w.stars} stars`);
       b.appendChild(islandCanvas(t, { flag: w.cleared }));
       b.insertAdjacentHTML("beforeend", `<b>${wname(w)}</b><small>${weekLabel(w.added)}</small>${starsHtml(w.stars)}`);
-      b.addEventListener("click", () => { sel = w.id; say(wname(w), 0.95, true); renderMap(); });
+      b.addEventListener("click", () => { sel = w.id; say(wname(w), 0.95, true, "tap"); renderMap(); });
       track.appendChild(b);
       if (w.id === M.cur){
         const h = document.createElement("canvas"); h.className = "mhero"; h.width = 16; h.height = 22;
@@ -4819,10 +4884,10 @@ window.LavaEvents = (() => {
     const $ = s => root.querySelector(s);
     const starts = (() => { const s = new Set(); let i = 0; W.chunks.forEach(c => { s.add(i); i += c.length; }); return s; })();
     const chunkHTML = (c, ci) => { const s = W.chunks.slice(0, ci).join("").length; return [...c].map((ch, k) => W.tricky.includes(s + k) ? `<span class="t">${ch}</span>` : ch).join(""); };
-    const hearWord = () => { say(W.word, .75, true); if (W.sentence) later(() => say(W.sentence, .9, false), 50); };
+    const hearWord = () => { say(W.word, .75, true, "prompt"); if (W.sentence) say(W.sentence, .9, false, "prompt"); };
     const chunkOfPos = p => { let s = 0; for (let i = 0; i < W.chunks.length; i++) { s += W.chunks[i].length; if (p < s) return i; } return W.chunks.length - 1; };
 
-    function close(res) { if (closed) return; closed = true; timers.forEach(clearTimeout); try { speechSynthesis.cancel(); } catch (e) {} root.remove(); onDone && onDone(res); }
+    function close(res) { if (closed) return; closed = true; timers.forEach(clearTimeout); try { o.hush ? o.hush() : speechSynthesis.cancel(); } catch (e) {} root.remove(); onDone && onDone(res); }
     function shell(body, foot) {
       root.innerHTML = `<div class="ww-app">
         <div class="ww-top"><button class="ww-chip ww-x" id="wwX" aria-label="Leave the workshop">✕</button><div class="ww-ttl">Word Workshop</div><button class="ww-chip ww-x" id="wwHearTop" aria-label="Hear the word">🔊</button></div>
@@ -4846,12 +4911,12 @@ window.LavaEvents = (() => {
           <button class="ww-hear" id="wwHear">🔊 Hear the word</button></div>`,
         `<div class="ww-row"><button class="ww-btn alt" id="wwSpell">Spell it to me</button>${all ? `<button class="ww-btn go" id="wwNext">Build it! ▶</button>` : ""}</div>`);
       root.querySelectorAll(".ww-chunk").forEach(b => b.onclick = () => {
-        const i = +b.dataset.i, first = !heard.has(i); heard.add(i); say(W.sayParts[i], .7, true); sfx("ok");
+        const i = +b.dataset.i, first = !heard.has(i); heard.add(i); say(W.sayParts[i], .7, true, "tap"); sfx("ok");
         if (heard.size === W.chunks.length && first) { talk(`Now YOU say it out loud: <b>${W.word}</b>!<br>${W.tips[0]}`, "happy"); later(() => say("Now you say it! " + W.word, .85, true), 700); }
         else if (first) talk(`<b>${W.chunks[i]}</b>! ${heard.size < W.chunks.length ? "Tap the next block." : ""}`, "happy");
         hear();
       });
-      $("#wwSpell").onclick = () => say([...W.word].join(", "), .7, true);
+      $("#wwSpell").onclick = () => say([...W.word].join(", "), .7, true, "prompt");
       const n = $("#wwNext"); if (n) n.onclick = () => { sfx("step"); party(n, 30); later(build0, 250); };
     }
 
@@ -4871,7 +4936,7 @@ window.LavaEvents = (() => {
       root.querySelectorAll(".ww-chunk[data-i]").forEach(b => b.onclick = () => {
         const p = pool[+b.dataset.i];
         if (p.ok !== undefined && !p.used && p.c === W.chunks[built]) {
-          p.used = true; say(W.sayParts[built], .75, true); sfx("ok"); built++;
+          p.used = true; say(W.sayParts[built], .75, true, "tap"); sfx("ok"); built++;
           if (built === W.chunks.length) { talk(`You built <b>${W.word}</b>! ${pick(YAY)}`, "happy"); later(() => say(W.word, .8, true), 500); sfx("step"); build(); party($(".ww-card"), 40); return; }
           talk(pick(YAY) + " What comes next?", "happy"); build();
         } else {
@@ -5067,7 +5132,7 @@ window.LavaEvents = (() => {
       if (!go){ e.skip = 1; save(); show(); return; }
       LLAudio.setScene("quiet");
       WordWorkshop.start({
-        word: w, sentence: e.s, tricky: trickyIdx(w), say,
+        word: w, sentence: e.s, tricky: trickyIdx(w), say, hush: speechCancel,
         sfx: n => LLAudio.sfx({ ok: "land", step: "coin", nope: "hurt", win: "win" }[n] || "coin"),
         reward: s => 5 + (s === 3 ? 5 : 0),
       }, r => {
