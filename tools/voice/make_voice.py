@@ -83,6 +83,7 @@ def read_bosses(src):
     looks = dict(re.findall(r'^\s*(\w+):\s*\{ shape:.*?word: "([^"]+)"', src, re.M))
     s_mini = re.search(r'const SPECIAL = \{ mini: \[([^\]]*)\], super: "([^"]+)"', src)
     t_def = re.search(r'const TAUNTS = \{ 2: "((?:[^"\\]|\\.)*)", 3: "((?:[^"\\]|\\.)*)" \}', src)
+    l_def = re.search(r'const LINES = \{(.*?)\};', src)
     out = []
     for line in re.findall(r'^\s*\{ id: ".*?(?=^\s*\{ id: "|^\s*\];)', src, re.M | re.S):
         g = lambda pat: re.search(pat, line, re.S)
@@ -93,6 +94,8 @@ def read_bosses(src):
         tm = g(r'taunts: \{ 2: "((?:[^"\\]|\\.)*)", 3: "((?:[^"\\]|\\.)*)" \}') or t_def
         b["taunts"] = [js_str(re.match(r"(.*)", tm.group(i))) for i in (1, 2)]
         sp = g(r'special: \{ mini: \[([^\]]*)\], super: "([^"]+)"') or s_mini
+        lm = g(r'lines: \{(.*?)\},\n') or l_def
+        b["lines"] = [json.loads(x) for x in re.findall(r'\w+: ("(?:[^"\\]|\\.)*")', lm.group(1))]
         b["mini"] = re.findall(r'"([^"]+)"', sp.group(1)); b["super"] = sp.group(2)
         out.append(b)
     return out
@@ -100,7 +103,7 @@ def read_bosses(src):
 def boss_narration(b):
     """Narrator (Heart) lines that have the boss's name, shot or special in them."""
     n, shot = b["name"], b["shot"]
-    lines = [f"You beat {n}! Amazing spelling!", f"{n} got away. Practice and come back!",
+    lines = [f"You beat {n}! Now you can tame your own in the shop!",
              f"Your power is supercharged! Tap {b['super']}!", f"{b['super']}!"] + [f"{m}!" for m in b["mini"]]
     if b["id"] == "sizzle":
         lines += [f"Lava monster! Pick the right tricky part to block the {shot} and hit {n}.",
@@ -134,7 +137,7 @@ def main():
         for seg in boss_narration(b):
             add(norm(seg), seg.strip(), "phrase")
         v = BOSS_VOICES.get(b["id"], BOSS_VOICES["sizzle"])
-        for t in b["taunts"] + [f"{b['name']} gets stronger!"]:
+        for t in b["taunts"] + b["lines"] + [f"{b['name']} gets stronger!"]:
             for seg in segments(t):
                 add(f"boss:{b['id']}:{norm(seg)}", seg.strip(), "phrase", v)
 
