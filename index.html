@@ -3969,6 +3969,43 @@ window.LLStreak = (() => {
   let M = null; try { M = JSON.parse(store.get(MAP_KEY) || "null"); } catch(e){}
   if (!M || !Array.isArray(M.worlds)) M = { worlds: [], cur: 0, next: 1 };
   const persist = () => store.set(MAP_KEY, JSON.stringify(M));
+  /* ---------- test days: each world has the date of its real spelling test ----------
+     Next world opens when he beats the one before it OR that world's test day is over. */
+  const isoOf = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const dayOf = iso => new Date(iso + "T12:00:00");
+  const addDays = (iso, n) => { const d = dayOf(iso); d.setDate(d.getDate() + n); return isoOf(d); };
+  const validIso = v => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(dayOf(v));
+  const nextWed = () => { const d = new Date(); d.setDate(d.getDate() + ((3 - d.getDay() + 7) % 7)); return isoOf(d); };  // today if it's Wednesday
+  function defaultTest(){
+    const last = M.worlds[M.worlds.length - 1], nw = nextWed();
+    if (!last || !validIso(last.test)) return nw;
+    const after = addDays(last.test, 7);
+    return after > nw ? after : nw;
+  }
+  // migrate: worlds saved before test days existed. Newest = next Wednesday, older ones a week apart.
+  (function(){
+    let changed = false;
+    for (let i = M.worlds.length - 1; i >= 0; i--){
+      const w = M.worlds[i]; if (validIso(w.test)) continue;
+      const nx = M.worlds[i + 1];
+      w.test = nx && validIso(nx.test) ? addDays(nx.test, -7) : nextWed(); changed = true;
+    }
+    if (changed) store.set(MAP_KEY, JSON.stringify(M));
+  })();
+  const passed = w => validIso(w.test) && w.test < today();
+  function unlocked(i){
+    for (let j = 1; j <= i; j++){ const p = M.worlds[j - 1]; if (!p || !(p.cleared || passed(p))) return false; }
+    return i >= 0 && i < M.worlds.length;
+  }
+  const isOpen = w => unlocked(M.worlds.indexOf(w));
+  const openCount = () => { let n = 0; while (n < M.worlds.length && unlocked(n)) n++; return n; };
+  const niceDay = (iso, opts) => validIso(iso) ? dayOf(iso).toLocaleDateString("en-US", opts || { weekday: "long", month: "short", day: "numeric" }) : "";
+  // the list for his NEXT real test (earliest test day today or later); falls back to the current world
+  function testWorld(){
+    const t = today(); let best = null;
+    M.worlds.forEach(w => { if (validIso(w.test) && w.test >= t && (!best || w.test < best.test)) best = w; });
+    return best;
+  }
   const byId = id => M.worlds.find(w => w.id === id);
   const idx = w => M.worlds.indexOf(w);
   const theme = w => THEMES[idx(w) % THEMES.length];
@@ -3980,15 +4017,22 @@ window.LLStreak = (() => {
     return "Week of " + d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
   function addWorld(lines){
-    const w = { id: M.next++, lines: lines.slice(), added: today(), stars: 0, best: 0, plays: 0, cleared: false };
+    const w = { id: M.next++, lines: lines.slice(), added: today(), test: defaultTest(), stars: 0, best: 0, plays: 0, cleared: false };
     M.worlds.push(w); M.cur = w.id; persist(); return w;
   }
   // make sure the list the game is using has a world (first run, or words changed elsewhere)
   function sync(){
     const lines = linesOf(wordList), s = sigOf(lines);
     const hit = M.worlds.find(w => sigOf(w.lines) === s);
-    if (hit){ if (M.cur !== hit.id){ M.cur = hit.id; persist(); } return null; }
-    return addWorld(lines);
+    if (hit){ if (M.cur !== hit.id){ M.cur = hit.id; persist(); } ensureOpen(); return null; }
+    const w = addWorld(lines); ensureOpen(); return w;
+  }
+  // the world he plays must be open: if not, go back to the newest open world
+  function ensureOpen(){
+    const w = curWorld(); if (!w || isOpen(w)) return false;
+    const n = openCount(), back = M.worlds[Math.max(0, n - 1)];
+    if (back && back !== w) selectWorld(back);
+    return true;
   }
   function overlap(a, b){
     const A = new Set(parseList(a).map(x => x.w)), B = parseList(b).map(x => x.w);
@@ -4024,6 +4068,14 @@ window.LLStreak = (() => {
 .mstars{font-size:15px;letter-spacing:1px;color:#5a4a5e;text-shadow:1px 1px 0 #000;line-height:1}
 .mstars i{font-style:normal}.mstars i.on{color:var(--glow)}
 .mnode.lock .isl{filter:grayscale(1) brightness(.45)}
+.mnode .lk{font-size:12px;font-weight:700;color:#ffd166;background:rgba(14,8,16,.85);padding:1px 6px;text-shadow:1px 1px 0 #000}
+.mlock{font-size:16px;line-height:1.35;color:var(--ink)}
+.mlock b{color:var(--glow)}
+#testDays{margin-top:6px;display:flex;flex-direction:column;gap:6px}
+#testDays h3{margin:4px 0 0;font-size:18px}
+#testDays label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px}
+#testDays label span{flex:1;min-width:0}
+#testDays input[type=date]{font:inherit;font-size:16px;background:#140d18;color:var(--ink);border:3px solid var(--deck-edge);padding:4px 6px;border-radius:0;min-width:150px}
 .mhero{position:absolute;width:48px;height:66px;margin-left:-24px;pointer-events:none;image-rendering:pixelated;animation:mbob 1.1s ease-in-out infinite}
 @keyframes mbob{50%{transform:translateY(-5px)}}
 @media (prefers-reduced-motion: reduce){.mhero{animation:none}}
@@ -4121,22 +4173,41 @@ window.LLStreak = (() => {
   let mapFrom = "startCard", sel = null;
   function openMap(from, toast){
     if (sync()) toast = toast || "new";
+    const nOpen = openCount();
+    if (!toast && M.open != null && nOpen > M.open) toast = "opened";
+    if (M.open !== nOpen){ M.open = nOpen; persist(); }
     mapFrom = from; $(from).hidden = true;
     sel = M.cur;
     card.hidden = false;
-    renderMap();
-    const w = curWorld();
+    const w = curWorld(), newest = M.worlds[M.worlds.length - 1];
+    if (toast === "new" && newest && !isOpen(newest)) toast = `New world spotted!<br>${wname(newest)} 🔒`;
+    if (toast === "opened"){ const o = M.worlds[nOpen - 1]; toast = o ? `World open!<br>${wname(o)}` : null; if (o) sel = o.id; }
     if (toast && w){
       const t = document.createElement("div"); t.className = "mtoast";
       t.innerHTML = toast === "new" ? `New world!<br>${wname(w)}` : toast;
       $("mapScroll").parentNode.appendChild(t); setTimeout(() => t.remove(), 2700);
-      say(toast === "new" ? "New world unlocked! " + wname(w) : String(toast).replace(/<[^>]+>/g, " "), 0.95, true);
+      say(toast === "new" ? "New world unlocked! " + wname(w) : String(toast).replace(/<[^>]+>/g, " ").replace("🔒", ""), 0.95, true);
       LLAudio.sfx && LLAudio.sfx("win");
     }
+    renderMap();
   }
   function closeMap(){ card.hidden = true; $(mapFrom).hidden = false; renderStartLine(); }
   $("mapDone").addEventListener("click", closeMap);
 
+  function testLabel(w){
+    if (!validIso(w.test)) return weekLabel(w.added);
+    if (w.test === today()) return "Test is today!";
+    return (passed(w) ? "Test was " : "Test: ") + niceDay(w.test, { weekday: "short", month: "short", day: "numeric" });
+  }
+  // kid-friendly: why is world i locked?
+  function lockHint(i, spoken){
+    const p = M.worlds[i - 1]; if (!p) return "";
+    if (!unlocked(i - 1)) return `Open World ${i} first!`;
+    const when = validIso(p.test) ? niceDay(addDays(p.test, 1)) : "";
+    return spoken
+      ? `Locked! Beat ${wname(p)} to open it${when ? ", or it opens by itself on " + when : ""}.`
+      : `Beat <b>${wname(p)}</b> to open it!${when ? `<br>Or it opens by itself on <b>${when}</b>.` : ""}`;
+  }
   function renderMap(){
     const track = $("mapTrack"), n = M.worlds.length, rows = n + 1, H = rows * ROW;
     track.innerHTML = ""; track.style.height = H + "px";
@@ -4168,12 +4239,15 @@ window.LLStreak = (() => {
     // islands
     M.worlds.forEach((w, i) => {
       const p = pos(i), t = theme(w), b = document.createElement("button");
-      b.type = "button"; b.className = "mnode" + (w.id === sel ? " sel" : "");
+      const open = unlocked(i);
+      b.type = "button"; b.className = "mnode" + (w.id === sel ? " sel" : "") + (open ? "" : " lock");
       b.style.left = p.x + "%"; b.style.top = (p.y - 52) + "px";
-      b.setAttribute("aria-label", `World ${i + 1}, ${wname(w)}, ${w.stars} stars`);
+      b.setAttribute("aria-label", open ? `World ${i + 1}, ${wname(w)}, ${w.stars} stars` : `World ${i + 1}, ${wname(w)}, locked. ${lockHint(i, true)}`);
       b.appendChild(islandCanvas(t, { flag: w.cleared }));
-      b.insertAdjacentHTML("beforeend", `<b>${wname(w)}</b><small>${weekLabel(w.added)}</small>${starsHtml(w.stars)}`);
-      b.addEventListener("click", () => { sel = w.id; say(wname(w), 0.95, true, "tap"); renderMap(); });
+      b.insertAdjacentHTML("beforeend", open
+        ? `<b>${wname(w)}</b><small>${testLabel(w)}</small>${starsHtml(w.stars)}`
+        : `<b>🔒 ${wname(w)}</b><span class="lk">Beat World ${i}!</span>`);
+      b.addEventListener("click", () => { sel = w.id; say(open ? wname(w) : lockHint(i, true), 0.95, true, open ? "tap" : undefined); renderMap(); });
       track.appendChild(b);
       if (w.id === M.cur){
         const h = document.createElement("canvas"); h.className = "mhero"; h.width = 16; h.height = 22;
@@ -4204,9 +4278,17 @@ window.LLStreak = (() => {
       return;
     }
     const w = byId(sel) || curWorld(); if (!w) { s.innerHTML = ""; return; }
-    const words = parseList(w.lines);
+    const words = parseList(w.lines), i = idx(w);
+    if (!unlocked(i)){
+      const prev = M.worlds[Math.max(0, openCount() - 1)];
+      s.innerHTML = `<h3>🔒 ${wname(w)}</h3>
+        <div class="mlock">${lockHint(i)}</div>
+        ${prev ? `<button class="btn go" type="button" id="mapPlay">Play ${wname(prev)}</button>` : ""}`;
+      if (prev) $("mapPlay").addEventListener("click", () => { selectWorld(prev); card.hidden = true; $("startCard").hidden = true; start(); });
+      return;
+    }
     s.innerHTML = `<h3>${wname(w)}</h3>
-      <div class="meta">${weekLabel(w.added)} · ${words.length} words ${starsHtml(w.stars)}${w.cleared ? " · Cleared!" : ""}</div>
+      <div class="meta">${testLabel(w)} · ${words.length} words ${starsHtml(w.stars)}${w.cleared ? " · Cleared!" : ""}</div>
       <div class="mwords">${words.map(x => `<span>${x.w}</span>`).join("")}</div>
       <button class="btn go" type="button" id="mapPlay">${w.cleared ? "Play again" : "Play this world"}</button>`;
     $("mapPlay").addEventListener("click", () => {
@@ -4221,10 +4303,10 @@ window.LLStreak = (() => {
     if (!$("editCard").hidden) return; // original handler refused (empty list)
     const lines = linesOf(wordList), s = sigOf(lines), wasNew = addingNew; addingNew = false;
     const hit = M.worlds.find(w => sigOf(w.lines) === s);
-    if (hit){ M.cur = hit.id; persist(); renderStartLine(); return; }
+    if (hit){ M.cur = hit.id; persist(); ensureOpen(); renderStartLine(); return; }
     const prev = curWorld();
-    if (prev && !wasNew && overlap(prev.lines, lines) >= 0.5){ prev.lines = lines; persist(); renderStartLine(); return; }
-    addWorld(lines); renderStartLine();
+    if (prev && !wasNew && overlap(prev.lines, lines) >= 0.5){ prev.lines = lines; persist(); renderTestDays(); renderStartLine(); return; }
+    addWorld(lines); ensureOpen(); renderTestDays(); renderStartLine();
     openMap("startCard", "new");
   });
 
@@ -4236,6 +4318,7 @@ window.LLStreak = (() => {
     try {
       sync();
       const w = curWorld(); if (!w) return;
+      const openBefore = openCount();
       const base = G.order.filter(x => !x.again).length || 1, perf = Math.min(G.perfect, base), r = perf / base;
       const stars = 1 + (r >= 0.75 ? 1 : 0) + (r >= 1 && diff !== "easy" ? 1 : 0);
       let bonus = 0; const firstClear = !w.cleared;
@@ -4245,16 +4328,51 @@ window.LLStreak = (() => {
       persist();
       if (bonus){ SAVE.gems += bonus; save(); updateHud(); }
       const tip = w.stars < 2 ? "Get 3 of 4 words perfect for ★★." : w.stars < 3 ? "All perfect on Medium or Hard for ★★★." : "All 3 stars!";
-      winInfo.innerHTML = `${starsHtml(stars)}<br>${firstClear ? `<b>${wname(w)} cleared!</b> Flag planted.` : wname(w)}${bonus ? ` +${bonus} bonus diamonds.` : ""}<br><span class="small">${tip}</span>`;
+      const opened = openCount() > openBefore ? M.worlds[openCount() - 1] : null;
+      winInfo.innerHTML = `${starsHtml(stars)}<br>${firstClear ? `<b>${wname(w)} cleared!</b> Flag planted.` : wname(w)}${bonus ? ` +${bonus} bonus diamonds.` : ""}${opened ? `<br><b>🔓 ${wname(opened)} is open!</b>` : ""}<br><span class="small">${tip}</span>`;
+      if (opened){ M.open = openCount(); persist(); setTimeout(() => say(wname(opened) + " is open!", 0.95, false), firstClear ? 4200 : 2600); }
       winInfo.hidden = false;
       if (firstClear) setTimeout(() => say(wname(w) + " cleared!", 0.95, false), 2600);
     } catch(e){}
   };
 
-  sync(); renderStartLine();
+  /* ---------- Grown-ups word editor: test day for each world ---------- */
+  const td = document.createElement("div"); td.id = "testDays";
+  $("wordBox").insertAdjacentElement("afterend", td);
+  function renderTestDays(){
+    td.innerHTML = `<h3>Test days</h3><p class="small" style="margin:0">The next world opens when he beats the one before it, or the day after that world's test. A brand new list gets the Wednesday after the last one.</p>`;
+    M.worlds.slice().reverse().forEach(w => {
+      const i = idx(w), l = document.createElement("label");
+      l.innerHTML = `<span>World ${i + 1}: ${wname(w)}${w.id === M.cur ? " (now)" : ""}${unlocked(i) ? "" : " 🔒"}</span>`;
+      const inp = document.createElement("input"); inp.type = "date"; inp.value = validIso(w.test) ? w.test : "";
+      inp.setAttribute("aria-label", `Test day for World ${i + 1}`);
+      inp.addEventListener("change", () => {
+        if (!validIso(inp.value)) { inp.value = w.test || ""; return; }
+        w.test = inp.value; persist();
+        if (ensureOpen()) $("wordBox").value = linesOf(wordList).join("\n");
+        renderTestDays(); renderStartLine();
+      });
+      l.appendChild(inp); td.appendChild(l);
+    });
+  }
+  const baseOpenEditor = openEditor;
+  openEditor = function(){ sync(); baseOpenEditor.apply(this, arguments); renderTestDays(); };
+
+  sync();
+  // a world opened since last time (his test day passed) and the one he's on is done: move him to the newest open world
+  (function(){
+    const n = openCount(), w = curWorld();
+    if (M.open != null && n > M.open && w && passed(w) && idx(w) < n - 1) selectWorld(M.worlds[n - 1]);
+  })();
+  if (M.open == null){ M.open = openCount(); persist(); }
+  renderStartLine();
+  // Test Day / countdown: date + words of his NEXT real test (not always the world he's playing)
+  window.LLTestDate = () => { const w = testWorld(); return w ? w.test : null; };
   window.LavaMap = { open: openMap, worlds: () => M.worlds,
+    unlocked: i => unlocked(i), testWorld: () => testWorld(),
+    testWords: () => { const w = testWorld(); return w ? parseList(w.lines) : wordList.slice(); },
     themeIndex: () => { const w = curWorld(); return w ? idx(w) % THEMES.length : 0; },          // picks the world boss
-    opened: i => i === 0 || M.worlds.some((w, j) => j % THEMES.length === i) };                   // boss pets: "???" until reached
+    opened: i => i === 0 || M.worlds.some((w, j) => j % THEMES.length === i && unlocked(j)) };                   // boss pets: "???" until reached
 })();
 </script>
 
