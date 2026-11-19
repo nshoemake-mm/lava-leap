@@ -2635,7 +2635,7 @@ const isLetter = ch => /[a-z]/.test(ch);
 
 function newGame(bossWords){
   G.boss = !!bossWords;
-  G.order = shuffle(bossWords || wordList); G.idx = 0; G.perfect = 0; G.roundGems = 0; G.beaten = []; G.wordNo = 0;
+  G.order = shuffle(bossWords || wordList.concat(window.LLFocus ? LLFocus.extraWords(wordList) : [])); G.idx = 0; if (window.LLFocus) LLFocus.roundStart(); G.perfect = 0; G.roundGems = 0; G.beaten = []; G.wordNo = 0;
   G.used = { health: 0, shield: 0, glow: 0 }; G.shield = false;
   SAVE.session++; save();
   resetWorld();
@@ -2643,7 +2643,7 @@ function newGame(bossWords){
 }
 function startWord(first, retry){
   G.pos = 0; G.hearts = HEARTS; G.misses = 0; G.letterMisses = 0;
-  if (!retry){ G.dirty = false; G.missChunks = new Set(); G.glowChunks = new Set(); G.wordNo++; }
+  if (!retry){ G.dirty = false; G.helped = false; G.missChunks = new Set(); G.glowChunks = new Set(); G.wordNo++; }
   skipNonLetters();
   G.phase = "play";
   updateHud(); renderTiles();
@@ -2693,7 +2693,7 @@ function startSurgeWord(it){
       onMiss: (t, pos) => { G.dirty = true; G.misses++; markMiss(it.w, pos); } }, r => {
       LLAudio.setScene("main");
       if (r.gems){ SAVE.gems += r.gems; G.roundGems += r.gems; save(); }
-      if (!r.ok) G.dirty = true;
+      if (!r.ok){ G.dirty = true; G.helped = true; }
       G.pos = it.w.length; renderTiles();
       wordDone();
     });
@@ -2805,7 +2805,7 @@ function tapLetter(b){
     G.hearts--; LLAudio.sfx("hurt");
     updateHud(); renderTiles();
     if (G.hearts <= 0){ lavaGotYou(); return; }
-    if (G.letterMisses >= 2){ setSay("The glowing block is the right one.", "bad"); hintBlock(); }
+    if (G.letterMisses >= 2){ G.helped = true; setSay("The glowing block is the right one.", "bad"); hintBlock(); }
     else setSay(`Oops! That's ${b.ch.toUpperCase()}.${part}`, "bad");
     speakWord(false);
   }
@@ -2818,6 +2818,7 @@ function wordDone(){
   const clean = !G.dirty;
   const earn = (clean ? 2 : 1) * (G.boss ? 2 : 1);
   SAVE.gems += earn; G.roundGems += earn; LLAudio.sfx("word");
+  if (window.LLFocus) LLFocus.wordDone(it, clean);
   if (clean) G.perfect++;
 
   // spaced repetition: a clean chunk counts once per round
@@ -2865,6 +2866,7 @@ function wordDone(){
 
 function lavaGotYou(){
   const it = current();
+  G.helped = true;
   G.phase = "between";
   updatePotions();
   clearChoices(null);
@@ -2896,7 +2898,7 @@ function win(){
   updateHud();
   say(G.perfect === n ? "Perfect! You crossed the lava!" : (G.boss ? "Boss Chunk done!" : "You crossed the lava!"), 0.95, true);
   if (window.LLStreak) LLStreak.roundDone();
-  setTimeout(() => { $("winCard").hidden = false; }, 1400);
+  setTimeout(() => { const show = () => { $("winCard").hidden = false; }; if (!(window.LLFocus && LLFocus.afterRound(show))) show(); }, 1400);
 }
 
 /* ---------- potions ---------- */
@@ -2945,7 +2947,7 @@ function usePotion(p){
   if (p === "glow"){
     const it = current(), c = chunkAt(it.w, G.pos);
     if (c) G.glowChunks.add(spotKey(it.w, c));
-    G.dirty = true; hintBlock(); setSay("The glowing block is the right one.", "good");
+    G.dirty = true; G.helped = true; hintBlock(); setSay("The glowing block is the right one.", "good");
   }
   updateHud();
 }
@@ -4464,6 +4466,539 @@ window.LavaEvents = (() => {
   };
   const bb = document.getElementById("bossBtn");
   bb && bb.addEventListener("click", () => { const l = document.getElementById("winCombo"); if (l) l.hidden = true; });
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   Word Workshop: a calm, slow "focus mode" for one word he keeps missing.
+   Steps: Hear it -> Build it -> Hide it (2 fades) -> Solo (from memory) -> stars.
+   Self-contained: own CSS (ww- prefix), own overlay, no save keys.
+
+   WordWorkshop.plan(word, trickyIdx?)  -> { word, chunks, sayParts, tricky, tips, decoys }
+   WordWorkshop.start({
+       word, sentence,          // required word; sentence optional
+       tricky: [idx...],        // optional: letter indexes he actually missed
+       say(text, rate, cancel), // optional: host speech (defaults to speechSynthesis)
+       sfx(name),               // optional: host sound ("ok","step","nope","win")
+       reward(stars) -> n,      // optional: diamonds shown on the finish screen
+     }, onDone({ stars, slips, peeks, quit }))
+   WordWorkshop.prompt({ word, misses, canSkip }, onChoice(go:boolean))
+   ========================================================================== */
+(function (global) {
+  "use strict";
+  if (global.WordWorkshop) return;
+
+  /* ---------- chunking (syllable-ish pieces) ---------- */
+  const SUF = ["ness", "less", "ment", "tion", "sion", "ful", "ing", "ly"];
+  const TEAMS = ["ough", "augh", "eigh", "igh", "tch", "dge", "ai", "ay", "ee", "ea", "oa", "oe", "ou", "ow", "oo", "oi", "oy", "au", "aw", "ew", "ie", "ei", "ue", "ui", "ch", "sh", "th", "wh", "ph", "ck", "ng", "qu", "kn", "wr", "gh", "ar", "ir", "or", "ur", "er"];
+  const CONS = new Set(["tch", "dge", "ch", "sh", "th", "wh", "ph", "ck", "ng", "qu", "kn", "wr", "gh"]);
+  const isV = c => "aeiou".includes(c);
+
+  function units(s) {
+    const out = []; let i = 0;
+    while (i < s.length) {
+      let m = TEAMS.find(t => s.startsWith(t, i)) || s[i];
+      out.push({ t: m, s: i }); i += m.length;
+    }
+    return out;
+  }
+  function syllables(stem) {
+    const u = units(stem);
+    const nuc = [];
+    u.forEach((x, k) => {
+      let v = !CONS.has(x.t) && ([...x.t].some(isV) || (x.t === "y" && k > 0));
+      // silent final e (grate, care) is not a beat of its own
+      if (v && x.t === "e" && k === u.length - 1 && k > 0 && nuc.length) v = false;
+      if (v) nuc.push(k);
+    });
+    if (nuc.length < 2) return [stem];
+    const cuts = [];
+    for (let n = 0; n < nuc.length - 1; n++) {
+      const a = nuc[n], b = nuc[n + 1], k = b - a - 1;
+      if (k === 0) continue;
+      const cutUnit = k === 1 ? a + 1 : a + 2;     // V-CV  or  VC-CV
+      cuts.push(u[cutUnit].s);
+    }
+    const parts = []; let p = 0;
+    cuts.forEach(c => { if (c > p) { parts.push(stem.slice(p, c)); p = c; } });
+    parts.push(stem.slice(p));
+    return parts;
+  }
+  function chunkUp(word) {
+    let stem = word, tail = null;
+    for (const s of SUF) if (word.length >= s.length + 3 && word.endsWith(s)) { stem = word.slice(0, -s.length); tail = s; break; }
+    const parts = /^[a-z]+$/.test(stem) ? syllables(stem) : [stem];
+    if (tail) parts.push(tail);
+    return parts;
+  }
+
+  const SAY = { ful: "full", less: "less", ness: "ness", ment: "ment", tion: "shun", sion: "zhun", ing: "ing", ly: "lee",
+    de: "dee", re: "ree", be: "bee", pre: "pree", suc: "suck", cess: "sess", ti: "tih", a: "uh" };
+  const OPEN = { a: "ah", e: "ee", i: "ih", o: "oh", u: "oo", y: "ee" };
+  function sayPart(c) {
+    if (SAY[c]) return SAY[c];
+    if (c.length <= 3 && isV(c[c.length - 1]) && !isV(c[c.length - 2] || "")) return c.slice(0, -1) + OPEN[c[c.length - 1]];
+    return c;
+  }
+
+  function autoTricky(word, chunks) {
+    const t = new Set();
+    for (const tm of ["igh", "gh", "ough", "augh", "au", "ou", "ea", "ai", "oa", "ie", "ei", "ue", "ew", "ow"]) {
+      let i = word.indexOf(tm); while (i >= 0) { for (let k = 0; k < tm.length; k++) t.add(i + k); i = word.indexOf(tm, i + 1); }
+    }
+    for (let i = 0; i < word.length - 1; i++) if (word[i] === word[i + 1]) { t.add(i); t.add(i + 1); }
+    const last = chunks[chunks.length - 1];
+    if (last === "ful") t.add(word.length - 1);
+    return [...t].sort((a, b) => a - b);
+  }
+
+  function tipsFor(word, chunks, tricky) {
+    const tips = [], has = i => tricky.includes(i);
+    const g = word.search(/e?igh/) >= 0 ? word.indexOf("gh", word.search(/e?igh/)) : -1;   // only igh/eigh: silent gh (not tough, laugh)
+    if (g >= 0 && (has(g) || has(g + 1))) tips.push(`See the <em>g h</em>? It's silent. You see it, but you don't hear it!`);
+    for (let i = 0; i < word.length - 1; i++) if (word[i] === word[i + 1] && (has(i) || has(i + 1)) && !(/(less|ness)$/.test(word) && i >= word.length - 2)) { tips.push(`Twin letters! It has <em>${word[i]}${word[i]}</em>.`); break; }
+    const last = chunks[chunks.length - 1];
+    if (last === "ful" && tricky.some(i => i >= word.length - 3)) tips.push(`The end is <em>ful</em>, with only ONE <em>l</em>!`);
+    if ((last === "less" || last === "ness") && tricky.some(i => i >= word.length - 4)) tips.push(`<em>${last}</em> ends with TWO <em>s</em>'s!`);
+    const team = ["ou", "ea", "ai", "oa", "ie", "ei", "oy", "oi", "ow", "aw", "ew"].find(tm => { const i = word.indexOf(tm); return i >= 0 && has(i); });
+    if (team && tips.length < 2) tips.push(`<em>${team[0]}</em> and <em>${team[1]}</em> team up to make one sound.`);
+    const stem = chunks.slice(0, last && SUF.includes(last) ? -1 : undefined).join("");
+    if (/[^aeiou]e$/.test(stem) && has(stem.length - 1) && tips.length < 2) tips.push(`There's a sneaky silent <em>e</em> after <em>${stem.slice(-2, -1)}</em>!`);
+    if (!tips.length) tips.push(`The orange letters are the sneaky ones. Look closely!`);
+    return tips.slice(0, 2);
+  }
+
+  function decoysFor(chunks, tricky) {
+    const out = [], real = new Set(chunks);
+    const add = (c, why) => { if (c && !real.has(c) && !out.some(d => d.c === c) && out.length < 2) out.push({ c, why }); };
+    let pos = 0;
+    const order = chunks.map((c, i) => { const s = pos; pos += c.length; return { c, s, hot: tricky.some(t => t >= s && t < s + c.length) }; })
+      .sort((a, b) => b.hot - a.hot);
+    for (const { c } of order) {
+      if (c.includes("igh")) add(c.replace(/ight?/, m => m.length === 4 ? "ite" : "i"), `Sounds right, but this word uses <em>${c}</em> with a silent g h.`);
+      if (c === "ful") add("full", `Trap! At the end of a word, <em>ful</em> has just one <em>l</em>.`);
+      if (c === "less" || c === "ness") add(c.slice(0, -1), `Trap! <em>${c}</em> needs two <em>s</em>'s.`);
+      const dbl = c.match(/(.)\1/); if (dbl) add(c.replace(dbl[0], dbl[1]), `Trap! <em>${c}</em> has twin letters.`);
+      if (/^c[ei]/.test(c)) add("s" + c.slice(1), `Sounds the same! But this piece starts with <em>c</em>.`);
+      if (/[^aeiou]a[^aeiour]e$/.test(c)) add(c.replace(/a([^aeiour])e$/, "ea$1"), `Sounds the same! But this word uses <em>${c}</em>.`);
+      const swaps = { ou: "ow", ow: "ou", ea: "ee", ee: "ea", ai: "ay", ay: "ai", oy: "oi", oi: "oy" };
+      for (const k in swaps) if (c.includes(k)) add(c.replace(k, swaps[k]), `Close! This word uses <em>${k}</em>.`);
+    }
+    return out;
+  }
+
+  function plan(word, tricky) {
+    word = String(word).toLowerCase().trim();
+    const chunks = chunkUp(word);
+    const t = (tricky && tricky.length ? tricky : autoTricky(word, chunks)).filter(i => i >= 0 && i < word.length);
+    return { word, chunks, sayParts: chunks.map(sayPart), tricky: t, tips: tipsFor(word, chunks, t), decoys: decoysFor(chunks, t) };
+  }
+
+  /* ---------- styles ---------- */
+  const CSS = `
+.ww{position:fixed;inset:0;z-index:70;background:#121826;color:#eef3ff;font-family:var(--body,"Andika","Trebuchet MS",system-ui,sans-serif);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;
+  --ww-edge:#2f3b56;--ww-deck:#1b2335;--ww-muted:#9fb0cc;--ww-calm:#6fd3e8;--ww-warm:#ffb627;--ww-tricky:#ff8a5c;--ww-ok:#62d26f;--ww-disp:var(--display,"Pixelify Sans",ui-monospace,monospace)}
+.ww *{box-sizing:border-box}
+.ww :where(button){font:inherit;color:inherit}
+.ww button:focus-visible{outline:3px solid var(--ww-calm);outline-offset:2px}
+.ww-app{height:100%;display:flex;flex-direction:column;gap:10px;max-width:440px;margin:0 auto;padding-top:calc(10px + env(safe-area-inset-top,0px));padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:radial-gradient(120% 60% at 50% 110%,rgba(111,211,232,.12),transparent 60%)}
+.ww-top{display:flex;align-items:center;gap:8px}
+.ww-chip{font-family:var(--ww-disp);font-weight:700;font-size:15px;background:rgba(10,14,24,.8);border:2px solid var(--ww-edge);padding:5px 10px;display:flex;gap:6px;align-items:center;min-height:36px}
+.ww-x{appearance:none;cursor:pointer}
+.ww-ttl{flex:1;text-align:center;font-family:var(--ww-disp);font-weight:700;font-size:21px;color:var(--ww-calm);text-shadow:2px 2px 0 #0a3a48}
+.ww-gem{color:#bff0ff}
+.ww-track{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.ww-track div{font-family:var(--ww-disp);font-size:13px;text-align:center;color:var(--ww-muted);padding:4px 0;border-bottom:5px solid var(--ww-edge)}
+.ww-track div.on{color:#eef3ff;border-color:var(--ww-calm)}
+.ww-track div.done{color:var(--ww-ok);border-color:var(--ww-ok)}
+.ww-guide{display:flex;align-items:flex-end;gap:10px;min-height:86px}
+.ww-peb{flex:0 0 58px;height:54px;position:relative;background:#8f8aa0;box-shadow:inset -6px -6px 0 #66617a,inset 6px 6px 0 #b9b4c8,0 5px 0 #3d394a;animation:ww-idle 2.6s ease-in-out infinite}
+.ww-peb::before,.ww-peb::after{content:"";position:absolute;top:17px;width:9px;height:12px;background:#1a1525;box-shadow:inset 3px 3px 0 #fff}
+.ww-peb::before{left:14px}.ww-peb::after{right:14px}
+.ww-peb i{position:absolute;left:21px;bottom:10px;width:16px;height:5px;background:#1a1525}
+.ww-peb.happy{animation:ww-hop .5s ease-out 2}
+.ww-peb.happy i{height:7px;border-radius:0 0 8px 8px}
+.ww-peb.oops{animation:ww-wob .4s}
+.ww-peb.oops i{width:8px;left:25px;height:8px;border-radius:50%}
+.ww-peb.think::before,.ww-peb.think::after{height:5px;top:21px}
+@keyframes ww-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes ww-hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-16px) rotate(-6deg)}}
+@keyframes ww-wob{0%,100%{transform:rotate(0)}25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+.ww-bub{flex:1;position:relative;background:#eef3ff;color:#16203a;padding:10px 12px;font-size:18px;line-height:1.3;font-weight:700;box-shadow:inset -3px -3px 0 #c5d0e8;text-wrap:balance}
+.ww-bub::before{content:"";position:absolute;left:-10px;bottom:14px;border:5px solid transparent;border-right:10px solid #eef3ff;border-left:0}
+.ww-bub b{color:#0b7d96}
+.ww-bub em{font-style:normal;color:#d6501c}
+.ww-card{background:var(--ww-deck);border:3px solid var(--ww-edge);padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:inset -4px -4px 0 rgba(0,0,0,.25)}
+.ww-lab{font-family:var(--ww-disp);font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--ww-muted)}
+.ww-hear{appearance:none;border:2px solid var(--ww-edge);background:#10182a;cursor:pointer;font-family:var(--ww-disp);font-weight:700;font-size:16px;padding:8px 14px;display:flex;gap:8px;align-items:center;min-height:44px;touch-action:manipulation}
+.ww-chunks{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;min-height:60px;align-items:center}
+.ww-chunk{appearance:none;border:0;cursor:pointer;font-weight:700;font-size:32px;padding:8px 12px;min-width:58px;color:#10202a;background:#9fdcec;box-shadow:inset -4px -4px 0 #5fa9bd,inset 4px 4px 0 #d2f2fa,0 6px 0 #2f6070;touch-action:manipulation;transition:transform .12s}
+.ww-chunk:active{transform:translateY(4px)}
+.ww-chunk.heard{background:#c9f5d0;box-shadow:inset -4px -4px 0 #7fc58a,inset 4px 4px 0 #ebffee,0 6px 0 #3d6e45}
+.ww-chunk .t{color:#c2410c}
+.ww-chunk.empty{background:transparent;box-shadow:none;border:3px dashed var(--ww-edge);color:var(--ww-muted)}
+.ww-chunk.wait{animation:ww-nudge 1.4s ease-in-out infinite}
+.ww-chunk.nope{animation:ww-shake .35s}
+@keyframes ww-nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes ww-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.ww-slots{display:flex;justify-content:center;gap:3px;width:100%;position:relative}
+.ww-slot{flex:0 1 32px;min-width:0;height:46px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:25px;background:#0e1422;border:2px solid var(--ww-edge);border-bottom-width:4px}
+.ww-slot.gap{margin-left:7px}
+.ww-slot.ghost{color:rgba(238,243,255,.3)}
+.ww-slot.hole{border-color:var(--ww-tricky);border-style:dashed}
+.ww-slot.cur{border-color:var(--ww-calm);box-shadow:0 0 0 2px rgba(111,211,232,.4)}
+.ww-slot.fill{background:#173225;border-color:var(--ww-ok)}
+.ww-slot.fill.t{background:#3a2216;border-color:var(--ww-tricky)}
+.ww-slot.pop{animation:ww-pop .25s ease-out}
+@keyframes ww-pop{0%{transform:scale(1.4)}100%{transform:scale(1)}}
+.ww-lid{position:absolute;inset:-5px;background:repeating-linear-gradient(45deg,#24304a 0 10px,#1e2840 10px 20px);border:2px solid var(--ww-edge);display:flex;align-items:center;justify-content:center;font-family:var(--ww-disp);font-weight:700;font-size:20px;color:var(--ww-muted)}
+.ww-lid.show{background:#0e1422;color:#eef3ff;font-family:inherit;font-size:32px;letter-spacing:.04em}
+.ww-blocks{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 14px;padding:4px 10px 0}
+.ww-blk{appearance:none;border:0;cursor:pointer;height:66px;font-weight:700;font-size:34px;color:#1f1726;background:#9a94a6;box-shadow:inset -5px -5px 0 #6d677a,inset 5px 5px 0 #bdb7c9,0 6px 0 #4f4a5c;touch-action:manipulation;transition:transform .12s}
+.ww-blk:active{transform:translateY(4px)}
+.ww-blk.nope{animation:ww-shake .35s;opacity:.45}
+.ww-blk.glow{background:#bff0ff;box-shadow:inset -5px -5px 0 #74c3d8,inset 5px 5px 0 #eafbff,0 6px 0 #2f6070,0 0 20px rgba(111,211,232,.9)}
+.ww-sp{flex:1}
+.ww-row{display:flex;gap:10px}
+.ww-btn{appearance:none;border:0;cursor:pointer;flex:1;font-family:var(--ww-disp);font-weight:700;font-size:18px;color:#2a1405;background:var(--ww-warm);padding:10px 14px;min-height:54px;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset -4px -4px 0 rgba(0,0,0,.25),inset 4px 4px 0 rgba(255,255,255,.35);touch-action:manipulation}
+.ww-btn.alt{background:#26314a;color:#eef3ff}
+.ww-btn.go{animation:ww-nudge 1.4s ease-in-out infinite}
+.ww-stars{font-size:46px;letter-spacing:8px;text-align:center;font-family:var(--ww-disp);color:var(--ww-warm);text-shadow:3px 3px 0 #a3300c}
+.ww-stars span{display:inline-block;animation:ww-pop .4s ease-out backwards}
+.ww-stars .off{color:#3a4560;text-shadow:none}
+.ww-big{margin:0;font-family:var(--ww-disp);font-weight:700;font-size:30px;line-height:1.05;color:var(--ww-calm);text-align:center;text-wrap:balance}
+.ww-word{font-weight:700;font-size:36px;text-align:center}
+.ww-word .t{color:var(--ww-tricky)}
+.ww-word .dot{color:var(--ww-muted)}
+.ww-prize{font-family:var(--ww-disp);font-weight:700;font-size:22px;color:#bff0ff;text-align:center}
+.ww-fx{position:absolute;inset:0;pointer-events:none;width:100%;height:100%}
+@media (prefers-reduced-motion: reduce){.ww *{animation:none!important;transition:none!important}}
+`;
+  let styled = false;
+  function addStyle() { if (styled) return; styled = true; const s = document.createElement("style"); s.textContent = CSS; document.head.appendChild(s); }
+
+  /* ---------- sound + speech ---------- */
+  let ac = null;
+  function tone(f, d, type, vol) {
+    try { ac = ac || new (global.AudioContext || global.webkitAudioContext)(); if (ac.state === "suspended") ac.resume();
+      const o = ac.createOscillator(), g = ac.createGain(); o.type = type || "triangle"; o.frequency.value = f;
+      g.gain.setValueAtTime(vol || .08, ac.currentTime); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d);
+      o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + d); } catch (e) {}
+  }
+  const OWN_SFX = {
+    ok() { tone(660, .14); setTimeout(() => tone(990, .16), 70); },
+    step() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, .16), i * 80)); },
+    nope() { tone(180, .16, "sine", .07); },
+    win() { [523, 659, 784, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => tone(f, .22), i * 110)); },
+  };
+  let voice = null;
+  function pickVoice() { try { const vs = speechSynthesis.getVoices(); voice = vs.find(v => /^en[-_]US/i.test(v.lang) && /Samantha|Google US|Ava|Allison|Nicky/i.test(v.name)) || vs.find(v => /^en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null; } catch (e) {} }
+  if ("speechSynthesis" in global) { pickVoice(); try { speechSynthesis.addEventListener("voiceschanged", pickVoice); } catch (e) {} }
+  function ownSay(text, rate, cancel) { try { if (cancel !== false) speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); if (voice) u.voice = voice; u.lang = "en-US"; u.rate = rate || .85; speechSynthesis.speak(u); } catch (e) {} }
+
+  /* ---------- confetti (blocky) ---------- */
+  function burst(root, x, y, n) {
+    const cv = root.querySelector(".ww-fx"); if (!cv || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const r = root.getBoundingClientRect(); cv.width = r.width; cv.height = r.height;
+    const ctx = cv.getContext("2d"), cols = ["#6fd3e8", "#ffb627", "#62d26f", "#ff8a5c", "#bff0ff", "#eef3ff"];
+    const ps = Array.from({ length: n || 40 }, () => ({ x, y, vx: (Math.random() - .5) * 9, vy: -Math.random() * 10 - 3, s: 5 + Math.random() * 6, c: cols[Math.random() * cols.length | 0] }));
+    let t = 0;
+    (function f() { ctx.clearRect(0, 0, cv.width, cv.height); ps.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .45; ctx.fillStyle = p.c; ctx.fillRect(p.x | 0, p.y | 0, p.s, p.s); }); if (++t < 70) requestAnimationFrame(f); else ctx.clearRect(0, 0, cv.width, cv.height); })();
+  }
+
+  /* ---------- copy ---------- */
+  const STEPS = ["Hear it", "Build it", "Hide it", "Solo"];
+  const YAY = ["Yes!", "Nice!", "You got it!", "Boom!", "Awesome!", "Great job!"];
+  const OOPS = ["Oops! Try another one.", "Not that one. Try again!", "Almost! Look again."];
+  const pick = a => a[Math.random() * a.length | 0];
+
+  /* ---------- the workshop ---------- */
+  function start(o, onDone) {
+    addStyle();
+    const P = plan(o.word, o.tricky);
+    const say = o.say || ownSay;
+    const sfx = n => { try { o.sfx ? o.sfx(n) : OWN_SFX[n](); } catch (e) {} };
+    const W = Object.assign(P, { sentence: o.sentence || "" });
+    const root = document.createElement("div"); root.className = "ww"; root.setAttribute("role", "dialog"); root.setAttribute("aria-label", "Word Workshop");
+    document.body.appendChild(root);
+    let step = 0, mode = "", pos = 0, misses = 0, slips = 0, peeks = 0, heard = new Set(), built = 0, pool = [], opts = [], timers = [], closed = false, mood = "", bubble = "";
+    const later = (f, ms) => { const id = setTimeout(() => { if (!closed) f(); }, ms); timers.push(id); };
+    const $ = s => root.querySelector(s);
+    const starts = (() => { const s = new Set(); let i = 0; W.chunks.forEach(c => { s.add(i); i += c.length; }); return s; })();
+    const chunkHTML = (c, ci) => { const s = W.chunks.slice(0, ci).join("").length; return [...c].map((ch, k) => W.tricky.includes(s + k) ? `<span class="t">${ch}</span>` : ch).join(""); };
+    const hearWord = () => { say(W.word, .75, true); if (W.sentence) later(() => say(W.sentence, .9, false), 50); };
+    const chunkOfPos = p => { let s = 0; for (let i = 0; i < W.chunks.length; i++) { s += W.chunks[i].length; if (p < s) return i; } return W.chunks.length - 1; };
+
+    function close(res) { if (closed) return; closed = true; timers.forEach(clearTimeout); try { speechSynthesis.cancel(); } catch (e) {} root.remove(); onDone && onDone(res); }
+    function shell(body, foot) {
+      root.innerHTML = `<div class="ww-app">
+        <div class="ww-top"><button class="ww-chip ww-x" id="wwX" aria-label="Leave the workshop">✕</button><div class="ww-ttl">Word Workshop</div><button class="ww-chip ww-x" id="wwHearTop" aria-label="Hear the word">🔊</button></div>
+        <div class="ww-track">${STEPS.map((s, i) => `<div class="${i < step ? "done" : i === step ? "on" : ""}">${i < step ? "✓ " : ""}${s}</div>`).join("")}</div>
+        <div class="ww-guide"><div class="ww-peb ${mood}" aria-hidden="true"><i></i></div><div class="ww-bub" aria-live="polite">${bubble}</div></div>
+        ${body}<div class="ww-sp"></div>${foot || ""}</div><canvas class="ww-fx"></canvas>`;
+      $("#wwX").onclick = () => close({ quit: true, stars: 0, slips, peeks });
+      $("#wwHearTop").onclick = hearWord;
+      const h = $("#wwHear"); if (h) h.onclick = hearWord;
+      mood = "";
+    }
+    function talk(html, m, speak) { bubble = html; mood = m || ""; if (speak) say(speak, .9, true); }
+    function party(el, n) { const r = root.getBoundingClientRect(), b = el ? el.getBoundingClientRect() : { left: r.width / 2, top: r.height / 2, width: 0, height: 0 }; burst(root, b.left - r.left + b.width / 2, b.top - r.top + b.height / 2, n); }
+
+    /* 1. Hear it */
+    function hear() {
+      const all = heard.size === W.chunks.length;
+      const nextUp = W.chunks.findIndex((_, i) => !heard.has(i));
+      shell(`<div class="ww-card">
+          <div class="ww-chunks">${W.chunks.map((c, i) => `<button class="ww-chunk ${heard.has(i) ? "heard" : ""} ${i === nextUp ? "wait" : ""}" data-i="${i}">${chunkHTML(c, i)}</button>`).join("")}</div>
+          <button class="ww-hear" id="wwHear">🔊 Hear the word</button></div>`,
+        `<div class="ww-row"><button class="ww-btn alt" id="wwSpell">Spell it to me</button>${all ? `<button class="ww-btn go" id="wwNext">Build it! ▶</button>` : ""}</div>`);
+      root.querySelectorAll(".ww-chunk").forEach(b => b.onclick = () => {
+        const i = +b.dataset.i, first = !heard.has(i); heard.add(i); say(W.sayParts[i], .7, true); sfx("ok");
+        if (heard.size === W.chunks.length && first) { talk(`Now YOU say it out loud: <b>${W.word}</b>!<br>${W.tips[0]}`, "happy"); later(() => say("Now you say it! " + W.word, .85, true), 700); }
+        else if (first) talk(`<b>${W.chunks[i]}</b>! ${heard.size < W.chunks.length ? "Tap the next block." : ""}`, "happy");
+        hear();
+      });
+      $("#wwSpell").onclick = () => say([...W.word].join(", "), .7, true);
+      const n = $("#wwNext"); if (n) n.onclick = () => { sfx("step"); party(n, 30); later(build0, 250); };
+    }
+
+    /* 2. Build it */
+    function build0() {
+      step = 1; built = 0;
+      pool = [...W.chunks.map((c, i) => ({ c, ok: i })), ...W.decoys.map(d => ({ c: d.c, why: d.why }))].sort(() => Math.random() - .5);
+      talk(`Build the word! Tap the blocks in order. Watch out for <em>traps</em>!`, "", "Build the word. Watch out for traps!"); build();
+    }
+    function build() {
+      const done = built === W.chunks.length;
+      shell(`<div class="ww-card">
+          <div class="ww-chunks">${W.chunks.slice(0, built).map((c, i) => `<span class="ww-chunk heard">${chunkHTML(c, i)}</span>`).join("")}${done ? "" : `<span class="ww-chunk empty">?</span>`}</div>
+          <button class="ww-hear" id="wwHear">🔊 Hear the word</button></div>
+        <div class="ww-chunks">${pool.map((p, i) => p.used ? "" : `<button class="ww-chunk" data-i="${i}">${p.c}</button>`).join("")}</div>`,
+        `<div class="ww-row">${done ? `<button class="ww-btn go" id="wwNext">Hide it! ▶</button>` : ""}</div>`);
+      root.querySelectorAll(".ww-chunk[data-i]").forEach(b => b.onclick = () => {
+        const p = pool[+b.dataset.i];
+        if (p.ok !== undefined && !p.used && p.c === W.chunks[built]) {
+          p.used = true; say(W.sayParts[built], .75, true); sfx("ok"); built++;
+          if (built === W.chunks.length) { talk(`You built <b>${W.word}</b>! ${pick(YAY)}`, "happy"); later(() => say(W.word, .8, true), 500); sfx("step"); build(); party($(".ww-card"), 40); return; }
+          talk(pick(YAY) + " What comes next?", "happy"); build();
+        } else {
+          sfx("nope"); b.classList.add("nope");
+          if (p.why) { talk(`Ha, that's a trap! ${p.why}`, "oops"); later(build, 380); }
+          else { talk(`Not yet! That piece comes later.`, "oops"); later(build, 380); }
+        }
+      });
+      const n = $("#wwNext"); if (n) n.onclick = () => { sfx("step"); fade(0); };
+    }
+
+    /* 3. Hide it (2 passes)  +  4. Solo */
+    function fade(p) {
+      step = 2; mode = p === 0 ? "ghost" : "holes"; pos = 0; misses = 0; newOpts();
+      if (p === 0) talk(`Copy it! Tap the letters to fill the boxes.`, "", "Copy it! Tap the letters.");
+      else talk(`Uh oh, the sneaky letters are <em>hiding</em>! Can you find them?`, "think", "The sneaky letters are hiding. Can you find them?");
+      spell();
+    }
+    function solo() {
+      step = 3; mode = "solo"; pos = 0; misses = 0; slips = 0; peeks = 0; newOpts();
+      talk(`Look at it really hard... I'm going to cover it up!`, "think", `Look at it really hard. I'm going to cover it up.`);
+      spell(true);
+    }
+    function newOpts() {
+      const right = W.word[pos], set = new Set([right]);
+      const near = { a: "eiu", e: "aiy", i: "eyl", o: "au", u: "oa", g: "jq", h: "n", t: "d", l: "i", f: "v", c: "ks", s: "cz", r: "w", d: "bt", b: "dp", y: "ie", n: "m", m: "n" };
+      (near[right] || "").split("").forEach(c => set.size < 6 && set.add(c));
+      const az = "abcdefghiklmnoprstuwy";
+      while (set.size < 6) set.add(az[Math.random() * az.length | 0]);
+      opts = [...set].sort(() => Math.random() - .5);
+    }
+    function slots() {
+      return `<div class="ww-slots">${[...W.word].map((ch, i) => {
+        const t = W.tricky.includes(i); let cls = "ww-slot", txt = "";
+        if (i > 0 && starts.has(i)) cls += " gap";
+        if (i < pos) { cls += " fill" + (t ? " t" : ""); txt = ch; if (i === pos - 1) cls += " pop"; }
+        else { if (i === pos) cls += " cur"; if (mode === "ghost") { cls += " ghost"; txt = ch; } else if (mode === "holes") { if (t) cls += " hole"; else { cls += " ghost"; txt = ch; } } }
+        return `<div class="${cls}">${txt}</div>`;
+      }).join("")}${mode === "solo" && pos < W.word.length ? `<div class="ww-lid" id="wwLid" hidden></div>` : ""}</div>`;
+    }
+    function spell(look) {
+      const done = pos === W.word.length;
+      const lab = mode === "ghost" ? "Hide it · 1 of 2" : mode === "holes" ? "Hide it · 2 of 2" : "Solo · from memory";
+      const nextLabel = mode === "ghost" ? "Hide more! ▶" : mode === "holes" ? "Go solo! ▶" : "See my stars ▶";
+      shell(`<div class="ww-card"><div class="ww-lab">${lab}</div>${slots()}<button class="ww-hear" id="wwHear">🔊 Hear the word</button></div>
+        ${done ? "" : `<div class="ww-blocks">${opts.map((c, i) => `<button class="ww-blk" data-i="${i}" ${look ? "disabled" : ""}>${c}</button>`).join("")}</div>`}`,
+        `<div class="ww-row">${mode === "solo" && !done ? `<button class="ww-btn alt" id="wwPeek">👀 Peek (costs a ★)</button>` : ""}${done ? `<button class="ww-btn go" id="wwNext">${nextLabel}</button>` : ""}</div>`);
+      if (look) {
+        const lid = $("#wwLid"); lid.hidden = false; lid.className = "ww-lid show"; lid.textContent = W.word;
+        let n = 3; const tick = () => { if (n > 0) { talk(`Remember it... <b>${n}</b>`, "think"); spellBubble(); n--; later(tick, 1000); } else { lid.className = "ww-lid"; lid.textContent = "hidden!"; talk(`Now spell it all by yourself!`, "", `Now spell ${W.word}, all by yourself!`); spellBubble(); later(() => spell(), 700); } };
+        later(tick, 900);
+      }
+      root.querySelectorAll(".ww-blk").forEach(b => b.onclick = () => tap(+b.dataset.i, b));
+      const pk = $("#wwPeek"); if (pk) pk.onclick = () => { peeks++; const lid = $("#wwLid"); lid.hidden = false; lid.className = "ww-lid show"; lid.textContent = W.word; talk(`Quick peek! (${peeks} peek${peeks > 1 ? "s" : ""})`, "think"); spellBubble(); later(() => { lid.hidden = true; }, 1500); };
+      const nx = $("#wwNext"); if (nx) nx.onclick = () => { sfx("step"); if (mode === "ghost") fade(1); else if (mode === "holes") solo(); else finish(); };
+    }
+    function spellBubble() { const b = $(".ww-bub"), p = $(".ww-peb"); if (b) b.innerHTML = bubble; if (p) p.className = "ww-peb " + mood; }
+    function tap(i, el) {
+      const right = W.word[pos];
+      if (opts[i] === right) {
+        sfx("ok"); pos++; misses = 0;
+        if (pos === W.word.length) {
+          say(W.word, .8, true);
+          talk(mode === "solo" ? (slips || peeks ? `You did it! <b>${W.word}</b>!` : `WOW! All by yourself! <b>${W.word}</b>!`) : `${pick(YAY)} <b>${W.word}</b>!`, "happy");
+          spell(); party($(".ww-slots"), mode === "solo" ? 70 : 35); if (mode === "solo") sfx("win"); return;
+        }
+        if (mode === "holes" && W.tricky.includes(pos) && !W.tricky.includes(pos - 1)) talk(`Here come the sneaky letters! ${W.tips[0]}`, "think");
+        else talk(pick(YAY), "happy");
+        newOpts(); spell();
+      } else {
+        sfx("nope"); misses++; if (mode === "solo") slips++;
+        el.classList.add("nope"); el.disabled = true;
+        if (misses >= 2) { const k = opts.indexOf(right); const b = root.querySelector(`.ww-blk[data-i="${k}"]`); b && b.classList.add("glow"); talk(`The glowing block is the one!`, "oops"); }
+        else talk(pick(OOPS), "oops");
+        spellBubble();
+        if (mode !== "ghost" && misses === 1) later(() => say(W.sayParts[chunkOfPos(pos)], .7, true), 300);
+      }
+    }
+
+    /* finish */
+    function finish() {
+      step = 4;
+      const stars = slips === 0 && peeks === 0 ? 3 : slips + peeks <= 2 ? 2 : 1;
+      const prize = o.reward ? o.reward(stars) : 0;
+      const word = W.chunks.map((c, i) => chunkHTML(c, i)).join(`<span class="dot">·</span>`);
+      talk(stars === 3 ? `Word caught! Beat it again tomorrow to win its <b>badge</b>!` : `Great practice! Let's catch it for good tomorrow.`, "happy");
+      shell(`<div class="ww-card" style="gap:14px">
+          <p class="ww-big">${stars === 3 ? "WORD CAUGHT!" : stars === 2 ? "SO CLOSE!" : "NICE TRY!"}</p>
+          <div class="ww-stars" aria-label="${stars} of 3 stars">${[0, 1, 2].map(i => `<span class="${i < stars ? "" : "off"}" style="animation-delay:${.2 + i * .25}s">★</span>`).join("")}</div>
+          <div class="ww-word">${word}</div>
+          ${prize ? `<div class="ww-prize">+${prize} 💎</div>` : ""}</div>`,
+        `<div class="ww-row"><button class="ww-btn go" id="wwDone">Back to the lava! ▶</button></div>`);
+      party($(".ww-stars"), 90);
+      later(() => say(stars === 3 ? `Word caught! ${W.word}!` : `Great practice! ${W.word}.`, .9, true), 300);
+      $("#wwDone").onclick = () => close({ stars, slips, peeks, quit: false });
+    }
+
+    talk(`Tap each block to hear it. Start with the bouncing one!`, "", `Let's catch the word ${W.word}. Tap each block to hear it.`);
+    if (W.sentence) later(() => say(W.sentence, .9, false), 60);
+    hear();
+    return { close: () => close({ quit: true, stars: 0, slips, peeks }) };
+  }
+
+  /* the "sneaky word!" invite shown after a round */
+  function prompt(o, onChoice) {
+    addStyle();
+    const say = o.say || ownSay;
+    const root = document.createElement("div"); root.className = "ww"; root.setAttribute("role", "dialog"); root.setAttribute("aria-label", "Sneaky word");
+    root.innerHTML = `<div class="ww-app" style="justify-content:center;gap:18px">
+      <p class="ww-big" style="font-size:34px">Uh oh! A sneaky word!</p>
+      <div class="ww-guide" style="justify-content:center"><div class="ww-peb think" aria-hidden="true"><i></i></div><div class="ww-bub"><b>${o.word}</b> tripped you up ${o.misses || 3} times. Let's catch it together! No lava, no timer.</div></div>
+      <div class="ww-card"><div class="ww-lab">Catch it and win</div><div class="ww-prize">up to +${o.prize || 10} 💎</div></div>
+      <div class="ww-row"><button class="ww-btn go" id="wwGo">Catch it! ▶</button></div>
+      ${o.canSkip ? `<div class="ww-row"><button class="ww-btn alt" id="wwSkip">Later</button></div>` : ""}</div><canvas class="ww-fx"></canvas>`;
+    document.body.appendChild(root);
+    say(`Uh oh! A sneaky word! ${o.word} tripped you up. Let's catch it!`, .9, true);
+    const done = go => { root.remove(); onChoice(go); };
+    root.querySelector("#wwGo").onclick = () => done(true);
+    const sk = root.querySelector("#wwSkip"); if (sk) sk.onclick = () => done(false);
+  }
+
+  global.WordWorkshop = { plan, start, prompt };
+})(window);
+
+</script>
+
+<script>
+/* ==========================================================================
+   Sneaky words (Word Workshop hookup). Nick's rules, 2026-11-19:
+   - A "miss" = he needed help on a word: the glow came on (2 wrong taps on a
+     letter or a Glow potion), he ran out of hearts, or a Lava Surge timed out.
+     Counted once per word per round.
+   - 3 misses spread over at least 2 different days -> the word is "sneaky".
+   - After a normal round (not boss) a "Sneaky word!" card offers the Word
+     Workshop. He can tap Later once; the next time there is no Later.
+   - Max 1 workshop a day. +5 diamonds for finishing, +5 more for 3 stars.
+   - 3 stars -> mastery check the next day: the word comes up in normal play;
+     right on the first try (no wrong taps) = badge + 10 diamonds, word cleared.
+     A miss sets its count to 2, so one more miss brings the workshop back.
+   - Under 3 stars -> workshop again on a later day before the check.
+   - New week: sneaky words not mastered yet carry over as bonus words.
+   Save: new fields SAVE.focus { word: {...} } and SAVE.focusDay (added with
+   defaults; no existing keys touched).
+   ========================================================================== */
+(function(){
+  if (typeof SAVE === "undefined" || !window.WordWorkshop) return;
+  SAVE.focus = SAVE.focus || {};
+  SAVE.focusDay = SAVE.focusDay || "";
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const entry = (w, s) => { const e = SAVE.focus[w] || (SAVE.focus[w] = { miss: 0, days: [], state: "watch", ws: "", skip: 0, stars: 0, sess: -1, s: "" }); if (s) e.s = s; return e; };
+  let caughtThisRound = [];
+
+  function trickyIdx(w){
+    const out = new Set();
+    for (const sp of Object.values(SAVE.spots || {})) if (sp.w === w && sp.miss > 0) for (let i = sp.s; i < sp.e; i++) out.add(i);
+    return [...out].sort((a, b) => a - b);
+  }
+  function wordDone(it, clean){
+    if (!it || G.boss) return;
+    const e = entry(it.w, it.s), t = today();
+    if (e.state === "done") return;
+    // mastery check: first time the word comes up on a later day
+    if (e.state === "check" && e.ws && e.ws < t && !it.again){
+      if (clean){
+        e.state = "done"; e.badge = t; caughtThisRound.push(it.w);
+        SAVE.gems += 10; G.roundGems += 10; save(); updateHud();
+        setTimeout(() => { setSay(`BADGE! You beat ${it.w} for good! +10 diamonds`, "good"); say(`Badge! You beat ${it.w} for good!`, 0.95, true); try { celebrate(true); } catch(err){} }, 300);
+        return;
+      }
+      e.state = "watch"; e.miss = 2; e.skip = 0; e.sess = SAVE.session;   // this failed check is not counted again
+      save(); return;
+    }
+    if (G.helped && e.sess !== SAVE.session){
+      e.sess = SAVE.session; e.miss++;
+      if (!e.days.includes(t)) e.days.push(t);
+      if (e.days.length > 10) e.days = e.days.slice(-10);
+    }
+    if (e.state === "watch" && e.miss >= 3 && e.days.length >= 2) e.state = "ready";
+    save();
+  }
+  function candidate(){
+    const t = today();
+    if (SAVE.focusDay === t) return null;
+    return Object.entries(SAVE.focus)
+      .filter(([, e]) => e.state === "ready" || (e.state === "redo" && e.ws < t))
+      .sort((a, b) => b[1].miss - a[1].miss)[0] || null;
+  }
+  function afterRound(show){
+    if (G.boss) return false;
+    const c = candidate(); if (!c) return false;
+    const [w, e] = c;
+    WordWorkshop.prompt({ word: w, misses: Math.max(3, e.miss), canSkip: !e.skip, prize: 10, say }, go => {
+      if (!go){ e.skip = 1; save(); show(); return; }
+      LLAudio.setScene("quiet");
+      WordWorkshop.start({
+        word: w, sentence: e.s, tricky: trickyIdx(w), say,
+        sfx: n => LLAudio.sfx({ ok: "land", step: "coin", nope: "hurt", win: "win" }[n] || "coin"),
+        reward: s => 5 + (s === 3 ? 5 : 0),
+      }, r => {
+        LLAudio.setScene("main");
+        if (r.quit){ e.skip = 1; save(); show(); return; }
+        const n = 5 + (r.stars === 3 ? 5 : 0);
+        SAVE.focusDay = today(); e.ws = SAVE.focusDay; e.stars = r.stars; e.skip = 0;
+        e.state = r.stars === 3 ? "check" : "redo";
+        SAVE.gems += n; save(); updateHud();
+        show();
+      });
+    });
+    return true;
+  }
+  // sneaky words that aren't on this week's list yet come along as bonus words
+  function extraWords(list){
+    return Object.entries(SAVE.focus)
+      .filter(([w, e]) => (["ready", "redo", "check"].includes(e.state) || (e.state === "watch" && e.ws)) && !list.some(x => x.w === w))
+      .map(([w, e]) => ({ w, s: e.s || "" }));
+  }
+  function roundStart(){ caughtThisRound = []; }
+  window.LLFocus = { wordDone, afterRound, extraWords, roundStart, _today: today };
 })();
 </script>
 
