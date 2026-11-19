@@ -146,6 +146,20 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .it .badge{position:absolute;top:3px;right:6px;font-family:var(--display);font-weight:700;font-size:14px;color:var(--ink)}
 .gm{display:inline-block;width:9px;height:9px;margin:0 4px 0 2px;background:#5ee0d0;box-shadow:inset -2px -2px 0 #2a9d8f;transform:rotate(45deg);flex:none}
 .items .note{grid-column:1/-1;margin:2px 0 0;font-size:14px;line-height:1.35;color:var(--muted);text-align:center}
+/* streak flame */
+.sf-box,.sf-win{display:flex;align-items:center;gap:12px;background:#140d18;border:2px solid var(--deck-edge);padding:10px 12px;min-height:64px}
+.sf-win.prize{border-color:var(--glow);box-shadow:0 0 0 2px rgba(255,182,39,.25), 0 0 18px rgba(255,182,39,.35)}
+.sf-pic{flex:none;width:72px;display:grid;place-items:end center;min-height:56px}
+.sf-svg{display:block;transform-origin:50% 100%;animation:sfFlick 1.1s steps(3) infinite alternate}
+.sf-svg.out{animation:none;opacity:.8}
+.sf-win.grow .sf-svg{animation:sfGrow .9s cubic-bezier(.3,1.6,.5,1) both, sfFlick 1.1s steps(3) .9s infinite alternate}
+.sf-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sf-txt b{font-family:var(--display);font-size:20px;color:var(--glow);line-height:1.1}
+.sf-txt span{font-size:15px;line-height:1.3}
+.sf-txt small{font-size:13px;color:var(--muted);line-height:1.3}
+@keyframes sfFlick{from{transform:scale(1,1)}to{transform:scale(.94,1.07)}}
+@keyframes sfGrow{0%{transform:scale(.3)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion: reduce){.sf-svg,.sf-win.grow .sf-svg{animation:none}}
 </style>
 
 </head>
@@ -178,6 +192,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 <div class="overlay" id="startCard">
   <div class="card">
     <h1>Lava Leap</h1>
+    <div class="sf-box" id="streakBox" role="status"></div>
     <p>The floor is lava! Spell the word by jumping on the right letter blocks.</p>
     <ol>
       <li>Listen to the word.</li>
@@ -223,6 +238,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   <div class="card">
     <h2 id="winTitle">You crossed the lava!</h2>
     <p id="winScore"></p>
+    <div class="sf-win" id="winStreak" hidden></div>
     <div id="winBeat" hidden>
       <p class="small" style="margin-bottom:6px">Tricky parts defeated:</p>
       <div class="practice" id="beatList"></div>
@@ -2368,6 +2384,7 @@ function win(){
   $("bossBtn").hidden = weakChunkList().length === 0;
   updateHud();
   say(G.perfect === n ? "Perfect! You crossed the lava!" : (G.boss ? "Boss Chunk done!" : "You crossed the lava!"), 0.95, true);
+  if (window.LLStreak) LLStreak.roundDone();
   setTimeout(() => { $("winCard").hidden = false; }, 1400);
 }
 
@@ -3085,6 +3102,119 @@ resetWorld();
 sizeCanvas();
 updateHud();
 requestAnimationFrame(frame);
+</script>
+
+<script>
+/* ---------- streak flame ----------
+   Self-contained. Saved on the device under its own key, separate from SAVE.
+   A day counts when he finishes a round. Forgiving: missing ONE day keeps the
+   flame alive; missing two or more starts a new flame (no scolding).
+   Milestone prizes (diamonds) at 3, 7 and 30 days, once per streak.
+   Hook: win() calls LLStreak.roundDone(). */
+window.LLStreak = (() => {
+  const KEY = "lavaleap.streak.v1";
+  const PRIZES = [{ d: 3, gems: 10, name: "3-day flame" }, { d: 7, gems: 30, name: "7-day blue flame" }, { d: 30, gems: 150, name: "30-day legend flame" }];
+  let S = null; try { S = JSON.parse(store.get(KEY) || "null"); } catch(e){}
+  S = Object.assign({ days: 0, last: "", best: 0, claimed: [], total: 0 }, S || {});
+  const persist = () => store.set(KEY, JSON.stringify(S));
+  const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const dayNum = k => { const [y, m, d] = k.split("-").map(Number); return Date.UTC(y, m - 1, d) / 864e5; };
+  const today = () => dayKey(new Date());
+  const gap = () => S.last ? dayNum(today()) - dayNum(S.last) : Infinity;
+  // Streak still alive right now? (played today, yesterday, or the day before)
+  const live = () => gap() <= 2 ? S.days : 0;
+
+  const TIERS = [
+    { min: 0,  c: ["#5a4a5e", "#7d6a80", "#9c8a9e"], label: "ember" },
+    { min: 1,  c: ["#d9361c", "#ff7a1f", "#ffd166"], label: "flame" },
+    { min: 3,  c: ["#ff5a1f", "#ffb627", "#fff3a8"], label: "big flame" },
+    { min: 7,  c: ["#2f6bff", "#5ee0ff", "#e8fbff"], label: "blue flame" },
+    { min: 30, c: ["#9b3cff", "#ff5ad8", "#fff0ff"], label: "legend flame" },
+  ];
+  const tier = d => TIERS.filter(t => d >= t.min).pop();
+  const GRID = [
+    "....1....",
+    "....1...1",
+    "...121...",
+    "...121..1",
+    "..12221.1",
+    ".1223221.",
+    ".1233321.",
+    "122333221",
+    "123333321",
+    ".1233321.",
+    "..11111..",
+  ];
+  // Pixel flame SVG, bigger for longer streaks (caps at 14 days).
+  function flameSVG(days, px){
+    const t = tier(days), cell = px || (3 + Math.min(days, 14) * 0.3);
+    let r = "";
+    GRID.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== ".") r += `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${t.c[ch - 1]}"/>`; }));
+    return `<svg class="sf-svg${days ? "" : " out"}" viewBox="0 0 9 11" width="${Math.round(9 * cell)}" height="${Math.round(11 * cell)}" shape-rendering="crispEdges" aria-hidden="true">${r}</svg>`;
+  }
+  const nextPrize = d => PRIZES.find(p => d < p.d && !S.claimed.includes(p.d));
+  function nextLine(d){
+    const p = nextPrize(d);
+    if (!p) return `Best ever: ${Math.max(S.best, d)} days.`;
+    const n = p.d - d;
+    return `${n} more day${n === 1 ? "" : "s"} to the ${p.d}-day prize (+${p.gems} diamonds).`;
+  }
+
+  // Start-screen box
+  function render(){
+    const el = document.getElementById("streakBox"); if (!el) return;
+    const d = live(), g = gap();
+    let msg;
+    if (!d) msg = S.total ? "Finish a round to light a new flame!" : "Finish a round to light your streak flame!";
+    else if (g === 0) msg = "You played today. Your flame is happy!";
+    else msg = "Play a round today to grow your flame!";
+    el.innerHTML = `<div class="sf-pic">${flameSVG(d)}</div>
+      <div class="sf-txt"><b>${d ? `${d}-day streak` : "No flame yet"}</b><span>${msg}</span><small>${nextLine(d)}</small></div>`;
+    el.setAttribute("aria-label", `${d}-day streak. ${msg}`);
+  }
+
+  // Called once per finished round. Returns what happened so the win card can show it.
+  function roundDone(){
+    const g = gap();
+    if (g === 0){ showWin({ same: true }); return; }
+    const fresh = g > 2;
+    if (fresh){ S.days = 1; S.claimed = []; } else S.days++;
+    S.last = today(); S.total++; S.best = Math.max(S.best, S.days);
+    const prize = PRIZES.find(p => p.d === S.days && !S.claimed.includes(p.d));
+    if (prize){
+      S.claimed.push(prize.d);
+      SAVE.gems += prize.gems; save();
+      updateHud();
+    }
+    persist(); render();
+    showWin({ grew: true, fresh, prize, saved: g === 2 });
+  }
+
+  function showWin(r){
+    const el = document.getElementById("winStreak"); if (!el) return;
+    const d = S.days;
+    let head, sub;
+    if (r.same){ head = `${d}-day streak`; sub = "Today already counts. Come back tomorrow!"; }
+    else if (r.prize){ head = `${d}-day streak!`; sub = `Prize: +${r.prize.gems} diamonds for your ${r.prize.name}!`; }
+    else if (d === 1){ head = "Streak flame lit!"; sub = "Play tomorrow to make it grow."; }
+    else { head = `${d}-day streak!`; sub = r.saved ? "Your flame waited for you. It grew!" : "Your flame grew!"; }
+    el.className = "sf-win" + (r.prize ? " prize" : "") + (r.same ? "" : " grow");
+    el.innerHTML = `<div class="sf-pic">${flameSVG(d)}</div><div class="sf-txt"><b>${head}</b><span>${sub}</span>${r.prize || r.same ? "" : `<small>${nextLine(d)}</small>`}</div>`;
+    el.hidden = false;
+    if (r.prize){
+      try { LLAudio.sfx("coin"); } catch(e){}
+      setTimeout(() => say(`${d} day streak! You won ${r.prize.gems} bonus diamonds!`, 0.95, false), 300);
+    } else if (r.grew && d > 1){
+      setTimeout(() => say(`${d} day streak!`, 0.95, false), 300);
+    }
+  }
+  function hideWin(){ const el = document.getElementById("winStreak"); if (el) el.hidden = true; }
+
+  render();
+  // Re-check when the app comes back after midnight etc.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+  return { roundDone, render, hideWin, state: () => ({ ...S, live: live() }), _set(o){ Object.assign(S, o); persist(); render(); } };
+})();
 </script>
 
 <script>
