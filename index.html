@@ -532,6 +532,32 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       src.connect(f); f.connect(g); g.connect(sfxBus); src.start(t);
     } catch(e){}
   }
+  // filtered noise burst: knocks, clicks, sizzles
+  function noiseF(dur, vol, when, ftype, freq, q, freqTo){
+    const c = ctx; if (!c || c.state !== "running") return;
+    try {
+      const t = Math.max(c.currentTime, when || c.currentTime), len = Math.ceil(c.sampleRate * dur);
+      const buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+      src.buffer = buf; f.type = ftype || "lowpass"; f.frequency.setValueAtTime(freq || 900, t); f.Q.value = q || 1;
+      if (freqTo) f.frequency.exponentialRampToValueAtTime(freqTo, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(f); f.connect(g); g.connect(sfxBus); src.start(t); src.stop(t + dur + 0.02);
+    } catch(e){}
+  }
+  function bell(f, dur, vol, when){ tone(f, dur, vol, "sine", when); tone(f * 2.76, dur * 0.5, vol * 0.35, "sine", when); tone(f * 5.4, dur * 0.25, vol * 0.15, "sine", when); }
+  const T0 = () => (ctx ? ctx.currentTime : 0) + 0.01;
+  // "Block Clicks" set: wood knocks + stone thunks
+  const SHOP_SFX = {
+    shopTab(){ const t = T0(); noiseF(0.05, 0.5, t, "bandpass", 1500, 5); tone(380, 0.06, 0.12, "triangle", t, null, 300); },
+    shopPick(){ const t = T0(); noiseF(0.03, 0.45, t, "bandpass", 3200, 6); tone(820, 0.04, 0.06, "triangle", t); },
+    shopBuy(){ const t = T0(); [0, 0.09, 0.18].forEach((d, i) => { noiseF(0.05, 0.5, t + d, "bandpass", 1400 + i * 700, 5); tone(400 + i * 150, 0.06, 0.1, "triangle", t + d); });
+      tone(110, 0.2, 0.2, "sine", t + 0.3, null, 70); noiseF(0.12, 0.35, t + 0.3, "lowpass", 700); bell(1568, 0.4, 0.06, t + 0.34); },
+    shopPoor(){ const t = T0(); noiseF(0.1, 0.6, t, "lowpass", 350); tone(110, 0.12, 0.18, "sine", t, null, 80); noiseF(0.12, 0.6, t + 0.14, "lowpass", 280); tone(90, 0.14, 0.18, "sine", t + 0.14, null, 65); },
+    shopEquip(){ const t = T0(); tone(180, 0.12, 0.2, "sine", t, null, 120); noiseF(0.08, 0.45, t, "bandpass", 900, 2); noiseF(0.04, 0.35, t + 0.09, "bandpass", 2600, 6); },
+    shopLocked(){ noiseF(0.28, 0.4, T0(), "bandpass", 500, 3, 1400); },
+  };
   const SFX = {
     jump(){ tone(330, 0.16, 0.12, "square", 0, null, 700); },
     land(){ tone(880, 0.07, 0.08, "triangle"); tone(1320, 0.1, 0.06, "triangle", ctx && ctx.currentTime + 0.06); },
@@ -542,6 +568,8 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     lose(){ const t = ctx ? ctx.currentTime : 0; [392, 330, 262, 196].forEach((f, i) => tone(f, 0.22, 0.09, "triangle", t + i * 0.16)); },
     potion(){ const t = ctx ? ctx.currentTime : 0; for (let i = 0; i < 4; i++) tone(500 + i * 180, 0.08, 0.07, "sine", t + i * 0.06); },
     coin(){ tone(988, 0.07, 0.08, "square"); tone(1319, 0.18, 0.08, "square", ctx && ctx.currentTime + 0.07); },
+    // shop: sound effects instead of reading things aloud
+    ...SHOP_SFX,
   };
 
   /* ---------- background music: short chiptune adventure loop ---------- */
@@ -3296,7 +3324,7 @@ function renderShop(){
     b.setAttribute("aria-selected", String(k === shopTab));
     b.appendChild(k === "potion" ? thumb("potion", "health") : thumb(k, TAB_ICON[k]));
     b.appendChild(document.createTextNode(label));
-    b.addEventListener("click", () => { shopTab = k; say(label, 1, true, "tap"); renderShop(); $("shopGrid").scrollTop = 0; });
+    b.addEventListener("click", () => { shopTab = k; LLAudio.sfx("shopTab"); renderShop(); $("shopGrid").scrollTop = 0; });
     tabs.appendChild(b);
   }
   // items
@@ -3322,7 +3350,7 @@ function renderShop(){
     if (shopSel[shopTab] === id) b.classList.add("sel");
     const shown = mystery(shopTab, id) ? "Mystery pet" : it.name;
     b.setAttribute("aria-label", `${shown}. ${st.textContent}`);
-    b.addEventListener("click", () => { shopSel[shopTab] = id; say(shown, 1, true, "tap"); renderShop(); });
+    b.addEventListener("click", () => { shopSel[shopTab] = id; LLAudio.sfx(shopTapSound(shopTab, id)); renderShop(); });
     grid.appendChild(b);
   }
   if (!grid.querySelector(".it")) console.error("[shop] tab rendered empty:", shopTab);
@@ -3334,6 +3362,13 @@ function renderShop(){
   grid.appendChild(note);
   grid.scrollTop = keepScroll;
   renderShopInfo();
+}
+// which sound a tap on a shop item makes: locked thunk, "not enough" thud, or a plain click
+function shopTapSound(cat, id){
+  const it = cat === "potion" ? POTIONS[id] : COS[cat].items[id];
+  if (cat !== "potion" && locked(cat, id)) return "shopLocked";
+  if ((cat === "potion" || !owns(cat, id)) && SAVE.gems < it.price) return "shopPoor";
+  return "shopPick";
 }
 function renderShopInfo(){
   const id = shopSel[shopTab], btn = $("pvBtn");
@@ -3352,18 +3387,18 @@ function renderShopInfo(){
   $("pvDesc").textContent = it.chest && !owns(shopTab, id) ? "Chest-only! Win it from a Test Day reward chest." : myst ? "A boss lives in a world you haven't reached yet. Find it, beat it, then tame it!" : (locked(shopTab, id) || (it.legend && !owns(shopTab, id)) ? it.lockDesc : it.desc) || "";
   if (locked(shopTab, id)){ btn.textContent = it.chest ? "Find it in a chest" : myst ? "Find this world" : `Beat ${it.bossName || "the monster"}`; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; return; }
   if (cur(shopTab) === id){ btn.textContent = "Equipped ✓"; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; }
-  else if (owns(shopTab, id)){ btn.textContent = "Equip"; btn.classList.add("go"); btn.onclick = () => { setEq(shopTab, id); LLAudio.sfx("land"); renderShop(); }; }
+  else if (owns(shopTab, id)){ btn.textContent = "Equip"; btn.classList.add("go"); btn.onclick = () => { setEq(shopTab, id); LLAudio.sfx("shopEquip"); renderShop(); }; }
   else if (SAVE.gems >= it.price){ btn.innerHTML = "Buy · " + gemTxt(it.price); btn.onclick = () => buyItem(shopTab, id); }
   else { btn.textContent = `Need ${it.price - SAVE.gems} more`; btn.disabled = true; btn.classList.add("alt"); btn.onclick = null; }
 }
 function buyItem(cat, id){
   if (cat === "potion"){
     const p = POTIONS[id]; if (SAVE.gems < p.price) return;
-    SAVE.gems -= p.price; SAVE.inv[id]++; save(); LLAudio.sfx("coin"); say("Got it!", 1, true);
+    SAVE.gems -= p.price; SAVE.inv[id]++; save(); LLAudio.sfx("shopBuy");
   } else {
     const it = COS[cat].items[id]; if (owns(cat, id) || locked(cat, id) || SAVE.gems < it.price) return;
     SAVE.gems -= it.price; ownedList(cat).push(id); setEq(cat, id); save();
-    LLAudio.sfx("coin"); say(cat === "pet" ? "New friend!" : cat === "skin" || cat === "hat" ? "New look!" : "Awesome!", 1, true);
+    LLAudio.sfx("shopBuy");
   }
   if (pv) pv.burst = true;
   renderShop();
