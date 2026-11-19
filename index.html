@@ -2447,9 +2447,10 @@ const CLIPS = (() => {
   function decode(ctx, k){
     return decoded[k] || (decoded[k] = load(k).then(ab => new Promise((ok, bad) => {
       const p = ctx.decodeAudioData(ab.slice(0), ok, bad); if (p && p.catch) p.catch(bad);
-    }))).catch(e => { delete decoded[k]; delete raw[k]; throw e; });
+    }))).then(b => { decoded[k].ok = true; return b; }, e => { delete decoded[k]; delete raw[k]; throw e; });
   }
-  return { plan, decode };
+  function forget(keys){ keys.forEach(k => { if (!(decoded[k] && decoded[k].ok)) { delete decoded[k]; delete raw[k]; } }); }
+  return { plan, decode, forget };
 })();
 
 const SPEECH = { q: [], busy: false, gen: 0, nodes: [], timer: 0 };
@@ -2479,15 +2480,17 @@ function speechNext(){
     } catch(e){ done(); }
   };
   if (!parts) return fallback();
-  Promise.all(parts.map(p => CLIPS.decode(ctx, p.k))).then(bufs => {
+  // Don't let a slow download hold up the word: after 3 s use the phone voice instead.
+  const slow = new Promise((_, bad) => setTimeout(() => { CLIPS.forget(parts.map(p => p.k)); bad(); }, 3000));
+  Promise.race([Promise.all(parts.map(p => CLIPS.decode(ctx, p.k))), slow]).then(bufs => {
     if (gen !== SPEECH.gen) return;
     let t = ctx.currentTime + 0.03;
     bufs.forEach((b, i) => {
       const src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination);
       src.start(t); SPEECH.nodes.push(src);
+      if (i === bufs.length - 1) src.onended = done;   // audio time, so a paused app doesn't skip ahead
       t += b.duration + (i < bufs.length - 1 ? parts[i + 1].gap : 0);
     });
-    SPEECH.timer = setTimeout(done, (t - ctx.currentTime) * 1000 + 120);
   }, fallback);
 }
 function say(text, rate, cancel){

@@ -6,6 +6,11 @@ const CORE = ['./', './index.html', './manifest.webmanifest',
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
+  // Voice clips for offline play (best effort: a missing clip just uses the phone voice).
+  e.waitUntil(caches.open(CACHE).then(c => fetch('./audio/voice.json').then(r => r.ok ? r.clone().json().then(j => {
+    c.put('./audio/voice.json', r);
+    return Promise.all([...new Set(Object.values(j.clips || {}))].map(f => c.match('./audio/' + f).then(hit => hit || c.add('./audio/' + f).catch(() => {}))));
+  }) : null)).catch(() => {}));
 });
 
 self.addEventListener('activate', e => {
