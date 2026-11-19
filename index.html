@@ -174,6 +174,45 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .start-row .btn{flex:1;width:auto;min-width:0;padding-inline:8px}
 .start-foot{display:flex;justify-content:space-between;align-items:center;padding:0 4px}
 .start-foot .linkbtn{align-self:auto}
+/* Pet Nest: eggs + Mythic pets */
+.nest-row .btn{flex:1}
+#nestBtn{position:relative}
+#nestDot{position:absolute;top:-7px;right:-7px;min-width:22px;height:22px;padding:0 5px;display:grid;place-items:center;background:var(--bad);color:#fff;font-size:14px;border:2px solid #120b15;animation:nestPing 1s ease-in-out infinite alternate}
+@keyframes nestPing{to{transform:scale(1.15)}}
+#nestCard .card{gap:10px;padding:14px}
+.nest-head{display:flex;align-items:center;gap:8px}
+.nest-head h2{flex:1}
+.nest-head .btn{width:auto;min-height:40px;padding:6px 12px}
+#nestPrev{width:100%;height:140px;display:block;background:#1a1220;border:3px solid var(--deck-edge)}
+.nest-news{background:#3a2a10;border:3px solid var(--glow);padding:8px 10px;font-size:15px;line-height:1.3}
+.nest-sec{font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.nest-eggs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.nest-egg{all:unset;box-sizing:border-box;background:#1d1424;border:3px solid var(--deck-edge);padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;cursor:pointer;touch-action:manipulation}
+.nest-egg.ready{border-color:var(--glow);box-shadow:0 0 12px rgba(255,182,39,.55)}
+.nest-egg .tier{font-family:var(--display);font-size:12px;letter-spacing:.06em}
+.nest-egg .left{font-size:12px;color:var(--muted);line-height:1.15}
+.nest-egg .go{font-family:var(--display);font-size:13px;background:var(--glow);color:#2a1405;padding:3px 8px}
+.nest-egg.ready canvas{animation:eggWob 1.4s ease-in-out infinite}
+.nest-egg.hatching canvas{animation:eggShake .18s linear infinite}
+@keyframes eggWob{0%,70%,100%{transform:rotate(0)}78%{transform:rotate(-9deg)}86%{transform:rotate(9deg)}94%{transform:rotate(-4deg)}}
+@keyframes eggShake{25%{transform:translate(-3px,0) rotate(-8deg)}75%{transform:translate(3px,0) rotate(8deg)}}
+.nest-bar{width:100%;height:8px;background:#140d18;border:1px solid var(--deck-edge)}
+.nest-bar i{display:block;height:100%;background:var(--ok)}
+.nest-empty{font-size:15px;color:var(--muted);background:#1d1424;border:3px dashed var(--deck-edge);padding:10px}
+.nest-pet{background:#1d1424;border:3px solid var(--deck-edge);padding:10px;display:grid;grid-template-columns:88px 1fr;gap:10px;align-items:center}
+.nest-pet.on{border-color:var(--ok)}
+.nest-pic{height:88px;display:flex;align-items:flex-end;justify-content:center;background:radial-gradient(ellipse at 50% 80%,var(--c),transparent 66%)}
+.nest-pet canvas,.nest-egg canvas,.nest-reveal canvas{image-rendering:pixelated;display:block}
+.nest-pet .nm{font-family:var(--display);font-size:18px;line-height:1}
+.nest-pet .sub{font-size:13px;color:var(--muted);line-height:1.2;margin:3px 0 6px}
+.nest-stg{display:flex;gap:5px;margin:6px 0}
+.nest-stg button{all:unset;box-sizing:border-box;width:36px;height:36px;border:2px solid var(--deck-edge);background:#140d18;display:grid;place-items:end center;padding-bottom:2px;cursor:pointer}
+.nest-stg button.on{border-color:var(--glow)}
+.nest-stg button.lock{opacity:.4}
+.nest-pet .btn{min-height:40px;font-size:15px;padding:6px 10px;width:auto}
+.nest-reveal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(14,8,16,.86);padding:16px}
+.nest-reveal .card{align-items:center;text-align:center;max-width:340px;animation:sfGrow .35s ease-out}
+.nest-reveal .pic{min-height:150px;display:flex;align-items:flex-end;justify-content:center;width:100%;background:radial-gradient(ellipse at 50% 75%,var(--c),transparent 62%)}
 /* compact end-of-round card: buttons stay on screen, info scrolls (iPhone mini Safari) */
 #winCard .card{padding:14px;gap:10px;min-height:0;overflow:hidden}
 #winCard .card > .win-body{flex-shrink:1}
@@ -239,6 +278,9 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     <div class="row start-row">
       <button class="btn alt" id="mapBtn" type="button">World map</button>
       <button class="btn alt" id="startShopBtn" type="button">Shop · <span data-gems>0</span></button>
+    </div>
+    <div class="row start-row nest-row">
+      <button class="btn alt" id="nestBtn" type="button">🥚 Pet Nest<span id="nestDot" hidden>!</span></button>
     </div>
     <div class="seg" data-seg aria-label="Difficulty"></div>
     <div class="start-foot">
@@ -309,6 +351,18 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         <button class="btn alt" id="mainMenuBtn" type="button">Main menu</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="nestCard" hidden>
+  <div class="card" role="dialog" aria-label="Pet Nest">
+    <div class="nest-head">
+      <h2>Pet Nest</h2>
+      <div class="chip"><span class="gem" aria-hidden="true"></span><span data-gems>0</span></div>
+      <button class="btn go" id="nestDone" type="button">Done</button>
+    </div>
+    <canvas id="nestPrev" aria-label="You and your pet"></canvas>
+    <div id="nestBody"></div>
   </div>
 </div>
 
@@ -2720,6 +2774,10 @@ const SAVE = (() => {
   // world bosses (v7): which bosses he has beaten, by id. Sizzlejaw carries over from monsterBeaten.
   d.bossBeat = Object.assign({}, d.bossBeat);
   if (d.monsterBeaten) d.bossBeat.sizzle = true;
+  // pet eggs + Mythic pets (v17): eggs from Test Day chests, Mythic pets that grow with daily quizzes
+  d.eggs = Array.isArray(d.eggs) ? d.eggs : [];
+  d.mythic = Object.assign({}, d.mythic);
+  d.petNews = Array.isArray(d.petNews) ? d.petNews : [];
   return d;
 })();
 function save(){ store.set(SAVE_KEY, JSON.stringify(SAVE)); }
@@ -3150,6 +3208,7 @@ function renderShop(){
   const grid = $("shopGrid"), keepScroll = grid.scrollTop; grid.innerHTML = "";
   const list = shopTab === "potion" ? POTIONS : COS[shopTab].items;
   for (const [id, it] of Object.entries(list)){
+    if (it.mythic) continue;   // Mythic pets live in the Pet Nest
     const b = document.createElement("button"); b.type = "button"; b.className = "it";
     const th = document.createElement("span"); th.className = "th"; th.appendChild(thumb(shopTab, id));
     b.appendChild(th);
@@ -3173,7 +3232,7 @@ function renderShop(){
   const note = document.createElement("p"); note.className = "note";
   note.textContent = shopTab === "potion"
     ? `Use potions with the buttons next to Hear it. ${limitText()}`
-    : shopTab === "pet" ? "Beat each world's boss to tame it. ??? pets live in worlds you haven't reached yet."
+    : shopTab === "pet" ? "Beat each world's boss to tame it. ??? pets live in worlds you haven't reached yet. Eggs and Mythic pets are in the Pet Nest."
     : "Tap anything to try it on. Earn diamonds: 1 per word, 2 for a perfect word, double vs a boss.";
   grid.appendChild(note);
   grid.scrollTop = keepScroll;
@@ -3587,11 +3646,307 @@ const COS = {
     pal: b.pal, frames: [b.sprite, b.sprite, blink, b.sprite, chomp] };
 });
 COS.pet.items.sizzle.bossName = "Sizzlejaw";
+/* ---------- Mythic pets + pet eggs (quiz-only rewards) ----------
+   Eggs drop from Test Day chests (LavaPets.addEgg) and hatch after N daily quizzes (LavaPets.onQuizDone).
+   Mythic Eggs hatch one of 5 Mythic pets, which grow 3 stages the more quizzes he finishes.
+   Save fields (in lavaleap.save.v1): eggs [{uid,tier,got,need,done}], mythic {id:{stage,quizzes,look,got}},
+   petQuizDay (last day a quiz counted), petNews [ids that just grew]. Sprites: left halves, mirrored. */
+const LavaPets = (() => {
+  const K = "#1f1424";
+  function mirror(half){ return half.map(r => r + [...r].reverse().join("")); }
+  function build(st){
+    const g = (st.half ? mirror(st.half) : st.full.slice()).map(r => [...r]);
+    (st.over || []).forEach(([r, c, s]) => [...s].forEach((ch, i) => { if (ch !== " "){ while (g[r].length <= c + i) g[r].push("."); g[r][c + i] = ch; } }));
+    const w = Math.max(...g.map(r => r.length));
+    return g.map(r => r.join("").padEnd(w, "."));
+  }
+  const PETS = [
+  { id: "emberwing", name: "Emberwing", color: "#ff7a1f",
+    pal: { K, O:"#ff7a1f", R:"#c93312", M:"#7a1a0c", Y:"#ffd166", W:"#fff1b8", S:"#f4e9d8", s:"#c9b8a4" },
+    blurb: "A baby lava dragon that hatches from a glowing egg. The more you spell, the hotter its fire gets!",
+    stages: [
+      { name: "Ember Hatchling", half: [
+        "...K..","..KYK.","..KOKK",".KOOOO",".KOWKO",".KOKKO",".KOOOO","..KOMM","SKKOYY","sSKOYY","sSSKKK",".sSSSS","..ssss"] },
+      { name: "Emberwing Drake", half: [
+        "....K...","...KYK..","...KYOKK","..KOOOOO","K.KOWKOO","KKKOKKOO","KRRKOOOO","KRRRKOMM",".KRRKOOO","..KRKOYY","...KKOYY","....KOYY","....KOOK","....KKK."] },
+      { name: "Inferno Wyrm", half: [
+        "Y.........","KY......Y.","KRK....YOY","KRRK..KYOY","KRRRKKOOOO","KRRRKOYKOO","KRMRKOKKOO","KRMRRKOOOO","KRMMRKOMMM","KRMMRKOWMW",".KRMRKOOOO","..KRRKOYYY","...KRKOYYY","....KKOYYW","....KOOYYY","...KOOKOOO","..KOOK.KOO","..KKK...KK"] },
+    ] },
+  { id: "quillfox", name: "Quillfox", color: "#5bc8f5",
+    pal: { K, F:"#ff9a3c", f:"#d9661f", W:"#fff1b8", B:"#5bc8f5", b:"#2a75a5", G:"#ffd166" },
+    blurb: "A clever fox whose tail is a magic feather pen. It loves words and gets smarter every quiz.",
+    stages: [
+      { name: "Inkit", half: [
+        ".......",".K.....",".KK....",".KFK...",".KFFKKK","KFFFFFF","KFWKFFF","KFKKFFF","KWWWFFF",".KWWWWW","..KWWWK","..KFFFF","..KFWWW","..KKKKK"],
+        over: [[6,13,"Bb"],[7,13,"BB"],[8,13,"bB"],[9,12,"KK"],[10,12,"K"]] },
+      { name: "Quillfox", half: [
+        "........","..K.....","..KK....","..KFK...","..KFfK..","..KFFFKK",".KFFFFFF",".KFWKFFF",".KFKKFFF",".KWWWFFF","..KWWWWW","...KWWWK","...KFFFF","...KFWWW","...KFWWW","...KKKKK"],
+        over: [[3,14,"  B"],[4,13,"BBbB"],[5,13,"BbBB"],[6,13,"BBbK"],[7,14,"bBK"],[8,14,"BK"],[9,14,"K"]] },
+      { name: "Grand Scribe Fox", half: [
+        "..........","...G......","..GKG.....","...K......","...KK.....","...KFK....","...KFfK.GG","...KFFFKGK","..KFFFFFFF","..KFWKFFFF","..KFKKFFFF","..KWWWFFFF","...KWWWWWW","....KWWWWK","...KBKFFFF","..KBBKFWWW","..KBbKFWWW","...KKKFWWW","....KKKKKK"],
+        over: [[5,15,"  BB"],[6,14,"BBBbB"],[7,14,"BbBBB"],[8,14,"BBbBK"],[9,15,"bBBK"],[10,15,"BBK"],[11,16,"K"],[1,17,"G"],[3,16,"G"]] },
+    ] },
+  { id: "pebblit", name: "Pebblit", color: "#5ee0d0",
+    pal: { K, G:"#9a94a6", g:"#6d677a", H:"#bdb7c9", C:"#5ee0d0", c:"#1d7f74" },
+    blurb: "A tiny rock buddy with a crystal sprout. Feed it quizzes and it grows into a giant crystal titan!",
+    stages: [
+      { name: "Pebblit", half: [
+        "....KC","...KCc",".KKKKK",".KHHHH",".KHGGG",".KGCCG",".KGCCG",".KGGGG",".KgGKK",".KgggG","..KKgg","...KgK","...KK."] },
+      { name: "Boulderbash", half: [
+        "......KC",".....KCc","..KKKKKK","..KHHHHH",".KHGGGGG",".KGGCCGG",".KGGCCGG","KHKGGGGG","KGKGKKKK","KGKggGGG","KgKgggGG",".KKKgggg","...KgggK","...KggKK","...KKKK."] },
+      { name: "Crystal Titan", half: [
+        "........KC",".KC....KCc","KCcK..KCcc","KCcKKKKKKK","KcKHHHHHHH",".KHGGGGGGG",".KGGGCCGGG","KKGGGCCGGG","KCKGGGGGGG","KCcKGKCCCC","KcKGGGGGGG","KGGKgGGGCC","KGGKggGGCc","KggKgggGGG",".KKKgggggg","...KgggKKK","...KgggK..","...KKKKK.."] },
+    ] },
+  { id: "zappup", name: "Zappup", color: "#ffe14a",
+    pal: { K, U:"#4361ee", u:"#2a3a9e", L:"#ffe14a", W:"#e8f0ff" },
+    blurb: "A puppy made of thunder. It zips around with sparks and howls lightning when it's all grown up.",
+    stages: [
+      { name: "Zappup", half: [
+        ".K....",".KK...",".KLK..",".KUUKK","KUUUUL","KUWKUU","KUKKUU","KUUUWW",".KUWWW","..KWWK","..KUUU","..KUWW","..KKKK"] },
+      { name: "Thunderhowl", half: [
+        "..K.....","..KK....","..KLK...","..KUuK..","..KUUUKK",".KUUUUUL",".KUUUUUL",".KUWKUUU",".KUKKUUU",".KUUUUWW","..KUWWWW","...KWWWK","...KUUUU","..LKUUWW",".L.KUuWW","L..KKKKK"] },
+      { name: "Storm Alpha", half: [
+        "..L.......","..LK......","...KK.....","...KLK....","...KUuK...","...KUUUKKK","..KUUUUUUL","..KUUUUUUL",".KUULLUUUU",".KUULKUUUU",".KUUKKUUUU",".KUUUUUUWW","..KUUUWWWW","...KUWWWWK","..KUKUUUUU",".LKUUKUWWW","L.KUUKUWWW",".LKuuKUuWW","..KKKKKKKK"] },
+    ] },
+  { id: "voidcat", name: "Starprowl", color: "#a98bff",
+    pal: { K, P:"#5a4878", p:"#3a2d4e", V:"#a98bff", S:"#ffffff", Y:"#5ee0d0" },
+    blurb: "A shadow kitten from the night sky. Its fur fills up with stars, one for every quiz you finish.",
+    stages: [
+      { name: "Shadow Kit", half: [
+        "......",".K....",".KK...",".KVK..",".KPPKK","KPPPPP","KPYYPP","KPYKPP","KPPPPV",".KPPKK","..KPPP","..KPpp","..KKKK"] },
+      { name: "Nightprowl", half: [
+        "........","..K.....","..KK....","..KVK...","..KPPK..","..KPPPKK",".KPPSPPP",".KPYYPPP",".KPYKPPP",".KPPPPPV","..KPPPKK","...KPPPP","..KPKPSP","..KPKPpp","..KpKPpp","..KKKKKK"] },
+      { name: "Galaxy Panther", half: [
+        "....S.....","..........","...K......","...KK...S.","...KVK....","...KPVK...","...KPPPKKK","..KPPSPPPP","..KPPPPPSP",".KPPYYPPPP",".KPPYKPPPP","SKPPPPPPPV",".KPPPPPKKK","..KPPSPPPP","...KPPPPSP","..KPKPPPPP","..KPKSPpPP","..KpKPpppp","..KKKKKKKK"] },
+    ] },
+  ];
+  PETS.forEach(p => p.stages.forEach(s => s.grid = build(s)));
+  const EGG = { pal: { K, A:"#a98bff", B:"#ff7ab6", C:"#5ee0d0", D:"#ffd166", W:"#ffffff" },
+    grid: mirror(["...KK","..KAA",".KAWA",".KABB","KAAAB","KCCAA","KCCDD","KADDA","KAAAA",".KBBA",".KBBB","..KKK"]) };
+  // what each egg tier needs and gives. Shop-pet eggs hatch a pet he doesn't own yet, else diamonds.
+  const TIERS = {
+    common:    { name: "Common",    need: 1, col: ["#9a94a6", "#d8d2e2"], gems: 15,  pets: ["blob"] },
+    uncommon:  { name: "Uncommon",  need: 2, col: ["#3fa34d", "#9be05a"], gems: 25,  pets: ["blob", "bat"] },
+    rare:      { name: "Rare",      need: 2, col: ["#4361ee", "#8fb0ff"], gems: 50,  pets: ["bat", "ember"] },
+    epic:      { name: "Epic",      need: 3, col: ["#9b4dff", "#d0a8ff"], gems: 100, pets: ["ember", "dragon"] },
+    legendary: { name: "Legendary", need: 4, col: ["#e0a526", "#fff1b8"], gems: 200, pets: ["dragon"], legend: true },
+    mythic:    { name: "Mythic",    need: 5, mythic: true, gems: 300 },
+  };
+  const ORDER = Object.keys(TIERS);
+  const GROW = [0, 5, 15];                 // quizzes for stage 1, 2, 3 (a perfect quiz counts double)
+  const SIZE = [1.1, 1.35, 1.6];           // grown pets look bigger in the game
+  const BY = {}; PETS.forEach(p => BY[p.id] = p);
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const stageOf = q => q >= GROW[2] ? 3 : q >= GROW[1] ? 2 : 1;
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  function look(id){ const m = SAVE.mythic[id]; return m ? Math.max(1, Math.min(m.look || m.stage || 1, m.stage || 1)) : 1; }
+  function eggPal(tier){
+    const T = TIERS[tier] || TIERS.common;
+    return T.mythic ? EGG.pal : Object.assign({}, EGG.pal, { A: T.col[0], B: T.col[1], C: T.col[1], D: "#fff1b8" });
+  }
+  // Mythic pets live in the normal pet list so equipping + drawing work everywhere; the shop hides them.
+  PETS.forEach(p => {
+    COS.pet.items[p.id] = { mythic: true, price: 0, pal: p.pal, fps: 2,
+      get name(){ return p.stages[look(p.id) - 1].name; }, desc: p.blurb,
+      get frames(){ return [p.stages[look(p.id) - 1].grid]; },
+      get grow(){ return SIZE[look(p.id) - 1]; },
+      get aura(){ return look(p.id) === 3 ? p.color : null; } };
+  });
+  function bump(m, add){
+    const before = m.stage || 1;
+    m.quizzes = (m.quizzes || 0) + add; m.stage = stageOf(m.quizzes);
+    if (m.stage > before && (m.look || before) === before) m.look = m.stage;   // show the new look unless he picked an old one
+    return m.stage > before;
+  }
+  function news(id){ SAVE.petNews = (SAVE.petNews || []).filter(x => x !== id).concat(id); }
+
+  function addEgg(tier){
+    tier = TIERS[tier] ? tier : "common";
+    let uid = "e_" + Date.now(); while (SAVE.eggs.some(e => e.uid === uid)) uid += "x";
+    const e = { uid, tier, got: today(), need: TIERS[tier].need, done: 0 };
+    SAVE.eggs.push(e); save(); refreshBadge();
+    return e;
+  }
+  // call once when a daily Test Day quiz is finished: onQuizDone(rec) or onQuizDone(score, outOf)
+  function onQuizDone(a, b){
+    let score = a, n = b;
+    if (a && typeof a === "object"){ score = a.score; n = a.n; }
+    const day = today();
+    if (SAVE.petQuizDay === day) return { counted: false, grew: [] };   // one quiz a day counts
+    SAVE.petQuizDay = day;
+    const perfect = n ? score >= n : (score === 1 || score >= 100);
+    SAVE.eggs.forEach(e => { e.need = e.need || (TIERS[e.tier] || TIERS.common).need; if ((e.done || 0) < e.need) e.done = (e.done || 0) + 1; });
+    const grew = [];
+    for (const [id, m] of Object.entries(SAVE.mythic)) if (BY[id] && bump(m, perfect ? 2 : 1)){ grew.push(id); news(id); }
+    save(); refreshBadge();
+    return { counted: true, perfect, grew };
+  }
+  const ready = e => (e.done || 0) >= (e.need || 1);
+  function hatch(uid){
+    const i = SAVE.eggs.findIndex(e => e.uid === uid); if (i < 0 || !ready(SAVE.eggs[i])) return null;
+    const e = SAVE.eggs[i], T = TIERS[e.tier] || TIERS.common;
+    let out;
+    if (T.mythic){
+      const left = PETS.filter(p => !SAVE.mythic[p.id]);
+      if (left.length){ const p = pick(left); SAVE.mythic[p.id] = { stage: 1, quizzes: 0, look: 1, got: today() }; out = { kind: "mythic", id: p.id }; }
+      else {   // he has all 5: the egg gives his least-grown pet a big boost
+        const [id, m] = Object.entries(SAVE.mythic).sort((x, y) => (x[1].quizzes || 0) - (y[1].quizzes || 0))[0];
+        const grew = bump(m, 5); if (grew) news(id);
+        out = { kind: "boost", id, grew };
+      }
+    } else {
+      let pool = T.pets.filter(id => COS.pet.items[id] && !owns("pet", id));
+      if (T.legend) pool = pool.concat(Object.keys(COS.pet.items).filter(id => { const it = COS.pet.items[id]; return it.legend && !it.mythic && !owns("pet", id) && !locked("pet", id); }));
+      if (pool.length){ const id = pick(pool); SAVE.owned.pet.push(id); out = { kind: "pet", id }; }
+      else { SAVE.gems += T.gems; out = { kind: "gems", n: T.gems }; }
+    }
+    SAVE.eggs.splice(i, 1); save(); refreshBadge();
+    return out;
+  }
+  function refreshBadge(){
+    const b = document.getElementById("nestDot"); if (!b) return;
+    b.hidden = !(SAVE.eggs.some(ready) || (SAVE.petNews || []).length);
+  }
+  return { PETS, BY, EGG, TIERS, ORDER, GROW, addEgg, onQuizDone, hatch, ready, look, eggPal, stageOf, refreshBadge };
+})();
+window.LavaPets = LavaPets;
+/* Pet Nest screen: see eggs, hatch them, equip + restyle Mythic pets */
+const Nest = (() => {
+  let from = "startCard", raf = 0, t0 = 0, last = 0, busy = false;
+  const P = LavaPets;
+  function cv(grid, pal, px){
+    const c = document.createElement("canvas"); c.width = Math.ceil(grid[0].length * px); c.height = Math.ceil(grid.length * px);
+    drawGrid(c.getContext("2d"), grid, pal, c.width / 2, c.height, px, 0); return c;
+  }
+  const fit = (grid, pal, box) => { const k = box / Math.max(grid.length, grid[0].length); return cv(grid, pal, k >= 4 ? Math.floor(k) : k); };
+  function open(f){ from = f || "startCard"; $(from).hidden = true; render(); $("nestCard").hidden = false; $("nestCard").querySelector(".card").scrollTop = 0; start(); }
+  function close(){ $("nestCard").hidden = true; stop(); $(from).hidden = false; updateHud(); P.refreshBadge(); }
+  function render(){
+    updateHud();
+    const body = $("nestBody"); body.innerHTML = "";
+    const add = (html, cls) => { const d = document.createElement("div"); if (cls) d.className = cls; d.innerHTML = html; body.appendChild(d); return d; };
+    // news: pets that grew since he last looked
+    const nw = (SAVE.petNews || []).filter(id => P.BY[id] && SAVE.mythic[id]);
+    if (nw.length){
+      add(nw.map(id => `🎉 <b>${P.BY[id].name}</b> grew into <b>${P.BY[id].stages[SAVE.mythic[id].stage - 1].name}</b>!`).join("<br>"), "nest-news");
+      setTimeout(() => say(nw.map(id => `${P.BY[id].name} grew into ${P.BY[id].stages[SAVE.mythic[id].stage - 1].name}!`).join(" "), 1, true), 250);
+      SAVE.petNews = []; save();
+    }
+    // eggs
+    add(`Eggs · they hatch when you take quizzes`, "nest-sec");
+    if (!SAVE.eggs.length) add(`No eggs yet. Finish the daily <b>Test Day</b> quiz to win chests. Some chests have eggs inside!`, "nest-empty");
+    else {
+      const g = add("", "nest-eggs");
+      SAVE.eggs.slice().sort((a, b) => P.ready(b) - P.ready(a) || P.ORDER.indexOf(b.tier) - P.ORDER.indexOf(a.tier)).forEach(e => {
+        const T = P.TIERS[e.tier] || P.TIERS.common, rd = P.ready(e), left = (e.need || 1) - (e.done || 0);
+        const b = document.createElement("button"); b.type = "button"; b.className = "nest-egg" + (rd ? " ready" : "");
+        b.appendChild(cv(P.EGG.grid, P.eggPal(e.tier), 4));
+        b.insertAdjacentHTML("beforeend", `<span class="tier" style="color:${T.mythic ? "#ff7ab6" : T.col[1]}">${T.name.toUpperCase()}</span>` +
+          (rd ? `<span class="go">HATCH!</span>` : `<span class="nest-bar"><i style="width:${Math.round(100 * (e.done || 0) / (e.need || 1))}%"></i></span><span class="left">${left} more quiz${left > 1 ? "zes" : ""}</span>`));
+        b.setAttribute("aria-label", `${T.name} egg. ${rd ? "Ready to hatch!" : left + " more quizzes"}`);
+        b.addEventListener("click", () => rd ? doHatch(e.uid, b) : say(`${T.name} egg. ${left} more quiz${left > 1 ? "zes" : ""} until it hatches.`, 1, true, "tap"));
+        g.appendChild(b);
+      });
+    }
+    // mythic pets
+    const found = P.PETS.filter(p => SAVE.mythic[p.id]).length;
+    add(`Mythic pets · ${found} of ${P.PETS.length} found`, "nest-sec");
+    P.PETS.forEach(p => {
+      const m = SAVE.mythic[p.id], row = document.createElement("div");
+      row.className = "nest-pet" + (m && cur("pet") === p.id ? " on" : "");
+      row.style.setProperty("--c", m ? p.color + "44" : "transparent");
+      const pic = document.createElement("div"); pic.className = "nest-pic";
+      const lk = m ? P.look(p.id) : 1;
+      pic.appendChild(fit(p.stages[lk - 1].grid, m ? p.pal : SHADOW_PAL, 84));
+      row.appendChild(pic);
+      const r = document.createElement("div");
+      if (!m){
+        r.innerHTML = `<div class="nm" style="color:var(--muted)">??? Mythic pet</div><div class="sub" style="margin-top:4px">Hatch a Mythic Egg to meet it. Mythic Eggs only come from the daily quiz!</div>`;
+      } else {
+        const nxt = P.GROW[m.stage], q = m.quizzes || 0;
+        r.innerHTML = `<div class="nm" style="color:${p.color}">${p.stages[lk - 1].name}</div><div class="nest-stg"></div>` +
+          (nxt ? `<div class="nest-bar"><i style="width:${Math.round(100 * (q - P.GROW[m.stage - 1]) / (nxt - P.GROW[m.stage - 1]))}%"></i></div><div class="sub">${nxt - q} more to grow into ${p.stages[m.stage].name}. Perfect quiz = 2!</div>`
+                : `<div class="sub">Fully grown! ✨</div>`);
+        const sg = r.querySelector(".nest-stg");
+        p.stages.forEach((s, j) => {
+          const st = j + 1, b = document.createElement("button"); b.type = "button";
+          b.className = (st === lk ? "on" : "") + (st > m.stage ? " lock" : "");
+          b.appendChild(fit(s.grid, st > m.stage ? SHADOW_PAL : p.pal, 30));
+          b.setAttribute("aria-label", st > m.stage ? "Not grown yet" : s.name);
+          b.addEventListener("click", () => {
+            if (st > m.stage){ say(`Not yet! It grows after ${P.GROW[j] - q} more quizzes.`, 1, true, "tap"); return; }
+            m.look = st; save(); say(s.name, 1, true, "tap"); render();
+          });
+          sg.appendChild(b);
+        });
+        const on = cur("pet") === p.id, eb = document.createElement("button"); eb.type = "button";
+        eb.className = "btn" + (on ? " alt" : " go"); eb.textContent = on ? "✓ With you" : "Equip";
+        eb.addEventListener("click", () => { if (on) return; setEq("pet", p.id); LLAudio.sfx("land"); say(`${p.stages[lk - 1].name} is with you!`, 1, true); render(); });
+        r.appendChild(eb);
+      }
+      row.appendChild(r);
+      body.appendChild(row);
+    });
+    const tip = add(`Other pets are in the Shop.`, "small"); tip.style.textAlign = "center";
+  }
+  function doHatch(uid, el){
+    if (busy) return; busy = true;
+    el.classList.add("hatching"); LLAudio.sfx("step"); say("It's hatching!", 1, true);
+    setTimeout(() => {
+      busy = false;
+      const out = P.hatch(uid); if (!out){ render(); return; }
+      LLAudio.sfx("win"); reveal(out); render();
+    }, 1300);
+  }
+  function reveal(out){
+    const box = document.createElement("div"); box.className = "nest-reveal";
+    let title, text, grid, pal, color = "#ffb627", equip = null;
+    if (out.kind === "mythic" || out.kind === "boost"){
+      const p = P.BY[out.id], m = SAVE.mythic[out.id], st = p.stages[m.stage - 1];
+      grid = st.grid; pal = p.pal; color = p.color;
+      if (out.kind === "mythic"){ title = `${p.name}!`; text = `A <b>MYTHIC</b> pet! ${p.blurb}`; equip = out.id; }
+      else { title = "Mythic boost!"; text = out.grew ? `${p.name} grew into <b>${st.name}</b>!` : `${p.name} got 5 quizzes closer to growing up!`; }
+      if (out.grew) SAVE.petNews = (SAVE.petNews || []).filter(x => x !== out.id), save();
+    } else if (out.kind === "pet"){
+      const it = COS.pet.items[out.id]; grid = it.frames[0]; pal = it.pal; title = `${it.name}!`; text = `A new friend! ${it.desc || ""}`; equip = out.id;
+    } else { title = `+${out.n} diamonds!`; text = "You already have every pet this egg could hatch, so it was full of diamonds!"; }
+    const pic = grid ? fit(grid, pal, 140) : null;
+    box.innerHTML = `<div class="card" style="--c:${color}66"><h2>${title}</h2><div class="pic"></div><p style="font-size:16px">${text}</p><div class="row" style="width:100%"></div></div>`;
+    if (pic) box.querySelector(".pic").appendChild(pic); else box.querySelector(".pic").innerHTML = `<span style="font-size:72px">💎</span>`;
+    const row = box.querySelector(".row");
+    const btn = (label, cls, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + cls; b.textContent = label; b.style.flex = "1"; b.addEventListener("click", () => { fn && fn(); box.remove(); render(); }); row.appendChild(b); };
+    if (equip) btn("Equip now", "go", () => { setEq("pet", equip); LLAudio.sfx("land"); });
+    btn(equip ? "Later" : "Awesome!", equip ? "alt" : "go");
+    $("nestCard").appendChild(box);
+    say(out.kind === "gems" ? `${out.n} diamonds!` : out.kind === "mythic" ? `Wow! A Mythic pet! ${P.BY[out.id].name}!` : title, 1, true);
+  }
+  // live preview: hero + equipped pet standing over the lava
+  function start(){ stop(); t0 = last = performance.now(); raf = requestAnimationFrame(frame); }
+  function stop(){ cancelAnimationFrame(raf); raf = 0; }
+  function frame(now){
+    const c = $("nestPrev"), D = Math.min(window.devicePixelRatio || 1, 3), W = c.clientWidth, H = c.clientHeight;
+    if (!W || !H || $("nestCard").hidden){ raf = $("nestCard").hidden ? 0 : requestAnimationFrame(frame); return; }
+    if (c.width !== Math.round(W * D)){ c.width = Math.round(W * D); c.height = Math.round(H * D); }
+    const g = c.getContext("2d"), t = (now - t0) / 1000; g.setTransform(D, 0, 0, D, 0, 0); g.clearRect(0, 0, W, H);
+    const lvY = H - 14;
+    for (let x = 0; x < W; x += 8){ const w = Math.sin(x * 0.05 + t * 2) + Math.sin(x * 0.11 - t * 1.3); g.fillStyle = lavaCol(w, hash(x, 3), x / 8, 0, t); g.fillRect(x, lvY, 8, 14); }
+    const look = heroLook(), ps = (H * 0.5) / look.grid.length, hx = W * 0.4;
+    g.fillStyle = "#3b2c45"; g.fillRect(hx - ps * 6, lvY - 6, ps * 12, 6);
+    drawHero(g, hx, lvY - 6, ps, 0, look);
+    const pid = cur("pet");
+    if (pid !== "none" && COS.pet.items[pid]){ const fw = COS.pet.items[pid].frames[0][0].length; drawPet(g, pid, W * 0.66, lvY - 10, (H * 0.36) / fw, t); }
+    raf = requestAnimationFrame(frame);
+  }
+  return { open, close, render };
+})();
+$("nestDone").addEventListener("click", Nest.close);
+$("nestBtn").addEventListener("click", () => Nest.open("startCard"));
+LavaPets.refreshBadge();
 const SKINS = COS.skin.items;           // older code and modules read this
 const BLOCK_WRONG = { top:["#b0381a","#b0381a"], side:"#5a1a10", hi:"#bdb7c9", lo:"#6d677a", fleck:"#7a7487", ink:"#ffd7c9" };
 const COS_CATS = Object.keys(COS);
 function ownedList(cat){ return cat === "skin" ? SAVE.skins : SAVE.owned[cat]; }
-function owns(cat, id){ return COS[cat].items[id].price === 0 || ownedList(cat).includes(id); }
+function owns(cat, id){ const it = COS[cat].items[id]; if (it.mythic) return !!SAVE.mythic[id]; return it.price === 0 || ownedList(cat).includes(id); }
 function locked(cat, id){
   const it = COS[cat].items[id]; if (owns(cat, id)) return false;
   if (it.req === "monster") return !SAVE.monsterBeaten;
@@ -3637,7 +3992,18 @@ const SHADOW_PAL = new Proxy({}, { get: () => "#0e0910" });
 function drawPet(c2, id, cx, feetY, s, t){
   const P = COS.pet.items[id]; if (!P || !P.frames) return;
   const n = P.frames.length, fr = P.frames[((Math.floor(t * (P.fps || 4)) % n) + n) % n || 0];
-  drawGrid(c2, fr, mystery("pet", id) ? SHADOW_PAL : P.pal, cx, feetY + Math.sin(t * 3) * s * 0.8, s, 0);
+  s *= P.grow || 1;   // grown-up Mythic pets are bigger
+  const y = feetY + Math.sin(t * 3) * s * 0.8;
+  drawGrid(c2, fr, mystery("pet", id) ? SHADOW_PAL : P.pal, cx, y, s, 0);
+  if (P.aura){   // fully grown Mythic pets twinkle
+    const w = fr[0].length * s, h = fr.length * s;
+    c2.fillStyle = P.aura;
+    for (let i = 0; i < 5; i++){
+      const k = Math.sin(t * 3.1 + i * 2.3); if (k < 0.2) continue;
+      const a = i * 1.257 + t * 0.6, z = Math.round(s * (k > 0.8 ? 1.4 : 1));
+      c2.fillRect(Math.round(cx + Math.cos(a) * w * 0.62 - z / 2), Math.round(y - h / 2 + Math.sin(a) * h * 0.58 - z / 2), z, z);
+    }
+  }
 }
 function lavaCol(wave, v, c, r, t, id){
   const L = COS.lava.items[id || cur("lava")] || COS.lava.items.classic;
