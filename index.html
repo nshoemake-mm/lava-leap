@@ -2132,7 +2132,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         charge(c.t.length, clean);
         opts.onChunk && opts.onChunk(c.key, true);
         tiles(true);
-        say(c.t.split("").join(", ") + "!", 0.9, true);
+        say(c.t.split("").join(", ") + "!", 0.9, true, "now");
         setSay(`${c.t.toUpperCase()}! Take that!  +${earn}`, "good");
         sfx.throw();
         S.bolt = { t: 0, dur: reduce ? 250 : 520 };
@@ -2175,7 +2175,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       const bonus = 2 + Math.round(S.pow * 2); S.gems += bonus;
       banner(`${name}!<small>+${bonus} diamonds</small>`, true);
       setSay(`Power move: ${name}!`, "good");
-      say(`${name}!`, 1, true);
+      say(`${name}!`, 1, true, "now");
       sfx.special();
       S.fx = { kind: "mini", t: 0, dur: reduce ? 500 : 1500 };
       later(() => {
@@ -2184,7 +2184,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         sfx.angry(); S.shake = reduce ? 0 : 900; S.flash = 0.6; hud();
         const t = TT[n] || `${BN} gets stronger!`;
         banner(`${BN}: ${ph.label || "Phase " + n}!<small>${t}</small>`);
-        setSay(t, "bad"); say(t, 1, true);
+        setSay(t, "bad"); say(t, 1, true, "now");
         opts.onPhase && opts.onPhase(n);
         later(ask, 2400);
       }, reduce ? 700 : 1700);
@@ -2197,7 +2197,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       setSay(`Your power is supercharged! Tap it!`, "good");
       banner(`SUPERCHARGED!`, true);
       sfx.superReady();
-      say(`Your power is supercharged! Tap ${SP.super}!`, 1, true);
+      say(`Your power is supercharged! Tap ${SP.super}!`, 1, true, "now");
       S.superTimer = later(fireSuper, 9000);
     }
     function fireSuper() {
@@ -2206,7 +2206,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       S.phase = "blast"; R.super.hidden = true; R.choices.hidden = false;
       const bonus = 4 + (S.misses === 0 ? 4 : 0); S.gems += bonus;
       banner(`${SP.super}!<small>+${bonus} diamonds${S.misses === 0 ? " (perfect!)" : ""}</small>`, true);
-      say(`${SP.super}!`, 0.95, true);
+      say(`${SP.super}!`, 0.95, true, "now");
       sfx.blast(); S.shake = reduce ? 0 : 1600;
       S.fx = { kind: "super", t: 0, dur: reduce ? 700 : 2200 };
     }
@@ -2248,7 +2248,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       S.phase = "hurt"; S.hearts--; S.hurt = 1; sfx.roar(); hud();
       if (S.hearts <= 0) { lose(); return; }
       setSay(`${NAME} splashed you! Lost a heart.`, "bad");
-      say("Splash! Keep going!", 1, true);
+      say("Splash! Keep going!", 1, true, "now");
       S.target = 0.45;
       later(() => { S.phase = "ask"; setSay(ASK); }, 1300);
     }
@@ -2273,7 +2273,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         opts.onHurt && opts.onHurt(c.key);
         if (S.hearts <= 0) { lose(); return; }
         setSay(timedOut ? `Too slow! The ${SHOT} hit you. Lost a heart.` : `The ${SHOT} hit you! Lost a heart.`, "bad");
-        say(timedOut ? "Ouch! Pick faster next time!" : "Ouch! Try again!", 1, true);
+        say(timedOut ? "Ouch! Pick faster next time!" : "Ouch! Try again!", 1, true, "now");
       }
       later(() => { if (S.phase === "ask" && S.q === c && !S.done) { ATK.arm(windup(), 900 + (timedOut ? talkMs(c, false) : 0)); if (timedOut) speak(false); } }, 1200);
     }
@@ -2300,13 +2300,13 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     }
     function win() {
       finish(true); S.dead = 0.001; sfx.win(); burst(false, true);
-      setSay(`You beat ${NAME}!`, "good"); say(`You beat ${NAME}! Amazing spelling!`, 0.95, true);
+      setSay(`You beat ${NAME}!`, "good"); say(`You beat ${NAME}! Amazing spelling!`, 0.95, true, "now");
       const byKey = k => chunks.find(c => c.key === k);
       later(() => showCard(`${NAME} is defeated!`, `+${S.result.gems} diamonds!`, S.result.beaten.map(byKey), S.result.shaky.map(byKey)), 2000);
     }
     function lose() {
       finish(false); sfx.roar();
-      setSay(`${NAME} got away!`, "bad"); say(`${NAME} got away. Practice and come back!`, 0.95, true);
+      setSay(`${NAME} got away!`, "bad"); say(`${NAME} got away. Practice and come back!`, 0.95, true, "now");
       later(() => showCard(`${NAME} got away!`, `You hit it ${S.hits} times. +${S.result.gems} diamonds. Practice these and come back!`, [], chunks.filter(c => S.stats[c.key].wrong > 0)), 1600);
     }
     function close() {
@@ -2595,6 +2595,9 @@ const CLIPS = (() => {
                    its sentence, unless it is a word prompt or a tap echo
                    (tag "prompt" / "tap"); those are cut, since something newer matters more.
      tag "prompt": the word being asked (word, sentence, word). "tap": echo of a button tap.
+     tag "now":    a line tied to something on screen right now (boss hit, phase
+                   banner, super blast, win/lose). It cuts whatever is playing, so
+                   the voice never trails behind the animation.
    speechCancel() hard-stops everything (leaving a screen).
    say.left() = ms until the current must-finish line ends, so timers can wait for it. */
 const SPEECH = { q: [], busy: false, gen: 0, nodes: [], timer: 0, cur: null, endAt: 0 };
@@ -2647,7 +2650,7 @@ function say(text, rate, cancel, tag){
   if (!canSpeak) return;
   if (cancel){
     SPEECH.q = [];
-    if (SPEECH.busy && SPEECH.cur && SPEECH.cur.cut) speechStop();
+    if (SPEECH.busy && SPEECH.cur && (SPEECH.cur.cut || tag === "now")) speechStop();
   }
   SPEECH.q.push({ text: String(text), rate: rate || 0.9, cut: tag === "prompt" || tag === "tap" });
   speechNext();
