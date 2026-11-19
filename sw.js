@@ -1,5 +1,5 @@
 // Offline support. Bump VERSION on every release so phones pick up the update.
-const VERSION = 'v20';
+const VERSION = 'v21';
 const CACHE = 'lava-leap-' + VERSION;
 const CORE = ['./', './index.html', './manifest.webmanifest',
   './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
