@@ -1,5 +1,5 @@
 // Offline support. Bump VERSION on every release so phones pick up the update.
-const VERSION = 'v8';
+const VERSION = 'v9';
 const CACHE = 'lava-leap-' + VERSION;
 const CORE = ['./', './index.html', './manifest.webmanifest',
   './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
@@ -25,7 +25,15 @@ self.addEventListener('fetch', e => {
     }).catch(() => caches.match('./index.html')));
     return;
   }
-  // Fonts and own files: cache first, fill cache on first use.
+  // Voice list: network first so a new week's clips are picked up, cache when offline.
+  if (url.origin === location.origin && url.pathname.endsWith('/audio/voice.json')) {
+    e.respondWith(fetch(req).then(res => {
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+      return res;
+    }).catch(() => caches.match(req, { ignoreSearch: true })));
+    return;
+  }
+  // Fonts and own files (voice clips too: their names change when the audio does): cache first, fill cache on first use.
   if (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) {
     e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
       if (res.ok || res.type === 'opaque') { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
