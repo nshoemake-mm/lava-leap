@@ -6386,7 +6386,7 @@ window.LavaEvents = (() => {
   }
   function chestItems(tier){
     const out = [];
-    COS_CATS.forEach(cat => Object.entries(COS[cat].items).forEach(([id, it]) => { if (it.chest === tier && !owns(cat, id)) out.push({ cat, id }); }));
+    COS_CATS.forEach(cat => Object.entries(COS[cat].items).forEach(([id, it]) => { if (it.chest === tier && !owns(cat, id) && !C.pending.some(p => p.r.kind === "cos" && p.r.cat === cat && p.r.id === id)) out.push({ cat, id }); }));
     return out;
   }
   function rollReward(tier){
@@ -6630,8 +6630,9 @@ window.LavaEvents = (() => {
     const run = S; setTimeout(() => { if (S === run) reveal(); }, 650 + S.lv * 110);
   }
   function reveal(){
-    const ch = S.ch, t = TIERS[S.lv], txt = rewardText(ch);
-    grant(ch);
+    const ch = S.ch, t = TIERS[S.lv];
+    grant(ch);                       // may swap a duplicate cosmetic for diamonds
+    const txt = rewardText(ch);
     S.phase = "reveal";
     el.lbl.textContent = t.name + " chest" + (ch.wed ? " · Test Day bonus" : "");
     el.lbl.className = "lbl" + (t.rainbow ? " qc-rb" : ""); el.lbl.style.color = t.c;
