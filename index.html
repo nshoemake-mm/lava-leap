@@ -1684,6 +1684,22 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
   };
   const NAME = "Sizzlejaw";
 
+  /* ---------- BOSS PHASES + POWER MOVES (boss-agnostic; per-world bosses pass opts.boss) ----------
+     opts.boss = { name, phases, special, taunts, tint } all optional.
+     phases[i].at   = HP fraction where phase i starts (phase 1 at 1).
+     .speed scales rise speed (no-fireball mode), .attack divides fireball wind-up (S.attackSpeed), .drums scales drum gap,
+     .tint is a screen overlay color, .minHp skips the phase on tiny fights.
+     Correct picks charge the power meter (more letters = more charge). At the end of each phase
+     the hero fires a mini special (special.mini[i]); the final hit makes the meter SUPER and the
+     kid taps to fire special.super. Mini specials don't take HP, so every word still gets practiced. */
+  const PHASES = [
+    { at: 1,   label: "",            speed: 1,   attack: 1,    drums: 1,    tint: "" },
+    { at: 0.5, label: "Angry",       speed: 1.6, attack: 1.25, drums: 0.6,  tint: "rgba(201,51,18,.22)" },
+    { at: 0.2, label: "Last stand",  speed: 2.2, attack: 1.5, drums: 0.42, tint: "rgba(255,24,24,.3)", minHp: 5 },
+  ];
+  const SPECIAL = { mini: ["Diamond Burst", "Crystal Storm"], super: "Super Diamond Blast", color: "#5ee0d0", glow: "#b8fff6" };
+  const TAUNTS = { 2: "Grrr! Now I'm angry! You'll never spell these!", 3: "Last stand! I'm not done yet!" };
+
   /* ---------- sound-alike decoys for chunks ---------- */
   const ALTS = {
     ou: ["ow", "oo", "u", "oa", "au"], ow: ["ou", "oa", "o", "oe"], oo: ["ou", "u", "ew", "ue"],
@@ -1736,6 +1752,28 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
 .lm-boss span{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#ffb627;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lm-bar{height:10px;background:#140d18;border:2px solid #1a1220;position:relative}
 .lm-bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#ff7a1f,#c93312);transition:width .35s}
+.lm-boss span em{font-style:normal;color:#ff5a1f;margin-left:6px}
+.lm-boss span em:empty{display:none}
+.lm-boss.ph2{border-color:#c93312;animation:lmAngry 1s infinite}
+.lm-boss.ph3{border-color:#ff2a2a;animation:lmAngry .5s infinite}
+@keyframes lmAngry{50%{box-shadow:0 0 10px 2px rgba(255,60,30,.7)}}
+.lm-pow{height:8px;background:#140d18;border:2px solid #1a1220;position:relative;display:flex;align-items:center}
+.lm-pow i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#b8fff6,#2bb3a3);transition:width .35s}
+.lm-pow.bump i{filter:brightness(1.6)}
+.lm-pow.full i{background:linear-gradient(90deg,#5ee0d0,#ffd166,#ef476f,#9b8cff,#5ee0d0);background-size:200% 100%;animation:lmRainbow .6s linear infinite}
+@keyframes lmRainbow{to{background-position:200% 0}}
+.lm-pow::before{content:"⚡";position:absolute;left:-15px;top:-6px;font-size:11px}
+.lm-pwrow{display:flex;align-items:center;padding-left:14px}
+.lm-pwrow .lm-pow{flex:1}
+.lm-banner{position:absolute;left:0;right:0;top:40%;text-align:center;pointer-events:none;font-family:var(--display,"Pixelify Sans",monospace);font-weight:700;font-size:34px;line-height:1.05;color:#ffd166;text-shadow:0 3px 0 #000,0 0 18px rgba(255,90,31,.9);opacity:0;margin:0 auto;width:fit-content;max-width:calc(100% - 32px);box-sizing:border-box;padding:10px 14px;background:rgba(20,12,24,.78);border:3px solid #3b2c45}
+.lm-banner small{display:block;font-size:17px;color:#fff3e4;margin-top:6px}
+.lm-banner.cool{color:#b8fff6;text-shadow:0 3px 0 #0b3a35,0 0 20px rgba(94,224,208,1)}
+.lm-banner.show{animation:lmBan 1.9s ease-out forwards}
+@keyframes lmBan{0%{opacity:0;transform:scale(.4)}15%{opacity:1;transform:scale(1.15)}25%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
+.lm-super{appearance:none;border:0;cursor:pointer;min-height:96px;font-family:var(--display,"Pixelify Sans",monospace);font-weight:700;font-size:26px;line-height:1.1;color:#0b2a26;background:linear-gradient(90deg,#5ee0d0,#ffd166,#ef476f,#9b8cff,#5ee0d0);background-size:200% 100%;animation:lmRainbow 1.2s linear infinite,lmSuper .5s ease-in-out infinite alternate;box-shadow:inset -5px -5px 0 rgba(0,0,0,.25),inset 5px 5px 0 rgba(255,255,255,.45),0 0 20px rgba(184,255,246,.8);touch-action:manipulation}
+@keyframes lmSuper{to{transform:scale(1.04)}}
+@media (prefers-reduced-motion: reduce){.lm-banner.show{animation:lmBanR 1.9s forwards}.lm-super,.lm-boss.ph2,.lm-boss.ph3{animation:none}}
+@keyframes lmBanR{0%,90%{opacity:1}100%{opacity:0}}
 .lm-x{all:unset;cursor:pointer;font-family:var(--display,monospace);font-weight:700;font-size:15px;color:#c7b6c9;background:rgba(20,12,24,.82);border:2px solid #3b2c45;padding:5px 10px}
 #lmDeck{flex:none;background:#251b2c;border-top:4px solid #3b2c45;padding:10px max(16px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
 .lm-tiles{display:flex;justify-content:center;gap:4px}
@@ -1806,6 +1844,11 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     if (!chunks.length) { setTimeout(() => opts.onDone && opts.onDone({ won: false, quit: true, gems: 0, hits: 0, misses: 0, beaten: [], shaky: [], missed: [] }), 0); return { stop() {}, addHeart() { return false; }, shield() { return false; }, glow() { return false; } }; }
 
     const maxHearts = opts.hearts || 3;
+    const BC = opts.boss || {};
+    const BN = BC.name || NAME;
+    const PH = (BC.phases || PHASES);
+    const SP = Object.assign({}, SPECIAL, BC.special || {});
+    const TT = Object.assign({}, TAUNTS, BC.taunts || {});
     const reduce = global.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     /* speech + sfx */
@@ -1830,6 +1873,11 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       wrong() { tone(200, 90, 0.3, "sawtooth", 0.06); },
       drum() { tone(70, 40, 0.18, "sine", 0.18); },
       win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.18, "square", 0.06, i * 0.12)); },
+      charge(k) { tone(500 + 700 * k, 900 + 900 * k, 0.12, "triangle", 0.05); },
+      special() { [784, 988, 1175, 1568].forEach((f, i) => tone(f, f * 1.5, 0.14, "triangle", 0.06, i * 0.07)); },
+      angry() { tone(180, 60, 1.1, "sawtooth", 0.1); tone(120, 50, 1.2, "square", 0.06, 0.1); },
+      superReady() { [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.12, "square", 0.05, i * 0.07)); },
+      blast() { tone(1600, 80, 1.6, "sawtooth", 0.09); tone(60, 30, 1.8, "sine", 0.2, 0.1); [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, f, 0.2, "triangle", 0.05, 0.3 + i * 0.1)); },
     };
 
     /* boss projectile (fireball for Sizzlejaw), see BossAttack */
@@ -1847,15 +1895,17 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         <canvas id="lmCanvas" aria-label="${NAME} the lava monster rises from the lava."></canvas>
         <div class="lm-hud">
           <div class="lm-chip"><span class="lm-hearts" data-r="hearts" aria-label="Hearts"></span><span class="lm-shield" data-r="shield" hidden aria-label="Shield on"></span></div>
-          <div class="lm-chip lm-boss"><span>${NAME}</span><div class="lm-bar" role="progressbar" aria-label="${NAME} health"><i data-r="hp"></i></div></div>
+          <div class="lm-chip lm-boss" data-r="bossChip"><span>${NAME}<em data-r="ph"></em></span><div class="lm-bar" role="progressbar" aria-label="${NAME} health"><i data-r="hp"></i></div><div class="lm-pwrow"><div class="lm-pow" data-r="powBar" role="progressbar" aria-label="Power"><i data-r="pow"></i></div></div></div>
           <button class="lm-x" type="button" data-r="quit" aria-label="Run away">✕</button>
         </div>
+        <div class="lm-banner" data-r="banner" aria-live="assertive"></div>
         <div class="lm-over" data-r="over" hidden><div class="lm-card" data-r="card"></div></div>
       </div>
       <div id="lmDeck">
         <div class="lm-tiles" data-r="tiles" aria-hidden="true"></div>
         <div class="lm-say" data-r="say" aria-live="polite"></div>
         <div class="lm-choices" data-r="choices"></div>
+        <button class="lm-super" type="button" data-r="super" hidden></button>
         <div class="lm-row"><button class="lm-btn" type="button" data-r="hear">Hear it</button><button class="lm-btn alt" type="button" data-r="slow">Slow</button></div>
       </div>`;
     document.body.appendChild(root);
@@ -1872,8 +1922,11 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       stats: Object.fromEntries(chunks.map(c => [c.key, { right: 0, wrong: 0, glow: false }])),
       gems: 0, hits: 0, misses: 0, done: false, flash: 0, shake: 0, hurt: 0, dead: 0, blink: 0,
       bolt: null, parts: [], drums: 0, roarT: 0, result: null, blocks: 0, struck: false,
+      bossPhase: 1, pow: 0, powMax: 1, stun: 0, fx: null, superTimer: 0, attackSpeed: 1,
     };
     S.hp = S.hpMax;
+    // full meter = every hit clean with an average-length chunk
+    S.powMax = Math.max(2, S.hpMax * chunks.reduce((a, c) => a + c.t.length, 0) / chunks.length);
     let T = 0, lastT = performance.now(), raf = 0, timers = [];
     const later = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
 
@@ -1884,6 +1937,10 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       R.shield.hidden = !S.shield;
       R.hp.style.width = (100 * S.hp / S.hpMax) + "%";
       R.hp.parentNode.setAttribute("aria-valuenow", String(S.hp));
+      R.pow.style.width = (100 * S.pow) + "%";
+      R.powBar.classList.toggle("full", S.pow >= 1);
+      R.ph.textContent = (PH[S.bossPhase - 1] || {}).label || "";
+      R.bossChip.className = "lm-chip lm-boss" + (S.bossPhase > 1 ? " ph" + Math.min(3, S.bossPhase) : "");
     }
     function tiles(fill) {
       R.tiles.innerHTML = ""; const c = S.q; if (!c) return;
@@ -1940,6 +1997,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         if (clean) st.right++;
         if (ATK && ATK.block()) { S.blocks++; opts.onBlock && opts.onBlock(c.key); }
         const earn = clean ? 4 : 2; S.gems += earn; S.hits++;
+        charge(c.t.length, clean);
         opts.onChunk && opts.onChunk(c.key, true);
         tiles(true);
         say(c.t.split("").join(", ") + "!", 0.9, true);
@@ -1948,6 +2006,7 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
         S.bolt = { t: 0, dur: reduce ? 250 : 520 };
       } else {
         S.tries++; S.misses++; st.wrong++;
+        S.pow = Math.max(0, S.pow - 0.06); hud();
         opts.onChunk && opts.onChunk(c.key, false);
         b.classList.add("sunk");
         sfx.wrong();
@@ -1960,10 +2019,97 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
     }
     function glowRight() { R.choices.querySelectorAll(".lm-choice").forEach(x => { if (x.dataset.t === S.q.t) x.classList.add("glow"); }); }
 
+    /* ---------- phases + power moves ---------- */
+    const phaseOf = n => PH[n - 1] || PH[PH.length - 1];
+    function phaseFor() {
+      const f = S.hp / S.hpMax; let n = 1;
+      PH.forEach((ph, i) => { if (i > 0 && f <= ph.at && !(ph.minHp && S.hpMax < ph.minHp)) n = i + 1; });
+      return Math.max(S.bossPhase, n);
+    }
+    function charge(letters, clean) {
+      S.pow = Math.min(1, S.pow + letters / S.powMax * (clean ? 1 : 0.5));
+      hud(); sfx.charge(S.pow);
+      R.powBar.classList.remove("bump"); void R.powBar.offsetWidth; R.powBar.classList.add("bump");
+      later(() => R.powBar.classList.remove("bump"), 300);
+    }
+    function banner(html, cool) {
+      R.banner.innerHTML = html; R.banner.className = "lm-banner" + (cool ? " cool" : "");
+      void R.banner.offsetWidth; R.banner.classList.add("show");
+    }
+    // end of a phase: hero fires a mini special, then the boss enters the next phase
+    function phaseChange(n) {
+      S.phase = "special";
+      const name = SP.mini[S.bossPhase - 1] || SP.mini[SP.mini.length - 1];
+      const bonus = 2 + Math.round(S.pow * 2); S.gems += bonus;
+      banner(`${name}!<small>+${bonus} diamonds</small>`, true);
+      setSay(`Power move: ${name}!`, "good");
+      say(`${name}!`, 1, true);
+      sfx.special();
+      S.fx = { kind: "mini", t: 0, dur: reduce ? 500 : 1500 };
+      later(() => {
+        S.bossPhase = n; S.target = Math.max(0, S.target - 0.15);
+        const ph = phaseOf(n); S.attackSpeed = ph.attack || 1;
+        sfx.angry(); S.shake = reduce ? 0 : 900; S.flash = 0.6; hud();
+        const t = TT[n] || `${BN} gets stronger!`;
+        banner(`${BN}: ${ph.label || "Phase " + n}!<small>${t}</small>`);
+        setSay(t, "bad"); say(t, 1, true);
+        opts.onPhase && opts.onPhase(n);
+        later(ask, 2400);
+      }, reduce ? 700 : 1700);
+    }
+    // final hit: meter goes super, the kid taps to finish
+    function superReady() {
+      S.phase = "super"; S.pow = 1; S.stun = 1e9; hud();
+      R.choices.hidden = true; R.super.hidden = false;
+      R.super.textContent = `${SP.super}!`;
+      setSay(`Your power is supercharged! Tap it!`, "good");
+      banner(`SUPERCHARGED!`, true);
+      sfx.superReady();
+      say(`Your power is supercharged! Tap ${SP.super}!`, 1, true);
+      S.superTimer = later(fireSuper, 9000);
+    }
+    function fireSuper() {
+      if (S.phase !== "super") return;
+      clearTimeout(S.superTimer);
+      S.phase = "blast"; R.super.hidden = true; R.choices.hidden = false;
+      const bonus = 4 + (S.misses === 0 ? 4 : 0); S.gems += bonus;
+      banner(`${SP.super}!<small>+${bonus} diamonds${S.misses === 0 ? " (perfect!)" : ""}</small>`, true);
+      say(`${SP.super}!`, 0.95, true);
+      sfx.blast(); S.shake = reduce ? 0 : 1600;
+      S.fx = { kind: "super", t: 0, dur: reduce ? 700 : 2200 };
+    }
+    R.super.addEventListener("click", fireSuper);
+    function drawFx(g, dt) {
+      const F = S.fx; if (!F) return;
+      F.t += dt; const k = Math.min(1, F.t / F.dur);
+      const mx = W / 2, my = g.lavaY - g.show * g.ps * 0.55, sy = g.py - g.block * 0.6;
+      if (F.kind === "mini") {
+        // diamonds rain onto the boss
+        if (!reduce && k < 0.8 && Math.random() < 0.7) S.parts.push({ x: mx + (Math.random() - .5) * g.ps * 14, y: -10, vx: (Math.random() - .5) * 1.5, vy: 6 + Math.random() * 4, life: 1, s: 6 + Math.random() * 6, c: Math.random() < .5 ? SP.color : SP.glow, gem: true });
+        if (k > 0.3 && k < 0.85 && (F.t / 120 | 0) % 2) S.flash = 0.3;
+        ctx.fillStyle = `rgba(184,255,246,${0.25 * Math.sin(k * Math.PI)})`; ctx.fillRect(0, 0, W, H);
+      } else {
+        // big beam from the hero to the boss, then a white-out
+        const bw = (10 + 40 * Math.sin(Math.min(1, k * 1.4) * Math.PI)) * (0.8 + 0.2 * Math.sin(T * 40));
+        if (k < 0.75) {
+          const gr = ctx.createLinearGradient(mx - bw, 0, mx + bw, 0);
+          gr.addColorStop(0, "rgba(94,224,208,0)"); gr.addColorStop(0.3, SP.color); gr.addColorStop(0.5, "#ffffff"); gr.addColorStop(0.7, SP.color); gr.addColorStop(1, "rgba(94,224,208,0)");
+          ctx.fillStyle = gr; ctx.fillRect(mx - bw, my, bw * 2, sy - my);
+          if (!reduce) for (let i = 0; i < 3; i++) { const cs = ["#5ee0d0", "#ffd166", "#ef476f", "#9b8cff", "#62d26f"]; S.parts.push({ x: mx + (Math.random() - .5) * bw * 2, y: my + Math.random() * (sy - my), vx: (Math.random() - .5) * 8, vy: -3 - Math.random() * 4, life: 1, s: 4 + Math.random() * 5, c: cs[Math.random() * 5 | 0], gem: true }); }
+          S.flash = 0.5;
+        }
+        const wo = k < 0.6 ? 0 : k < 0.8 ? (k - 0.6) / 0.2 : 1 - (k - 0.8) / 0.2;
+        if (wo > 0) { ctx.fillStyle = `rgba(255,255,255,${wo})`; ctx.fillRect(0, 0, W, H); }
+      }
+      if (k >= 1) { const kind = F.kind; S.fx = null; if (kind === "super") win(); }
+    }
+
     function landHit() {
       S.hp--; S.flash = 1; S.shake = reduce ? 0 : 300; S.target = Math.max(0, S.target - D.knock);
       sfx.hit(); hud(); burst(true);
-      if (S.hp <= 0) { win(); return; }
+      if (S.hp <= 0) { later(superReady, 600); S.phase = "super-wait"; return; }
+      const n = phaseFor();
+      if (n > S.bossPhase) { later(() => phaseChange(n), 700); return; }
       later(ask, 900);
     }
     function reachPlayer() {
@@ -2083,12 +2229,12 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       const ps = g.ps, w = 16 * ps;
       const sink = S.dead ? S.dead * 16 : 0;
       const show = Math.max(0, g.show - sink);
-      const shake = S.shake > 0 ? Math.sin(T * 60) * ps * 0.6 : 0;
+      const shake = S.shake > 0 ? Math.sin(T * 60) * ps * 0.6 : (S.bossPhase > 2 && !reduce && !S.dead ? Math.sin(T * 45) * ps * 0.2 : 0);
       const bob = Math.sin(T * 2) * ps * 0.4;
       const x0 = Math.round(W / 2 - w / 2 + shake), top = Math.round(g.lavaY - show * ps + bob);
       const dmg = 1 - S.hp / S.hpMax;
       const blinkNow = (T % 3.7) < 0.12;
-      const angry = S.p > 0.7 && !S.dead;
+      const angry = (S.p > 0.7 || S.bossPhase > 1) && !S.dead;
       for (let r = 0; r < 16 && r < Math.ceil(show); r++) for (let c = 0; c < 16; c++) {
         let k = MON[r][c]; if (k === ".") continue;
         if (k === "R" && hash(c + 7, r + 3) < dmg * 0.45) k = "O";                 // cracks grow as it weakens
@@ -2141,14 +2287,15 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       const dt = Math.min(50, now - lastT); lastT = now; T += dt / 1000;
       if (!W || !H) { raf = requestAnimationFrame(frame); return; }
       // monster movement
-      if (S.phase === "ask" && D.rise && !ATK) S.target += D.rise * dt / 1000;
+      if (S.stun > 0) S.stun -= dt;
+      if (S.phase === "ask" && D.rise && !ATK && S.stun <= 0) S.target += D.rise * phaseOf(S.bossPhase).speed * dt / 1000;
       if (ATK && S.phase !== "intro") S.target += (0.3 - S.target) * Math.min(1, dt / 2500);   // knocked back, then wades in again
       if (ATK && !S.done && ATK.update(dt) === "hit") { const late = !S.struck; S.struck = false; fireHit(S.q, late); }
       S.p += (S.target - S.p) * Math.min(1, dt / 300);
       if (S.phase === "intro" && S.p > 0.1) { S.phase = "ready"; ask(); }
       if (S.phase === "ask" && S.p >= 0.98) reachPlayer();
       // drums speed up as it gets close
-      if (!S.done && S.phase !== "intro") { S.drums -= dt; if (S.drums <= 0) { sfx.drum(); S.drums = 1400 - 1000 * Math.max(0, Math.min(1, S.p)); } }
+      if (!S.done && S.phase !== "intro") { S.drums -= dt; if (S.drums <= 0) { sfx.drum(); S.drums = (1400 - 1000 * Math.max(0, Math.min(1, S.p))) * (phaseOf(S.bossPhase).drums || 1); } }
       if (S.flash > 0) S.flash -= dt / 400;
       if (S.shake > 0) S.shake -= dt;
       if (S.hurt > 0) S.hurt -= dt / 900;
@@ -2160,12 +2307,15 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       // danger tint
       if (ATK && !S.done && ATK.progress() > 0.75) { ctx.fillStyle = `rgba(201,51,18,${(ATK.progress() - 0.75) * 0.9 * (0.6 + 0.4 * Math.sin(T * 10))})`; ctx.fillRect(0, 0, W, H); }
       if (!S.done && S.p > 0.7) { ctx.fillStyle = `rgba(201,51,18,${(S.p - 0.7) * 0.6 * (0.6 + 0.4 * Math.sin(T * 8))})`; ctx.fillRect(0, 0, W, H); }
+      const tint = !S.done && phaseOf(S.bossPhase).tint;
+      if (tint) { ctx.globalAlpha = reduce ? 1 : 0.65 + 0.35 * Math.sin(T * (S.bossPhase > 2 ? 9 : 5)); ctx.fillStyle = tint; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
       drawPlayer(g);
       if (ATK) {
         const top = g.lavaY - g.show * g.ps;
         ATK.draw(ctx, { x: W / 2, y: Math.min(g.lavaY - g.ps, top + 11.5 * g.ps) }, { x: W / 2, y: g.py - g.block * 0.35 }, Math.max(26, g.block * 0.6), W * 0.24);
       }
       drawBolt(g, dt);
+      drawFx(g, dt);
       S.parts = S.parts.filter(p => p.life > 0);
       for (const p of S.parts) {
         p.x += p.vx * dt / 16; p.y += p.vy * dt / 16; p.vy += 0.2 * dt / 16; p.life -= dt / (p.gem ? 1400 : 800);
@@ -2190,13 +2340,14 @@ textarea{width:100%;min-height:220px;font-family:var(--body);font-size:17px;line
       addHeart() { if (S.done || S.hearts >= maxHearts) return false; S.hearts++; hud(); setSay("Glug glug! +1 heart.", "good"); return true; },
       shield() { if (S.done || S.shield) return false; S.shield = true; hud(); setSay("Shield up! Your next mistake is free.", "good"); return true; },
       glow() { if (S.phase !== "ask") return false; S.stats[S.q.key].glow = true; glowRight(); setSay("The glowing block is the right one.", "good"); return true; },
-      state() { return { hp: S.hp, hpMax: S.hpMax, hearts: S.hearts, phase: S.phase, p: S.p, q: S.q && S.q.key, shot: ATK ? ATK.progress() : 0, blocks: S.blocks }; },
+      state() { return { hp: S.hp, hpMax: S.hpMax, hearts: S.hearts, phase: S.phase, p: S.p, q: S.q && S.q.key, shot: ATK ? ATK.progress() : 0, blocks: S.blocks, bossPhase: S.bossPhase, pow: S.pow }; },
+      fireSuper,
     };
     active = ctrl;
     return ctrl;
   }
 
-  global.LavaMonster = { start, chunkDecoys, DIFF, NAME };
+  global.LavaMonster = { start, chunkDecoys, DIFF, NAME, PHASES, SPECIAL, TAUNTS };
 })(window);
 
 </script>
